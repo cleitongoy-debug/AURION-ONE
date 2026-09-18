@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import secrets
 import json
 import zipfile
@@ -14,8 +15,9 @@ from fastapi.responses import HTMLResponse
 from .config import Settings, get_settings
 from .models import DeviceState, PromptRequest, PromptResponse
 
-app = FastAPI(title="AURION ONE Home Node", version="0.1.0")
+app = FastAPI(title="AURION ONE Home Node", version="0.1.1")
 device_states: dict[str, dict] = {}
+scan_lock = asyncio.Lock()
 
 
 def load_context(path: Path) -> str:
@@ -52,6 +54,43 @@ async def inventory() -> dict:
     if not path.is_file():
         return {"status": "pending"}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.post("/api/scan", dependencies=[Depends(require_token)])
+async def run_inventory_scan() -> dict:
+    """Run only the fixed read-only inventory script, once at a time.
+
+    This endpoint accepts no command, paths, or script arguments. It never
+    starts/stops services, scans private file contents, or publishes inventory.
+    """
+    if scan_lock.locked():
+        raise HTTPException(status_code=409, detail="Um scan já está em andamento")
+    async with scan_lock:
+        script = Path(__file__).resolve().parents[1] / "scripts" / "scan_system.py"
+        if not script.is_file():
+            raise HTTPException(status_code=503, detail="Scanner não instalado")
+        import sys
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, str(script),
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            raise HTTPException(status_code=503, detail="Scanner indisponível") from exc
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=35)
+        except asyncio.TimeoutError as exc:
+            proc.kill()
+            await proc.wait()
+            raise HTTPException(status_code=504, detail="Scan excedeu 35 segundos") from exc
+        if proc.returncode != 0:
+            raise HTTPException(status_code=503, detail="Falha no scan; consulte o log local do PC")
+        path = Path(__file__).resolve().parents[1] / "data" / "inventory.json"
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail="Inventário não pôde ser lido") from exc
 
 
 @app.get("/api/status", dependencies=[Depends(require_token)])
@@ -124,13 +163,20 @@ pre{white-space:pre-wrap;color:#bde5ff}input,button,textarea{box-sizing:border-b
 button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
 <body><div id='login' class='card'><h1>Login AURION ONE</h1><p>No primeiro acesso, cole com Ctrl+V a chave copiada pelo inicializador.</p><input id='token' type='password' placeholder='Chave local'><button onclick='loginPortal()'>Entrar</button><pre id='loginStatus'></pre></div>
 <main id='portal' style='display:none'><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online, autenticado e com inventário carregado.</p></div>
-<div class='card'><button onclick='loadInventory()'>Atualizar inventário</button></div>
+<div class='card'><button onclick='runScan()'>Iniciar scan do PC</button><button onclick='loadInventory()'>Ver inventário salvo</button><pre id='scanStatus' aria-live='polite'></pre></div>
 <div class='card'><h2>Inventário automático</h2><pre id='inventory'>Informe o token para carregar.</pre></div>
 <div class='card'><h2>Comando local</h2>
 <textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
 <pre id='answer'></pre></div><script>
 function savedToken(){return localStorage.getItem('aurion_token')||token.value}
 async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value.trim()}});if(!r.ok){localStorage.removeItem('aurion_token');loginStatus.textContent='Chave inválida. Execute o inicializador novamente e cole a nova chave.';return}localStorage.setItem('aurion_token',token.value.trim());login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function runScan(){
+scanStatus.textContent='Escaneando PC...';
+try{const r=await fetch('/api/scan',{method:'POST',headers:{'Authorization':'Bearer '+savedToken()}});
+const data=await r.json();if(!r.ok)throw Error(data.detail||'Erro HTTP '+r.status);
+inventory.textContent=JSON.stringify(data,null,2);scanStatus.textContent='Scan concluído: '+(data.scanned_at||'sem horário');
+}catch(e){scanStatus.textContent='Falha no scan: '+e.message;}
+}
 async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+savedToken()}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
 async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+savedToken()},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
 const fragment=new URLSearchParams(location.hash.slice(1));const incoming=fragment.get('token');if(incoming){localStorage.setItem('aurion_token',incoming);history.replaceState(null,'',location.pathname)}const prior=localStorage.getItem('aurion_token');if(prior){token.value=prior;loginPortal()}
