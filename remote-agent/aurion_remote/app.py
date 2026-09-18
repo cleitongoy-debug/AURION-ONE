@@ -116,7 +116,7 @@ button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
 <textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
 <pre id='answer'></pre></div><script>
 function savedToken(){return localStorage.getItem('aurion_token')||token.value}
-async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});if(!r.ok){loginStatus.textContent='Chave inválida';return}localStorage.setItem('aurion_token',token.value);login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value.trim()}});if(!r.ok){localStorage.removeItem('aurion_token');loginStatus.textContent='Chave inválida. Execute o inicializador novamente e cole a nova chave.';return}localStorage.setItem('aurion_token',token.value.trim());login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2)}
 async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+savedToken()}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
 async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+savedToken()},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
 const prior=localStorage.getItem('aurion_token');if(prior){token.value=prior;loginPortal()}
