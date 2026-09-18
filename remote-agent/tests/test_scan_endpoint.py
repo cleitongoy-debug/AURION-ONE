@@ -16,17 +16,26 @@ def settings_for_scan() -> Settings:
     return Settings(api_token="scan-test-token")
 
 
+def restore_settings(previous):
+    if previous is None:
+        app.dependency_overrides.pop(get_settings, None)
+    else:
+        app.dependency_overrides[get_settings] = previous
+
+
 def test_scan_requires_authentication():
+    previous = app.dependency_overrides.get(get_settings)
     app.dependency_overrides[get_settings] = settings_for_scan
     try:
         with TestClient(app) as client:
             assert client.post("/api/scan").status_code == 401
             assert client.post("/api/scan", headers={"Authorization": "Bearer incorrect"}).status_code == 401
     finally:
-        app.dependency_overrides.pop(get_settings, None)
+        restore_settings(previous)
 
 
 def test_scan_returns_new_inventory(monkeypatch):
+    previous = app.dependency_overrides.get(get_settings)
     app.dependency_overrides[get_settings] = settings_for_scan
     path = Path(module.__file__).resolve().parents[1] / "data" / "inventory.json"
     path.parent.mkdir(exist_ok=True)
@@ -55,7 +64,7 @@ def test_scan_returns_new_inventory(monkeypatch):
             path.unlink(missing_ok=True)
         else:
             path.write_bytes(original)
-        app.dependency_overrides.pop(get_settings, None)
+        restore_settings(previous)
 
 
 def test_scan_rejects_concurrent_run():
