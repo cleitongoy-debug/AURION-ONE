@@ -5,6 +5,9 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
 import android.net.Uri;
+import android.graphics.Color;
+import android.view.View;
+import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -26,25 +29,31 @@ public class MainActivity extends Activity {
     private static final String PANEL_URL = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/mobile/aurion-one-live.html";
     private static final int PICK_FILE = 41;
     private WebView view;
-    private Button refreshButton;
-    private Button resetButton;
+    private Button refreshButton, resetButton;
     private boolean refreshing = false;
     private int requestVersion = 0;
     private ValueCallback<Uri[]> selectedFiles;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        getWindow().getDecorView().setSystemUiVisibility(0);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setBackgroundColor(Color.rgb(12, 24, 40));
+        layout.setOnApplyWindowInsetsListener((v, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         refreshButton = new Button(this);
         refreshButton.setText("Atualizar");
-        refreshButton.setContentDescription("Buscar e aplicar painel mais recente");
+        refreshButton.setContentDescription("Buscar painel mais recente");
         controls.addView(refreshButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         resetButton = new Button(this);
-        resetButton.setText("Reset / socorro");
-        resetButton.setContentDescription("Recuperar painel travado sem apagar configurações");
+        resetButton.setText("Socorro");
+        resetButton.setContentDescription("Recuperar painel sem apagar configurações");
         controls.addView(resetButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         layout.addView(controls);
         view = new WebView(this);
@@ -75,9 +84,9 @@ public class MainActivity extends Activity {
         refreshButton.setOnClickListener(v -> loadPanel());
         resetButton.setOnClickListener(v -> new AlertDialog.Builder(this)
             .setTitle("Recuperar AURION")
-            .setMessage("Voltar ao painel básico incluído no aplicativo? Isso remove somente o painel baixado e mantém as configurações locais. Depois, use Atualizar para tentar novamente.")
+            .setMessage("Restaurar o painel básico? A cópia baixada será removida, mas suas configurações serão mantidas.")
             .setNegativeButton("Cancelar", null)
-            .setPositiveButton("Resetar painel", (dialog, which) -> resetPanel())
+            .setPositiveButton("Restaurar", (dialog, which) -> resetPanel())
             .show());
         loadPanel();
     }
@@ -90,7 +99,7 @@ public class MainActivity extends Activity {
         new File(getFilesDir(), "panel-cache.html").delete();
         view.stopLoading();
         view.loadUrl("file:///android_asset/index.html");
-        Toast.makeText(this, "Painel básico restaurado. Configurações preservadas.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Painel básico restaurado", Toast.LENGTH_LONG).show();
     }
 
     private void loadPanel() {
