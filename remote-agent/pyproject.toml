@@ -1,0 +1,19 @@
+[project]
+name = "aurion-remote-agent"
+version = "0.1.0"
+description = "Nó doméstico seguro para controle remoto do AURION ONE"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "pydantic-settings>=2.7,<3",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "pytest-asyncio>=0.25,<1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
