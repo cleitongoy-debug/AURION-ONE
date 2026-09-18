@@ -8,7 +8,7 @@ if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
 
 $Created = $false
 foreach ($Version in @("3.13", "3.12", "3.11")) {
-    py "-$Version" -m venv .venv 2>$null
+    cmd.exe /d /c "py -$Version -m venv .venv 1>nul 2>nul"
     if ($LASTEXITCODE -eq 0) {
         $Created = $true
         Write-Host "Ambiente criado com Python $Version."
@@ -16,7 +16,9 @@ foreach ($Version in @("3.13", "3.12", "3.11")) {
     }
 }
 if (-not $Created) {
-    throw "Python 3.11, 3.12 ou 3.13 não encontrado. Execute: py -0p"
+    Write-Host "Versões detectadas pelo Python Launcher:"
+    py -0p
+    throw "Python 3.11, 3.12 ou 3.13 não encontrado."
 }
 
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
