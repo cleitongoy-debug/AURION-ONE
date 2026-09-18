@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import secrets
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, status
@@ -26,6 +28,14 @@ def require_token(
 @app.get("/health")
 async def health() -> dict:
     return {"service": "aurion-home-node", "status": "online", "time": datetime.now(UTC).isoformat()}
+
+
+@app.get("/api/inventory", dependencies=[Depends(require_token)])
+async def inventory() -> dict:
+    path = Path(__file__).resolve().parents[1] / "data" / "inventory.json"
+    if not path.is_file():
+        return {"status": "pending"}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @app.get("/api/status", dependencies=[Depends(require_token)])
@@ -89,9 +99,16 @@ async def prompt(request: PromptRequest, settings: Settings = Depends(get_settin
 async def panel() -> str:
     return """<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'><title>AURION ONE</title>
-<style>body{font:16px system-ui;background:#07182d;color:#fff;max-width:760px;margin:40px auto;padding:20px}
-.card{background:#102b4b;border:1px solid #1d6fd8;border-radius:16px;padding:24px}code{color:#e3b83f}</style></head>
-<body><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online.</p>
-<p>Use <code>/health</code> para verificação pública e <code>/api/status</code> com token para o estado privado.</p>
-<p>O painel móvel completo será conectado na próxima fase.</p></div></body></html>"""
-
+<style>body{font:16px system-ui;background:#07182d;color:#fff;max-width:900px;margin:30px auto;padding:20px}
+.card{background:#102b4b;border:1px solid #1d6fd8;border-radius:16px;padding:22px;margin:14px 0}code{color:#e3b83f}
+pre{white-space:pre-wrap;color:#bde5ff}input,button,textarea{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #2782dc}
+button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
+<body><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online e inventário carregado.</p></div>
+<div class='card'><h2>Acesso local</h2><input id='token' type='password' placeholder='Token do arquivo .env'><button onclick='loadInventory()'>Carregar inventário</button></div>
+<div class='card'><h2>Inventário automático</h2><pre id='inventory'>Informe o token para carregar.</pre></div>
+<div class='card'><h2>Comando local</h2>
+<textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
+<pre id='answer'></pre></div><script>
+async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token.value},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
+</script></body></html>"""
