@@ -108,12 +108,16 @@ async def panel() -> str:
 .card{background:#102b4b;border:1px solid #1d6fd8;border-radius:16px;padding:22px;margin:14px 0}code{color:#e3b83f}
 pre{white-space:pre-wrap;color:#bde5ff}input,button,textarea{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #2782dc}
 button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
-<body><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online e inventário carregado.</p></div>
-<div class='card'><h2>Acesso</h2><input id='token' type='password' placeholder='Token: necessário somente fora deste PC'><button onclick='loadInventory()'>Atualizar inventário</button></div>
+<body><div id='login' class='card'><h1>Login AURION ONE</h1><p>No primeiro acesso, cole com Ctrl+V a chave copiada pelo inicializador.</p><input id='token' type='password' placeholder='Chave local'><button onclick='loginPortal()'>Entrar</button><pre id='loginStatus'></pre></div>
+<main id='portal' style='display:none'><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online, autenticado e com inventário carregado.</p></div>
+<div class='card'><button onclick='loadInventory()'>Atualizar inventário</button></div>
 <div class='card'><h2>Inventário automático</h2><pre id='inventory'>Informe o token para carregar.</pre></div>
 <div class='card'><h2>Comando local</h2>
 <textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
 <pre id='answer'></pre></div><script>
-async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});inventory.textContent=JSON.stringify(await r.json(),null,2)};loadInventory();
-async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token.value},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
-</script></body></html>"""
+function savedToken(){return localStorage.getItem('aurion_token')||token.value}
+async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});if(!r.ok){loginStatus.textContent='Chave inválida';return}localStorage.setItem('aurion_token',token.value);login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+savedToken()}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+savedToken()},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
+const prior=localStorage.getItem('aurion_token');if(prior){token.value=prior;loginPortal()}
+</script></main></body></html>"""
