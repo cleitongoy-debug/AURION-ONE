@@ -53,6 +53,18 @@ if ($CurrentToken.Length -lt 32 -or $CurrentToken -like "troque-por-*") {
     Set-Content ".env" $EnvText -Encoding UTF8
 }
 
+$OllamaCommand = Get-Command ollama -ErrorAction SilentlyContinue
+$OllamaExe = if ($OllamaCommand) { $OllamaCommand.Source } else { Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe" }
+try {
+    Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 2 | Out-Null
+} catch {
+    if (Test-Path $OllamaExe) {
+        Write-Host "[AURION] Iniciando Ollama local..."
+        Start-Process -FilePath $OllamaExe -ArgumentList "serve" -WindowStyle Hidden
+        Start-Sleep -Seconds 4
+    }
+}
+
 try {
     $Tags = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 3
     $Candidates = @($Tags.models | Where-Object { $_.size -le 5905580032 } | Sort-Object size -Descending)
