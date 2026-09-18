@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from .config import Settings, get_settings
@@ -66,10 +66,15 @@ async def update_device(state: DeviceState) -> dict:
 
 
 @app.post("/api/prompt", response_model=PromptResponse, dependencies=[Depends(require_token)])
-async def prompt(request: PromptRequest, settings: Settings = Depends(get_settings)) -> PromptResponse:
+async def prompt(request: PromptRequest, http_request: Request, settings: Settings = Depends(get_settings)) -> PromptResponse:
     if settings.motion_lock and request.moving:
         return PromptResponse(status="blocked", answer="Comando bloqueado enquanto o dispositivo está em movimento.")
-    if not settings.allow_remote_prompts:
+    # O próprio PC pode usar o agente imediatamente. Dispositivos externos
+    # continuam bloqueados até o operador habilitar a rede privada.
+    is_local = bool(http_request.client and http_request.client.host in {"127.0.0.1", "::1"})
+    if is_local and not settings.allow_local_prompts:
+        return PromptResponse(status="disabled", answer="Prompts locais estão desativados.")
+    if not is_local and not settings.allow_remote_prompts:
         return PromptResponse(status="disabled", answer="Prompts remotos ainda não foram liberados pelo operador.")
     if not settings.ollama_model:
         return PromptResponse(status="disabled", answer="Defina AURION_OLLAMA_MODEL antes de liberar prompts.")
@@ -104,11 +109,11 @@ async def panel() -> str:
 pre{white-space:pre-wrap;color:#bde5ff}input,button,textarea{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #2782dc}
 button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
 <body><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online e inventário carregado.</p></div>
-<div class='card'><h2>Acesso local</h2><input id='token' type='password' placeholder='Token do arquivo .env'><button onclick='loadInventory()'>Carregar inventário</button></div>
+<div class='card'><h2>Acesso</h2><input id='token' type='password' placeholder='Token: necessário somente fora deste PC'><button onclick='loadInventory()'>Atualizar inventário</button></div>
 <div class='card'><h2>Inventário automático</h2><pre id='inventory'>Informe o token para carregar.</pre></div>
 <div class='card'><h2>Comando local</h2>
 <textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
 <pre id='answer'></pre></div><script>
-async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value}});inventory.textContent=JSON.stringify(await r.json(),null,2)};loadInventory();
 async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token.value},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
 </script></body></html>"""
