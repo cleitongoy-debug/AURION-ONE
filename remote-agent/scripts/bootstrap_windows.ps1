@@ -31,6 +31,7 @@ if (-not (Test-Path $VenvPython)) {
 
 Write-Host "[AURION] Sincronizando dependencias..."
 & $VenvPython -m pip install --disable-pip-version-check -q -e "."
+if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar as dependencias do AURION." }
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
