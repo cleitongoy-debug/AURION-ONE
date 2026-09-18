@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     port: int = 8765
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = ""
-    context_file: Path = Path("../Biblia_da_Inteligencia_Artificial_AURION_ONE.txt")
+    context_file: Path = Path("../Biblia_da_Inteligencia_Artificial_AURION_ONE.docx")
     allow_remote_prompts: bool = False
     allow_local_prompts: bool = True
     motion_lock: bool = True
