@@ -98,5 +98,5 @@ Write-Host "[AURION] Escaneando hardware, modelos e programas..."
 & $VenvPython "scripts\scan_system.py"
 
 Write-Host "[AURION] Abrindo portal..."
-Start-Process "http://127.0.0.1:8765"
+Start-Process "http://127.0.0.1:8765/#token=$LocalToken"
 & $VenvPython "run.py"
