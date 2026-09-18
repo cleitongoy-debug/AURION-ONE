@@ -37,6 +37,10 @@ if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
 }
 
+$EnvMigration = Get-Content ".env" -Raw
+$EnvMigration = $EnvMigration.Replace("Biblia_da_Inteligencia_Artificial_AURION_ONE.txt", "Biblia_da_Inteligencia_Artificial_AURION_ONE.docx")
+Set-Content ".env" $EnvMigration -Encoding UTF8
+
 $CurrentTokenLine = Get-Content ".env" | Where-Object { $_ -like "AURION_API_TOKEN=*" } | Select-Object -First 1
 $CurrentToken = if ($CurrentTokenLine) { $CurrentTokenLine.Substring("AURION_API_TOKEN=".Length).Trim() } else { "" }
 if ($CurrentToken.Length -lt 32 -or $CurrentToken -like "troque-por-*") {
