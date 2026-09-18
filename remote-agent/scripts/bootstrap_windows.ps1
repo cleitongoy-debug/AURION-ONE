@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$AgentRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$AgentRoot = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $AgentRoot
 $VenvPython = Join-Path $AgentRoot ".venv\Scripts\python.exe"
 Set-Location $AgentRoot
@@ -34,11 +34,28 @@ Write-Host "[AURION] Sincronizando dependencias..."
 
 if (-not (Test-Path ".env")) {
     $Bytes = New-Object byte[] 32
-    [Security.Cryptography.RandomNumberGenerator]::Fill($Bytes)
+    $Rng = New-Object Security.Cryptography.RNGCryptoServiceProvider
+    $Rng.GetBytes($Bytes)
+    $Rng.Dispose()
     $Token = [Convert]::ToHexString($Bytes).ToLowerInvariant()
     $Template = Get-Content ".env.example" -Raw
     $Template = $Template.Replace("troque-por-um-token-longo-e-aleatorio", $Token)
     Set-Content ".env" $Template -Encoding UTF8
+}
+
+try {
+    $Tags = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 3
+    $Candidates = @($Tags.models | Where-Object { $_.size -le 5905580032 } | Sort-Object size -Descending)
+    if ($Candidates.Count -eq 0) { $Candidates = @($Tags.models | Sort-Object size) }
+    if ($Candidates.Count -gt 0) {
+        $Model = $Candidates[0].name
+        $EnvText = Get-Content ".env" -Raw
+        $EnvText = [regex]::Replace($EnvText, "(?m)^AURION_OLLAMA_MODEL=.*$", "AURION_OLLAMA_MODEL=$Model")
+        Set-Content ".env" $EnvText -Encoding UTF8
+        Write-Host "[AURION] Modelo local selecionado: $Model"
+    }
+} catch {
+    Write-Host "[AURION] Ollama ainda nao respondeu. O portal abrira mesmo assim."
 }
 
 Write-Host "[AURION] Escaneando hardware, modelos e programas..."
@@ -47,4 +64,3 @@ Write-Host "[AURION] Escaneando hardware, modelos e programas..."
 Write-Host "[AURION] Abrindo portal..."
 Start-Process "http://127.0.0.1:8765"
 & $VenvPython "run.py"
-
