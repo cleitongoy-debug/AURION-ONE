@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     ollama_model: str = ""
     context_file: Path = Path("../Biblia_da_Inteligencia_Artificial_AURION_ONE.txt")
     allow_remote_prompts: bool = False
+    allow_local_prompts: bool = True
     motion_lock: bool = True
 
     model_config = SettingsConfigDict(
@@ -22,4 +23,3 @@ class Settings(BaseSettings):
 
 def get_settings() -> Settings:
     return Settings()  # type: ignore[call-arg]
-
