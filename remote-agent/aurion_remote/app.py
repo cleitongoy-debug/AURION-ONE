@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import secrets
 import json
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
+from xml.etree import ElementTree
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
@@ -14,6 +16,20 @@ from .models import DeviceState, PromptRequest, PromptResponse
 
 app = FastAPI(title="AURION ONE Home Node", version="0.1.0")
 device_states: dict[str, dict] = {}
+
+
+def load_context(path: Path) -> str:
+    if not path.is_file():
+        return "Você é o nó local AURION ONE. Seja preciso, seguro e auditável."
+    if path.suffix.lower() == ".docx":
+        try:
+            with zipfile.ZipFile(path) as archive:
+                root = ElementTree.fromstring(archive.read("word/document.xml"))
+            text = "\n".join(node.text for node in root.iter() if node.tag.endswith("}t") and node.text)
+            return text[:50000]
+        except (OSError, KeyError, zipfile.BadZipFile, ElementTree.ParseError):
+            return "Você é o nó local AURION ONE. Seja preciso, seguro e auditável."
+    return path.read_text(encoding="utf-8", errors="replace")[:50000]
 
 
 def require_token(
@@ -79,9 +95,7 @@ async def prompt(request: PromptRequest, http_request: Request, settings: Settin
     if not settings.ollama_model:
         return PromptResponse(status="disabled", answer="Defina AURION_OLLAMA_MODEL antes de liberar prompts.")
 
-    context = ""
-    if settings.context_file.is_file():
-        context = settings.context_file.read_text(encoding="utf-8")[:50000]
+    context = load_context(settings.context_file)
     payload = {
         "model": settings.ollama_model,
         "stream": False,
