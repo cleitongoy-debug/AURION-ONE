@@ -37,7 +37,7 @@ if (-not (Test-Path ".env")) {
     $Rng = New-Object Security.Cryptography.RNGCryptoServiceProvider
     $Rng.GetBytes($Bytes)
     $Rng.Dispose()
-    $Token = [Convert]::ToHexString($Bytes).ToLowerInvariant()
+    $Token = [BitConverter]::ToString($Bytes).Replace("-", "").ToLowerInvariant()
     $Template = Get-Content ".env.example" -Raw
     $Template = $Template.Replace("troque-por-um-token-longo-e-aleatorio", $Token)
     Set-Content ".env" $Template -Encoding UTF8
