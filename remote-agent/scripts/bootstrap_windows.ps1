@@ -33,14 +33,24 @@ Write-Host "[AURION] Sincronizando dependencias..."
 & $VenvPython -m pip install --disable-pip-version-check -q -e "."
 
 if (-not (Test-Path ".env")) {
+    Copy-Item ".env.example" ".env"
+}
+
+$CurrentTokenLine = Get-Content ".env" | Where-Object { $_ -like "AURION_API_TOKEN=*" } | Select-Object -First 1
+$CurrentToken = if ($CurrentTokenLine) { $CurrentTokenLine.Substring("AURION_API_TOKEN=".Length).Trim() } else { "" }
+if ($CurrentToken.Length -lt 32 -or $CurrentToken -like "troque-por-*") {
     $Bytes = New-Object byte[] 32
     $Rng = New-Object Security.Cryptography.RNGCryptoServiceProvider
     $Rng.GetBytes($Bytes)
     $Rng.Dispose()
     $Token = [BitConverter]::ToString($Bytes).Replace("-", "").ToLowerInvariant()
-    $Template = Get-Content ".env.example" -Raw
-    $Template = $Template.Replace("troque-por-um-token-longo-e-aleatorio", $Token)
-    Set-Content ".env" $Template -Encoding UTF8
+    $EnvText = Get-Content ".env" -Raw
+    if ($CurrentTokenLine) {
+        $EnvText = [regex]::Replace($EnvText, "(?m)^AURION_API_TOKEN=.*$", "AURION_API_TOKEN=$Token")
+    } else {
+        $EnvText = "AURION_API_TOKEN=$Token`r`n" + $EnvText
+    }
+    Set-Content ".env" $EnvText -Encoding UTF8
 }
 
 try {
@@ -60,7 +70,7 @@ try {
 
 $TokenLine = Get-Content ".env" | Where-Object { $_ -like "AURION_API_TOKEN=*" } | Select-Object -First 1
 if ($TokenLine) {
-    $LocalToken = $TokenLine.Substring("AURION_API_TOKEN=".Length)
+    $LocalToken = $TokenLine.Substring("AURION_API_TOKEN=".Length).Trim()
     if (Get-Command Set-Clipboard -ErrorAction SilentlyContinue) {
         Set-Clipboard -Value $LocalToken
         Write-Host "[AURION] Token local copiado. Cole no portal com Ctrl+V."
