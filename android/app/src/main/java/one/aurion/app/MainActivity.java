@@ -73,7 +73,7 @@ public class MainActivity extends Activity {
                         html = output.toByteArray();
                     }
                     String text = new String(html, StandardCharsets.UTF_8);
-                    if (!text.contains("AURION_ONE_LIVE_V1")) html = null;
+                    if (!text.contains("AURION ONE") || !text.contains("<html")) html = null;
                     else try (FileOutputStream output = new FileOutputStream(new File(getFilesDir(), "panel-cache.html"))) { output.write(html); }
                 }
             } catch (Exception ignored) { }
