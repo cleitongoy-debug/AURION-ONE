@@ -58,6 +58,15 @@ try {
     Write-Host "[AURION] Ollama ainda nao respondeu. O portal abrira mesmo assim."
 }
 
+$TokenLine = Get-Content ".env" | Where-Object { $_ -like "AURION_API_TOKEN=*" } | Select-Object -First 1
+if ($TokenLine) {
+    $LocalToken = $TokenLine.Substring("AURION_API_TOKEN=".Length)
+    if (Get-Command Set-Clipboard -ErrorAction SilentlyContinue) {
+        Set-Clipboard -Value $LocalToken
+        Write-Host "[AURION] Token local copiado. Cole no portal com Ctrl+V."
+    }
+}
+
 Write-Host "[AURION] Escaneando hardware, modelos e programas..."
 & $VenvPython "scripts\scan_system.py"
 
