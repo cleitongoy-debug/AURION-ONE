@@ -1,6 +1,7 @@
 package one.aurion.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
 import android.net.Uri;
@@ -26,17 +27,26 @@ public class MainActivity extends Activity {
     private static final int PICK_FILE = 41;
     private WebView view;
     private Button refreshButton;
+    private Button resetButton;
     private boolean refreshing = false;
+    private int requestVersion = 0;
     private ValueCallback<Uri[]> selectedFiles;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
         refreshButton = new Button(this);
-        refreshButton.setText("Atualizar painel");
-        refreshButton.setContentDescription("Buscar e aplicar a versão mais recente do painel");
-        layout.addView(refreshButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        refreshButton.setText("Atualizar");
+        refreshButton.setContentDescription("Buscar e aplicar painel mais recente");
+        controls.addView(refreshButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        resetButton = new Button(this);
+        resetButton.setText("Reset / socorro");
+        resetButton.setContentDescription("Recuperar painel travado sem apagar configurações");
+        controls.addView(resetButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        layout.addView(controls);
         view = new WebView(this);
         layout.addView(view, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         setContentView(layout);
@@ -49,7 +59,7 @@ public class MainActivity extends Activity {
                 if (selectedFiles != null) selectedFiles.onReceiveValue(null);
                 selectedFiles = callback;
                 try { startActivityForResult(params.createIntent(), PICK_FILE); return true; }
-                catch (Exception error) { selectedFiles = null; return false; }
+                catch (Exception error) { selectedFiles = null; callback.onReceiveValue(null); return true; }
             }
         });
         view.setWebViewClient(new WebViewClient() {
@@ -63,22 +73,40 @@ public class MainActivity extends Activity {
             }
         });
         refreshButton.setOnClickListener(v -> loadPanel());
+        resetButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setTitle("Recuperar AURION")
+            .setMessage("Voltar ao painel básico incluído no aplicativo? Isso remove somente o painel baixado e mantém as configurações locais. Depois, use Atualizar para tentar novamente.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Resetar painel", (dialog, which) -> resetPanel())
+            .show());
         loadPanel();
+    }
+
+    private void resetPanel() {
+        requestVersion++;
+        refreshing = false;
+        refreshButton.setEnabled(true);
+        refreshButton.setText("Atualizar");
+        new File(getFilesDir(), "panel-cache.html").delete();
+        view.stopLoading();
+        view.loadUrl("file:///android_asset/index.html");
+        Toast.makeText(this, "Painel básico restaurado. Configurações preservadas.", Toast.LENGTH_LONG).show();
     }
 
     private void loadPanel() {
         if (refreshing) return;
         refreshing = true;
+        final int currentRequest = ++requestVersion;
         refreshButton.setEnabled(false);
-        refreshButton.setText("Buscando atualização...");
+        refreshButton.setText("Buscando...");
         new Thread(() -> {
             byte[] html = null;
             boolean downloaded = false;
             HttpURLConnection connection = null;
             try {
                 connection = (HttpURLConnection) new URL(PANEL_URL).openConnection();
-                connection.setConnectTimeout(7000);
-                connection.setReadTimeout(7000);
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
                 connection.setUseCaches(false);
                 connection.setRequestProperty("Cache-Control", "no-cache");
                 connection.setRequestProperty("Accept", "text/html");
@@ -92,7 +120,7 @@ public class MainActivity extends Activity {
                         html = output.toByteArray();
                     }
                     String text = new String(html, StandardCharsets.UTF_8);
-                    if (!text.contains("AURION ONE") || !text.contains("<html")) html = null;
+                    if (!text.contains("AURION ONE") || !text.toLowerCase().contains("<html")) html = null;
                     else {
                         try (FileOutputStream output = new FileOutputStream(new File(getFilesDir(), "panel-cache.html"))) { output.write(html); }
                         downloaded = true;
@@ -110,13 +138,13 @@ public class MainActivity extends Activity {
             final byte[] result = html;
             final boolean updated = downloaded;
             runOnUiThread(() -> {
-                if (isFinishing() || isDestroyed()) return;
+                if (isFinishing() || isDestroyed() || currentRequest != requestVersion) return;
                 if (result != null) view.loadDataWithBaseURL("https://raw.githubusercontent.com/", new String(result, StandardCharsets.UTF_8), "text/html", "UTF-8", null);
                 else view.loadUrl("file:///android_asset/index.html");
-                refreshButton.setText("Atualizar painel");
+                refreshButton.setText("Atualizar");
                 refreshButton.setEnabled(true);
                 refreshing = false;
-                Toast.makeText(this, updated ? "Painel recebido do GitHub e aplicado" : "Sem atualização pela internet; exibindo versão disponível", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, updated ? "Painel recebido e aplicado" : "Sem atualização; exibindo versão disponível", Toast.LENGTH_LONG).show();
             });
         }).start();
     }
