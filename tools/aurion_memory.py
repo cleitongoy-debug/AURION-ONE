@@ -1,19 +1,11 @@
-"""AURION persistent LOCAL memory. Python standard library only.
-
-Private SQLite lives in remote-agent/data (gitignored); no network or shell.
-Remember explicitly, retrieve using lexical overlap, and index the Bible only on
-explicit /biblia command. Never put file contents or secrets in public GitHub.
-"""
+"""Memoria local persistente do AURION; SQLite privado, sem rede ou shell."""
 from __future__ import annotations
-
 import hashlib
-import json
 import pathlib
 import re
 import sqlite3
-import time
 import zipfile
-from collections import Counter
+from contextlib import contextmanager
 from xml.etree import ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -24,19 +16,22 @@ NS = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 SENSITIVE = re.compile(r'(?i)(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,}|AIza[A-Za-z0-9_-]{20,}|\b(?:password|senha|token|api[_ -]?key|chave[_ -]?api|cookie|authorization)\s*[:=]\s*\S+)')
 WORDS = re.compile(r'[\wÀ-ÿ]{3,}', re.UNICODE)
 
-
+@contextmanager
 def connection():
+    """Commit on success, rollback on error, ALWAYS close (Windows locks open DB files)."""
     DATA.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(str(DB), timeout=5)
-    db.execute('CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY, kind TEXT NOT NULL, source TEXT NOT NULL, content TEXT NOT NULL, digest TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)')
-    db.execute('CREATE INDEX IF NOT EXISTS memory_kind ON memory(kind)')
-    db.commit()
-    return db
-
+    try:
+        db.execute('CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY, kind TEXT NOT NULL, source TEXT NOT NULL, content TEXT NOT NULL, digest TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)')
+        db.execute('CREATE INDEX IF NOT EXISTS memory_kind ON memory(kind)')
+        db.commit()
+        with db:
+            yield db
+    finally:
+        db.close()
 
 def safe(text):
     return bool(text.strip()) and len(text) <= 4000 and not SENSITIVE.search(text)
-
 
 def remember(text, kind='user', source='explicit_user'):
     text = text.strip()
@@ -47,16 +42,13 @@ def remember(text, kind='user', source='explicit_user'):
         cur = db.execute('INSERT OR IGNORE INTO memory(kind,source,content,digest) VALUES(?,?,?,?)', (kind, source, text, digest))
         return bool(cur.rowcount), 'Memoria privada salva.' if cur.rowcount else 'Esta memoria ja existia.'
 
-
 def forget(memory_id):
     with connection() as db:
         cur = db.execute('DELETE FROM memory WHERE id=? AND kind=?', (memory_id, 'user'))
         return bool(cur.rowcount)
 
-
 def tokens(text):
     return set(WORDS.findall(text.casefold())) - {'para', 'com', 'uma', 'que', 'por', 'dos', 'das', 'isso', 'esta', 'este', 'como', 'sobre', 'voce', 'você', 'qual', 'quais', 'aqui', 'mais', 'onde'}
-
 
 def recall(query, limit=5):
     target = tokens(query)
@@ -72,12 +64,10 @@ def recall(query, limit=5):
     matches.sort(key=lambda row: (row[0], row[1]), reverse=True)
     return [{'id': mid, 'kind': kind, 'source': source, 'content': content} for _, mid, kind, source, content in matches[:limit]]
 
-
 def list_user(limit=12):
     with connection() as db:
         rows = db.execute("SELECT id,created_at,content FROM memory WHERE kind='user' ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
     return [{'id': row[0], 'created_at': row[1], 'content': row[2]} for row in rows]
-
 
 def bible_paragraphs():
     if not BIBLE.is_file():
@@ -97,14 +87,11 @@ def bible_paragraphs():
             paragraphs.append(value)
     return paragraphs
 
-
 def index_bible():
     paragraphs = bible_paragraphs()
     if not paragraphs:
         raise ValueError('Nao foi encontrado texto em paragrafos da Biblia. Tabelas/imagens podem exigir outro leitor.')
-    chunks = []
-    part = []
-    size = 0
+    chunks, part, size = [], [], 0
     for paragraph in paragraphs:
         for start in range(0, len(paragraph), 1000):
             segment = paragraph[start:start + 1000]
@@ -127,9 +114,7 @@ def index_bible():
         for i, chunk in enumerate(chunks, 1):
             db.execute('INSERT INTO memory(kind,source,content,digest) VALUES(?,?,?,?)', ('bible', 'Biblia_da_Inteligencia_Artificial_AURION_ONE.docx trecho ' + str(i), chunk, hashlib.sha256(('bible\0' + digest + '\0' + str(i)).encode('utf-8')).hexdigest()))
         db.execute('INSERT INTO memory(kind,source,content,digest) VALUES(?,?,?,?)', ('bible_meta', 'sha256', digest, hashlib.sha256(('bible_meta\0' + digest).encode('utf-8')).hexdigest()))
-        db.commit()
     return {'status': 'indexada', 'chunks': len(chunks), 'paragraphs': len(paragraphs), 'sha256': digest[:12]}
-
 
 def bible_status():
     with connection() as db:
