@@ -1,0 +1,23 @@
+name: AURION memory offline tests
+on:
+  push:
+    paths:
+      - 'tools/aurion_memory.py'
+      - 'tools/aurion_chat_local.py'
+      - 'tools/test_aurion_memory.py'
+      - '.github/workflows/aurion-memory-tests.yml'
+  workflow_dispatch:
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax verification
+        run: python -m py_compile tools/aurion_memory.py tools/aurion_chat_local.py tools/test_aurion_memory.py tools/aurion_model_benchmark.py
+      - name: Isolated memory and chat tests
+        run: python tools/test_aurion_memory.py
