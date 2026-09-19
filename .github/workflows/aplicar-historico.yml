@@ -1,0 +1,39 @@
+name: Aplicar historico AURION no painel
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/patch_historico_aurion.py'
+      - '.github/workflows/aplicar-historico.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch-panel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch idempotente sem sobrescrever outras abas
+        run: python3 tools/patch_historico_aurion.py
+      - name: Confirmar escopo e registrar alteracao
+        run: |
+          git diff --check
+          git status --short
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('mobile/aurion-one-live.html').read_text(encoding='utf-8')
+          for marker in ['315,7 h', '6.882', '188,45', 'Horas auditadas por sessão', 'data-tab="chat"', 'data-tab="pcpage"', 'data-tab="create"']:
+              assert marker in s, marker
+          print('PASS: metricas historicas e abas existentes presentes')
+          PY
+          if ! git diff --quiet -- mobile/aurion-one-live.html; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add mobile/aurion-one-live.html
+            git commit -m 'feat(mobile): show documented 2025 hours cycles and Q-level'
+            git push origin HEAD:main
+          fi
