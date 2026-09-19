@@ -34,6 +34,26 @@ def ollama_models() -> list[str]:
         return []
 
 
+def local_history_summary() -> dict | None:
+    """Read a previously approved LOCAL metadata scan; never publish it to Git."""
+    path = ROOT / "data" / "history_scan.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        return None
+    # Explicit allowlist: omit paths, tokens, file names and raw document contents.
+    fields = (
+        "schema_version", "observed_at", "scope", "complete", "partial",
+        "roots_scanned", "files_examined", "aurion_related_files",
+        "file_types", "aurion_related_modified_years",
+        "earliest_related_file_modified_at", "latest_related_file_modified_at",
+        "repo_git_commits_local", "scan_errors_count", "limits", "warning",
+    )
+    return {key: data[key] for key in fields if key in data}
+
+
 drives = [f"{letter}:\\" for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{letter}:\\").exists()]
 common = []
 for drive in drives:
@@ -64,7 +84,10 @@ try:
 except Exception:
     pass
 
+history = local_history_summary()
+if history is not None:
+    inventory["history_pc"] = history
+
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(json.dumps(inventory, ensure_ascii=False, indent=2), encoding="utf-8")
 print(f"[AURION] Inventario salvo: {OUT}")
-
