@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     bind_host: str = "127.0.0.1"
     port: int = 8765
     ollama_url: str = "http://127.0.0.1:11434"
-    comfyui_url: str = "http://127.0.0.1:8188"
     ollama_model: str = ""
     context_file: Path = Path("../Biblia_da_Inteligencia_Artificial_AURION_ONE.docx")
     allow_remote_prompts: bool = False
