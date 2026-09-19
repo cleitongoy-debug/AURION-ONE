@@ -55,6 +55,10 @@ public class MainActivity extends Activity {
         resetButton.setText("Socorro");
         resetButton.setContentDescription("Recuperar painel sem apagar configurações");
         controls.addView(resetButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        Button bandButton = new Button(this);
+        bandButton.setText("Testar Band");
+        bandButton.setContentDescription("Enviar notificação Android de teste para verificar espelhamento no Mi Fitness");
+        controls.addView(bandButton, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         layout.addView(controls);
         view = new WebView(this);
         layout.addView(view, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
@@ -82,6 +86,7 @@ public class MainActivity extends Activity {
             }
         });
         refreshButton.setOnClickListener(v -> loadPanel());
+        bandButton.setOnClickListener(v -> BandNotificationTest.requestOrSend(this));
         resetButton.setOnClickListener(v -> new AlertDialog.Builder(this)
             .setTitle("Recuperar AURION")
             .setMessage("Restaurar o painel básico? A cópia baixada será removida, mas suas configurações serão mantidas.")
@@ -89,6 +94,11 @@ public class MainActivity extends Activity {
             .setPositiveButton("Restaurar", (dialog, which) -> resetPanel())
             .show());
         loadPanel();
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        BandNotificationTest.onPermissionResult(this, requestCode, grantResults);
     }
 
     private void resetPanel() {
