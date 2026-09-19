@@ -6,6 +6,7 @@ on:
       - 'tools/patch_historico_aurion.py'
       - 'tools/patch_historia_ampliada.py'
       - 'tools/patch_historia_pc.py'
+      - 'tools/patch_memoria_arquivo.py'
       - '.github/workflows/aplicar-historico.yml'
   workflow_dispatch:
 permissions:
@@ -27,23 +28,33 @@ jobs:
           python3 tools/patch_historico_aurion.py
           python3 tools/patch_historia_ampliada.py
           python3 tools/patch_historia_pc.py
-      - name: Confirmar escopo e registrar alteracao
+          python3 tools/patch_memoria_arquivo.py
+      - name: Verificar fontes, escopo e sintaxe
         run: |
           git diff --check
-          git status --short
+          python3 -m py_compile remote-agent/scripts/scan_historico_pc.py remote-agent/scripts/scan_system.py tools/patch_historico_aurion.py tools/patch_historia_ampliada.py tools/patch_historia_pc.py tools/patch_memoria_arquivo.py
           python3 - <<'PY'
           from pathlib import Path
+          import re
           s = Path('mobile/aurion-one-live.html').read_text(encoding='utf-8')
-          for marker in ['315,7 h', '6.882', '188,45', '195,28 h', 'id="historia-cruzada-v2"', 'id="history-pc-status"', 'async function loadPCHistory()', 'Horas auditadas por sessão', 'data-tab="chat"', 'data-tab="pcpage"', 'data-tab="create"']:
+          for marker in ['315,7 h', '6.882', '188,45', '195,28 h', '206,68 h', '308', '107', 'id="historia-cruzada-v2"', 'id="memoria-arquivo-v1"', 'id="history-pc-status"', 'async function loadPCHistory()', 'Horas auditadas por sessão', 'data-tab="chat"', 'data-tab="pcpage"', 'data-tab="create"']:
               assert marker in s, marker
-          assert s.count('id="historia-cruzada-v2"') == 1
-          assert s.count('id="history-pc-status"') == 1
-          print('PASS: dados documentados e consulta privada do PC preservados')
+          for marker in ['id="historia-cruzada-v2"', 'id="memoria-arquivo-v1"', 'id="history-pc-status"']:
+              assert s.count(marker) == 1, marker
+          js = re.search(r'<script>(.*?)</script>', s, re.S)
+          assert js, 'JavaScript do painel ausente'
+          Path('/tmp/aurion-panel-history.js').write_text(js.group(1), encoding='utf-8')
+          print('PASS: indicadores, idempotencia e abas preservadas')
           PY
+          node --check /tmp/aurion-panel-history.js
+          echo 'PASS: JavaScript valido e scanner Python compila'
+      - name: Publicar somente alteração do painel
+        run: |
+          git status --short
           if ! git diff --quiet -- mobile/aurion-one-live.html; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add mobile/aurion-one-live.html
-            git commit -m 'feat(mobile): display opt-in authenticated local PC history summary'
+            git commit -m 'feat(mobile): include deduplicated memory archive gauges'
             git push origin HEAD:main
           fi
