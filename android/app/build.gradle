@@ -8,5 +8,14 @@ android {
         targetSdk 35
         versionCode 3
         versionName '0.3.0'
+        manifestPlaceholders = [appLabel: 'AURION ONE']
+    }
+    buildTypes {
+        debug {
+            // Each ephemeral GitHub runner generates a different debug signing key.
+            // Install this preview alongside v0.2.0 instead of triggering an update conflict.
+            applicationIdSuffix '.preview'
+            manifestPlaceholders = [appLabel: 'AURION ONE TESTE']
+        }
     }
 }
