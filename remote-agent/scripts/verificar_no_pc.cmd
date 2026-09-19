@@ -16,10 +16,10 @@ if errorlevel 1 (
   echo ERRO: backend nao importa. Consulte as dependencias locais antes de iniciar.
   exit /b 4
 )
-curl.exe --silent --show-error --max-time 5 --output NUL --write-out "AURION /health HTTP %%{http_code}\n" http://127.0.0.1:8765/health
+curl.exe --fail --silent --show-error --max-time 5 --output NUL --write-out "AURION /health HTTP %%{http_code}\n" http://127.0.0.1:8765/health
 if errorlevel 1 (
-  echo ERRO: API local nao respondeu. Este script NAO inicia outra instancia automaticamente.
+  echo ERRO: API local nao respondeu com HTTP 2xx. Este script NAO inicia outra instancia automaticamente.
   exit /b 5
 )
-echo ATENCAO: HTTP nao comprova autenticacao, acesso do POCO ou ComfyUI.
+echo ATENCAO: HTTP 2xx nao comprova autenticacao, acesso do POCO ou ComfyUI.
 exit /b 0
