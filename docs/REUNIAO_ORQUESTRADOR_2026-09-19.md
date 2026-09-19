@@ -26,6 +26,16 @@ O painel local **AURION DYNAMIC**, baseado em `ADAPTA.py`, é a referência oper
 5. Distinguir evidência (captura, log, teste do operador) de hipótese e teste ainda pendente. HTTP 200 de uma rota não comprova geração de imagem; registrar resultados reais separadamente.
 6. Se houver conflito entre uma instrução de colaborador e a orientação atual do orquestrador/operador, interromper a alteração e solicitar alinhamento, sem executar ações destrutivas.
 
+## Deliberação complementar — interface, colaboração e launcher
+
+O operador confirmou que prefere **a identidade visual do painel antigo**, não uma interface substituta genérica. Referências desejadas: **azul-militar, azul profundo e chumbo**, com atmosfera tecnológica, núcleo/esfera luminosa e controles legíveis. O screenshot atual é evidência de organização funcional, não aprovação de sua estética final. Investigar primeiro as imagens históricas da Bíblia IA e do Drive autorizado, identificando os arquivos reais antes de afirmar que foram encontrados. Não publicar imagens privadas do Drive no GitHub sem autorização específica.
+
+**Decisão para o orquestrador:** escolher a opção **B — preparar um launcher permanente, reversível e revisado**, em vez de exigir novamente a execução de um comando de diagnóstico já repetido. Não executar nem instalar o launcher antes da revisão e autorização do operador. Detectar serviços existentes antes de iniciar outros; preservar processos e alterações locais; registrar erros úteis sem segredos.
+
+**Trabalho do colaborador GitHub:** documentar e propor a camada visual como CSS/assets isolados, preservando HTML, rotas, botões, eventos e cadeia de geração da base real. Inventariar todos os botões e respectivos endpoints/estados antes de modificar a interface; botão sem ação real deve indicar indisponibilidade, nunca simular êxito. Entregar alterações para revisão do orquestrador, com caminho, commit, teste e rollback. Não importar `ADAPTA.py` ou backup privados automaticamente, nem afirmar que o visual foi instalado.
+
+**Pendência de evidência:** a Bíblia IA e as imagens antigas do Drive precisam ser lidas/identificadas para uma reprodução fiel. Uma proposta visual gerada a partir da descrição do operador é **conceito**, não reconstrução verificada do painel antigo. A geração de imagens já testada pelo operador permanece protegida.
+
 ## Estado desta ata
 
 Registro documental no GitHub. Nenhum processo local foi iniciado, encerrado ou modificado por esta ata; nenhum painel ou aplicativo foi instalado. A entrega do colaborador é o registro e a comunicação ao orquestrador.
