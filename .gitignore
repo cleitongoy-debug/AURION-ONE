@@ -1,0 +1,21 @@
+# Private runtime data, chat memory and PC inventories must never enter public GitHub.
+remote-agent/data/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.egg-info/
+mobile/*.bak-*
