@@ -11,15 +11,19 @@ if not exist "%ROOT%\.venv\Scripts\python.exe" (
   exit /b 3
 )
 set "PY=%ROOT%\.venv\Scripts\python.exe"
+pushd "%ROOT%" || exit /b 4
 "%PY%" -c "import aurion_remote.app; print('IMPORT_OK')" 2>nul
 if errorlevel 1 (
   echo ERRO: backend nao importa. Consulte as dependencias locais antes de iniciar.
+  popd
   exit /b 4
 )
-curl.exe --fail --silent --show-error --max-time 5 --output NUL --write-out "AURION /health HTTP %%{http_code}\n" http://127.0.0.1:8765/health
+"%PY%" -c "import json,urllib.request; u=urllib.request.urlopen('http://127.0.0.1:8765/health',timeout=5); d=json.load(u); assert u.status==200 and d.get('service')=='aurion-home-node' and d.get('status')=='online'; print('AURION /health HTTP 200; identificacao e status conferidos')"
 if errorlevel 1 (
-  echo ERRO: API local nao respondeu com HTTP 2xx. Este script NAO inicia outra instancia automaticamente.
+  echo ERRO: API local nao respondeu com JSON /health esperado. Este script NAO inicia outra instancia automaticamente.
+  popd
   exit /b 5
 )
-echo ATENCAO: HTTP 2xx nao comprova autenticacao, acesso do POCO ou ComfyUI.
+popd
+echo ATENCAO: health nao comprova autenticacao, acesso do POCO ou ComfyUI.
 exit /b 0
