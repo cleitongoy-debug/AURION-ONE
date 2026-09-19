@@ -5,6 +5,7 @@ on:
     paths:
       - 'tools/patch_historico_aurion.py'
       - 'tools/patch_historia_ampliada.py'
+      - 'tools/patch_historia_pc.py'
       - '.github/workflows/aplicar-historico.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +26,7 @@ jobs:
         run: |
           python3 tools/patch_historico_aurion.py
           python3 tools/patch_historia_ampliada.py
+          python3 tools/patch_historia_pc.py
       - name: Confirmar escopo e registrar alteracao
         run: |
           git diff --check
@@ -32,15 +34,16 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s = Path('mobile/aurion-one-live.html').read_text(encoding='utf-8')
-          for marker in ['315,7 h', '6.882', '188,45', '195,28 h', 'id="historia-cruzada-v2"', 'Horas auditadas por sessão', 'data-tab="chat"', 'data-tab="pcpage"', 'data-tab="create"']:
+          for marker in ['315,7 h', '6.882', '188,45', '195,28 h', 'id="historia-cruzada-v2"', 'id="history-pc-status"', 'async function loadPCHistory()', 'Horas auditadas por sessão', 'data-tab="chat"', 'data-tab="pcpage"', 'data-tab="create"']:
               assert marker in s, marker
           assert s.count('id="historia-cruzada-v2"') == 1
-          print('PASS: fontes, historico ampliado e abas existentes preservados')
+          assert s.count('id="history-pc-status"') == 1
+          print('PASS: dados documentados e consulta privada do PC preservados')
           PY
           if ! git diff --quiet -- mobile/aurion-one-live.html; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add mobile/aurion-one-live.html
-            git commit -m 'feat(mobile): cross-source historical agent gauges and Q9 log'
+            git commit -m 'feat(mobile): display opt-in authenticated local PC history summary'
             git push origin HEAD:main
           fi
