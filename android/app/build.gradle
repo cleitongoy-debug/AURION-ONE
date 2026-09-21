@@ -3,17 +3,11 @@ android {
     namespace 'one.aurion.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'one.aurion.mobile'
+        applicationId 'one.aurion.mobile.fixed'
         minSdk 26
         targetSdk 35
-        versionCode 10
-        versionName '1.0.0'
-        manifestPlaceholders = [appLabel: 'AURION ONE NOVO']
-    }
-    buildTypes {
-        debug {
-            applicationIdSuffix '.t8i'
-            manifestPlaceholders = [appLabel: 'AURION ONE · T8i']
-        }
+        versionCode 20
+        versionName '2.0.0'
+        manifestPlaceholders = [appLabel: 'AURION ONE MOBILE FIXO']
     }
 }

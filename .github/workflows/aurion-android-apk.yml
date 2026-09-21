@@ -1,4 +1,4 @@
-name: AURION ONE Mobile T8i APK
+name: AURION ONE Mobile Fixo APK
 on:
   push:
     branches: [main]
@@ -14,7 +14,7 @@ on:
 permissions:
   contents: read
 jobs:
-  build-debug-apk:
+  build-fixed-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     defaults:
@@ -38,18 +38,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Compile new mobile APK
+      - name: Compile fixed mobile APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-MOBILE-T8I-v1.0.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-MOBILE-T8I-v1.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-MOBILE-FIXO-v2.0.0.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-MOBILE-FIXO-v2.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Publish installable package
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-MOBILE-T8I-v1.0.0
+          name: AURION-ONE-MOBILE-FIXO-v2.0.0
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-MOBILE-T8I-v1.0.0.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-MOBILE-FIXO-v2.0.0.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
