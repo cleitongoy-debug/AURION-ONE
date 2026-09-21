@@ -11,6 +11,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+t8i = [
+  "numpy>=2,<3",
+  "Pillow>=11,<12",
+  "rawpy>=0.24,<1",
+  "tifffile>=2025.5,<2027",
+]
 dev = ["pytest>=8,<9", "pytest-asyncio>=0.25,<1"]
 
 [tool.setuptools]
