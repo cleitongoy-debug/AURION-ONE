@@ -119,7 +119,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", BuildConfig.VERSION_NAME);
+            j.put("appVersion", "2.0.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -264,7 +264,7 @@ public class MainActivity extends Activity {
                 case "notifications": i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()); break;
                 case "battery": i = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS); break;
                 case "developer": i = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS); break;
-                case "update": i = new Intent(Settings.ACTION_SYSTEM_UPDATE_SETTINGS); break;
+                case "update": i = new Intent("android.settings.SYSTEM_UPDATE_SETTINGS"); break;
                 case "app": i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())); break;
                 case "health": i = new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS"); break;
                 default: i = new Intent(Settings.ACTION_SETTINGS);
@@ -295,7 +295,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Mobile Fixo").setMessage("Versão " + BuildConfig.VERSION_NAME + "\nCliente móvel local. Diagnóstico não altera o sistema sem sua ação.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Mobile Fixo").setMessage("Versão 2.0.0\nCliente móvel local. Diagnóstico não altera o sistema sem sua ação.").setPositiveButton("OK", null).show()); }
     }
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
