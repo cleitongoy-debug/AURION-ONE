@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import re
 import shutil
 import uuid
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -20,7 +22,7 @@ DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 CONFIG_FILE = DATA_DIR / "t8i_workspace.json"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_-]{8,96}$")
 SAFE_FILE_RE = re.compile(r"^[^/\\\x00]+$")
-FOLDERS = ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS")
+FOLDERS = ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS", "BACKUPS")
 
 
 class WorkspaceRequest(BaseModel):
@@ -60,6 +62,11 @@ class ConversationAppend(BaseModel):
     attachments: list[str] = Field(default_factory=list, max_length=30)
 
 
+class BackupRequest(BaseModel):
+    include_raw: bool = False
+    include_exports: bool = False
+
+
 def _now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -67,6 +74,37 @@ def _now() -> str:
 def _slug(text: str) -> str:
     text = re.sub(r"[^A-Za-z0-9._-]+", "-", text.strip()).strip("-._")
     return (text or "sessao")[:64]
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temp.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temp.replace(path)
+    finally:
+        if temp.exists():
+            temp.unlink(missing_ok=True)
+
+
+def _append_jsonl(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(payload, ensure_ascii=False) + "\n"
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _sha256(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _load_config() -> dict:
@@ -103,9 +141,7 @@ def _save_workspace(root: Path) -> dict:
     _create_structure(root)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     payload = {"workspace": str(root), "updated_at": _now(), "version": 1}
-    temp = CONFIG_FILE.with_suffix(".tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    temp.replace(CONFIG_FILE)
+    _atomic_write_text(CONFIG_FILE, json.dumps(payload, ensure_ascii=False, indent=2))
     return payload
 
 
@@ -191,7 +227,7 @@ def _write_sidecar(path: Path, source: Path, params: DevelopParams, extra: dict 
         **(extra or {}),
     }
     sidecar = path.with_suffix(path.suffix + ".json")
-    sidecar.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_text(sidecar, json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 @router.get("/status")
@@ -297,7 +333,17 @@ async def import_files(body: ImportRequest) -> dict:
                     rejected.append({"path": raw_path, "reason": "por segurança, originais externos não são movidos"})
                     continue
                 dst = resolved
-            imported.append({"source": str(src), "stored": str(dst), "name": dst.name})
+            item = {
+                "time": _now(),
+                "source": str(src),
+                "stored": str(dst),
+                "name": dst.name,
+                "size": dst.stat().st_size,
+                "sha256": _sha256(dst),
+                "operation": "copy" if body.copy else "register",
+            }
+            imported.append(item)
+            _append_jsonl(root / "LOGS" / "imports.jsonl", item)
         except OSError as exc:
             rejected.append({"path": raw_path, "reason": str(exc)})
     return {"imported": imported, "rejected": rejected}
@@ -399,7 +445,7 @@ async def conversation_start(body: ConversationStart) -> dict:
         "created_at": _now(),
         "log_file": f"{session_id}.jsonl",
     }
-    (conv_dir / f"{session_id}.meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_text(conv_dir / f"{session_id}.meta.json", json.dumps(meta, ensure_ascii=False, indent=2))
     (conv_dir / f"{session_id}.jsonl").touch(exist_ok=False)
     return meta
 
@@ -419,12 +465,8 @@ async def conversation_append(body: ConversationAppend) -> dict:
         "content": body.content,
         "attachments": body.attachments,
     }
-    line = json.dumps(entry, ensure_ascii=False) + "\n"
     try:
-        with path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(line)
-            handle.flush()
-            os.fsync(handle.fileno())
+        _append_jsonl(path, entry)
     except OSError as exc:
         raise HTTPException(status_code=500, detail=f"Falha ao salvar conversa: {exc}") from exc
     return {"ok": True, "saved_at": entry["time"]}
@@ -444,3 +486,116 @@ async def conversations(limit: int = 100) -> dict:
         except (OSError, ValueError):
             continue
     return {"conversations": items}
+
+
+
+@router.get("/conversations/{session_id}")
+async def conversation_read(session_id: str, limit: int = 2000) -> dict:
+    if not SESSION_RE.match(session_id):
+        raise HTTPException(status_code=400, detail="ID de conversa inválido.")
+    root = _workspace()
+    assert root is not None
+    conv_dir = root / "CONVERSAS"
+    log_path = conv_dir / f"{session_id}.jsonl"
+    meta_path = conv_dir / f"{session_id}.meta.json"
+    if not log_path.is_file():
+        raise HTTPException(status_code=404, detail="Conversa não encontrada.")
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.is_file() else {"session_id": session_id}
+        entries = []
+        with log_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if len(entries) >= max(1, min(limit, 10000)):
+                    break
+                line = line.strip()
+                if line:
+                    entries.append(json.loads(line))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=500, detail=f"Falha ao ler conversa: {type(exc).__name__}") from exc
+    return {"meta": meta, "entries": entries, "count": len(entries)}
+
+
+def _backup_file_allowed(relative: Path, include_raw: bool, include_exports: bool) -> bool:
+    if relative.parts and relative.parts[0] == "BACKUPS":
+        return False
+    if relative.parts and relative.parts[0] == "RAW":
+        return include_raw
+    if relative.parts and relative.parts[0] in {"PREVIEWS", "EXPORTS"}:
+        return include_exports or relative.name.lower().endswith(".json")
+    return True
+
+
+def _create_backup(root: Path, include_raw: bool = False, include_exports: bool = False) -> dict:
+    backup_dir = root / "BACKUPS"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive = backup_dir / f"AURION_T8I_BACKUP_{stamp}_{uuid.uuid4().hex[:6]}.zip"
+    manifest = {
+        "created_at": _now(),
+        "workspace": str(root),
+        "include_raw": include_raw,
+        "include_exports": include_exports,
+        "files": [],
+    }
+    candidates = [
+        path for path in root.rglob("*")
+        if path.is_file() and _backup_file_allowed(path.relative_to(root), include_raw, include_exports)
+    ]
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as bundle:
+        for path in sorted(candidates):
+            relative = path.relative_to(root)
+            info = {"path": relative.as_posix(), "size": path.stat().st_size, "sha256": _sha256(path)}
+            manifest["files"].append(info)
+            bundle.write(path, relative.as_posix())
+        bundle.writestr("BACKUP_MANIFEST.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+    result = {
+        "file": archive.name,
+        "path": str(archive),
+        "size": archive.stat().st_size,
+        "sha256": _sha256(archive),
+        "files": len(manifest["files"]),
+        "created_at": manifest["created_at"],
+        "includes_original_raw": include_raw,
+        "includes_rendered_files": include_exports,
+    }
+    _append_jsonl(root / "LOGS" / "backups.jsonl", result)
+    return result
+
+
+@router.post("/backup")
+async def create_backup(body: BackupRequest) -> dict:
+    root = _workspace()
+    assert root is not None
+    try:
+        return await asyncio.to_thread(_create_backup, root, body.include_raw, body.include_exports)
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Falha ao criar backup: {exc}") from exc
+
+
+@router.get("/integrity")
+async def integrity(limit: int = 2000) -> dict:
+    root = _workspace()
+    assert root is not None
+    targets = []
+    for folder in ("RAW", "CONVERSAS", "PRESETS", "LOGS"):
+        base = root / folder
+        if base.is_dir():
+            targets.extend(path for path in base.rglob("*") if path.is_file())
+    cap = max(1, min(limit, 10000))
+    truncated = len(targets) > cap
+    records = []
+    for path in sorted(targets)[:cap]:
+        try:
+            records.append({
+                "path": path.relative_to(root).as_posix(),
+                "size": path.stat().st_size,
+                "sha256": await asyncio.to_thread(_sha256, path),
+                "ok": True,
+            })
+        except OSError as exc:
+            records.append({"path": str(path), "ok": False, "error": str(exc)})
+    checked_at = _now()
+    report = {"checked_at": checked_at, "count": len(records), "truncated": truncated, "files": records}
+    report_name = f"integrity_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    _atomic_write_text(root / "LOGS" / report_name, json.dumps(report, ensure_ascii=False, indent=2))
+    return {"ok": all(item["ok"] for item in records), "checked_at": checked_at, "count": len(records), "truncated": truncated, "report": report_name}
