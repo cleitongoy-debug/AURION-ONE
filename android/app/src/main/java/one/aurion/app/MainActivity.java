@@ -3,6 +3,7 @@ package one.aurion.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -41,6 +42,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.documentfile.provider.DocumentFile;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -63,12 +66,18 @@ public class MainActivity extends Activity {
     private static final int PICK_WORKSPACE = 413;
     private static final int PICK_CONVERT_IMAGE = 414;
     private static final int CAPTURE_PHOTO = 415;
+    private static final int PICK_TRIM_MEDIA = 416;
+    private static final int PICK_MEMORY_IMPORT = 417;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
     private String pendingConvertFormat = "JPEG";
     private int pendingConvertQuality = 94;
     private Uri pendingCameraUri;
+    private String pendingTrimKind = "video";
+    private double pendingTrimStart = 0;
+    private double pendingTrimEnd = 0;
+    private AurionStore store;
     private BluetoothLeScanner scanner;
     private ScanCallback scanCallback;
     private final Map<String, JSONObject> scanResults = new LinkedHashMap<>();
@@ -81,6 +90,7 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.rgb(4, 8, 13));
         getWindow().setNavigationBarColor(Color.rgb(4, 8, 13));
         web = new WebView(this);
+        store = new AurionStore(this);
         web.setBackgroundColor(Color.rgb(4, 8, 13));
         setContentView(web);
         WebSettings s = web.getSettings();
@@ -90,7 +100,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Mobile-Final/3.0");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Studio/4.0");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -137,7 +147,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "3.0.0");
+            j.put("appVersion", "4.0.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -174,6 +184,8 @@ public class MainActivity extends Activity {
             j.put("tailscale", packageInstalled("com.tailscale.ipn"));
             j.put("healthConnect", packageInstalled("com.google.android.apps.healthdata") || Build.VERSION.SDK_INT >= 34);
             j.put("bandBonded", bondedDevices());
+            j.put("accounts", store.accountStatus());
+            j.put("memoryRecords", store.list("all", "", 5000).length());
         } catch (Exception e) { try { j.put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
         return j;
     }
@@ -333,6 +345,97 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private boolean isTrustedCloud(String host) {
+        if (host == null) return false;
+        String h = host.toLowerCase(Locale.ROOT);
+        return h.equals("api.github.com") || h.equals("huggingface.co") || h.equals("router.huggingface.co") ||
+            h.equals("api.openai.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
+            h.equals("github.com") || h.equals("raw.githubusercontent.com") || h.equals("codeload.github.com") || h.endsWith(".huggingface.co");
+    }
+
+    private JSONObject cloudJson(String method, String raw, String authHeader, String apiKey, String body) {
+        JSONObject out = new JSONObject(); HttpURLConnection c = null;
+        try {
+            URL url = new URL(raw); if (!"https".equalsIgnoreCase(url.getProtocol()) || !isTrustedCloud(url.getHost())) throw new IllegalArgumentException("Serviço fora da lista segura");
+            c = (HttpURLConnection) url.openConnection(); c.setConnectTimeout(10000); c.setReadTimeout(120000); c.setUseCaches(false); c.setRequestMethod(method); c.setRequestProperty("Accept", "application/json");
+            if (authHeader != null && !authHeader.isEmpty()) c.setRequestProperty("Authorization", authHeader);
+            if (apiKey != null && !apiKey.isEmpty()) c.setRequestProperty("x-goog-api-key", apiKey);
+            if (body != null) { c.setDoOutput(true); c.setRequestProperty("Content-Type", "application/json; charset=utf-8"); try (OutputStream os = c.getOutputStream()) { os.write(body.getBytes(StandardCharsets.UTF_8)); } }
+            int code = c.getResponseCode(); InputStream stream = code >= 400 ? c.getErrorStream() : c.getInputStream(); StringBuilder text = new StringBuilder();
+            if (stream != null) try (BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) { String line; while ((line = br.readLine()) != null && text.length() < 500000) text.append(line).append('\n'); }
+            out.put("ok", code >= 200 && code < 300); out.put("http", code); out.put("service", url.getHost()); out.put("body", text.toString().trim());
+        } catch (Exception e) { try { out.put("ok", false); out.put("error", e.getClass().getSimpleName() + ": " + e.getMessage()); } catch (Exception ignored) { } }
+        finally { if (c != null) c.disconnect(); }
+        return out;
+    }
+
+    private void testAccount(String service) {
+        new Thread(() -> {
+            String key = store.getSecret(service); JSONObject result;
+            if (key.isEmpty() && !"googleDriveFolder".equals(service)) { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Credencial não configurada"); } catch (Exception ignored) { } }
+            else if ("github".equals(service)) result = cloudJson("GET", "https://api.github.com/user", "Bearer " + key, "", null);
+            else if ("huggingface".equals(service)) result = cloudJson("GET", "https://huggingface.co/api/whoami-v2", "Bearer " + key, "", null);
+            else if ("openai".equals(service)) result = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+            else if ("gemini".equals(service)) result = cloudJson("GET", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", "", key, null);
+            else if ("googleDrive".equals(service)) result = cloudJson("GET", "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", "Bearer " + key, "", null);
+            else { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Serviço desconhecido"); } catch (Exception ignored) { } }
+            emit("aurionAccountResult", new JSONObjectResult(service, result).toString());
+        }).start();
+    }
+
+    private void runCloudAi(String provider, String model, String prompt, String memory) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                String key = store.getSecret(provider); if (key.isEmpty()) throw new IllegalStateException("Credencial ausente para " + provider);
+                String input = (memory == null || memory.trim().isEmpty() ? "" : "MEMÓRIA AUTORIZADA:\n" + memory.trim() + "\n\n") + prompt;
+                if ("openai".equals(provider)) {
+                    JSONObject body = new JSONObject().put("model", model.isEmpty() ? "gpt-5-mini" : model).put("input", input);
+                    result = cloudJson("POST", "https://api.openai.com/v1/responses", "Bearer " + key, "", body.toString());
+                } else if ("gemini".equals(provider)) {
+                    JSONArray parts = new JSONArray().put(new JSONObject().put("text", input)); JSONArray contents = new JSONArray().put(new JSONObject().put("role", "user").put("parts", parts));
+                    JSONObject body = new JSONObject().put("contents", contents); String selected = model.isEmpty() ? "gemini-2.5-flash" : model;
+                    result = cloudJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + selected + ":generateContent", "", key, body.toString());
+                } else if ("huggingface".equals(provider)) {
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 1200);
+                    result = cloudJson("POST", "https://router.huggingface.co/v1/chat/completions", "Bearer " + key, "", body.toString());
+                } else throw new IllegalArgumentException("Provedor não suportado");
+            } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
+            emit("aurionAiResult", new JSONObjectResult(provider, result).toString());
+        }).start();
+    }
+
+    private void downloadResource(String raw, String filename, String expectedSha) {
+        try {
+            URL url = new URL(raw); if (!"https".equalsIgnoreCase(url.getProtocol()) || !isTrustedCloud(url.getHost())) throw new IllegalArgumentException("Use GitHub ou Hugging Face por HTTPS");
+            String clean = filename == null ? "aurion_resource.bin" : filename.replaceAll("[^A-Za-z0-9._-]", "_"); if (clean.isEmpty()) clean = "aurion_resource.bin";
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(raw)).setTitle("AURION · " + clean).setDescription("Recurso solicitado pelo operador").setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED).setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "AURION/RECURSOS/" + clean);
+            long id = ((DownloadManager)getSystemService(DOWNLOAD_SERVICE)).enqueue(request);
+            JSONObject meta = new JSONObject().put("url", raw).put("filename", clean).put("sha256Expected", expectedSha == null ? "" : expectedSha).put("downloadId", id).put("status", "solicitado");
+            store.add("download", clean, raw, meta.toString()); emit("aurionDownloadResult", new JSONObject().put("ok", true).put("id", id).put("message", "Download iniciado. Verifique o hash informado ao concluir.").toString());
+        } catch (Exception e) { try { emit("aurionDownloadResult", new JSONObject().put("ok", false).put("error", e.getMessage()).toString()); } catch (Exception ignored) { } }
+    }
+
+    private void chooseTrimMedia(String kind, double start, double end) {
+        pendingTrimKind = "audio".equals(kind) ? "audio" : "video"; pendingTrimStart = Math.max(0, start); pendingTrimEnd = Math.max(0, end);
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType(pendingTrimKind.equals("audio") ? "audio/*" : "video/*").addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(i, PICK_TRIM_MEDIA);
+    }
+
+    private void syncMemoryToWorkspace() {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                String raw = getSharedPreferences("aurion_workspace", MODE_PRIVATE).getString("tree", ""); if (raw.isEmpty()) throw new IllegalStateException("Escolha um workspace primeiro");
+                DocumentFile root = DocumentFile.fromTreeUri(this, Uri.parse(raw)); if (root == null || !root.canWrite()) throw new IllegalStateException("Workspace sem permissão de escrita");
+                DocumentFile folder = root.findFile("AURION_MEMORY"); if (folder == null) folder = root.createDirectory("AURION_MEMORY"); if (folder == null) throw new IllegalStateException("Não foi possível criar AURION_MEMORY");
+                String name = "aurion_memory_" + System.currentTimeMillis() + ".json"; DocumentFile file = folder.createFile("application/json", name); if (file == null) throw new IllegalStateException("Não foi possível criar backup");
+                try (OutputStream out = getContentResolver().openOutputStream(file.getUri())) { out.write(store.exportAll().toString(2).getBytes(StandardCharsets.UTF_8)); }
+                result.put("ok", true); result.put("message", "Memória sincronizada em AURION_MEMORY/" + name);
+            } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
+            emit("aurionMemoryResult", result.toString());
+        }).start();
+    }
+
     private void shareText(String title, String text) {
         runOnUiThread(() -> {
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
@@ -383,6 +486,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void chooseWorkspace() { runOnUiThread(MainActivity.this::chooseWorkspace); }
         @JavascriptInterface public void capturePhoto() { runOnUiThread(MainActivity.this::capturePhoto); }
         @JavascriptInterface public void convertImage(String format, int quality) { runOnUiThread(() -> chooseImageForConversion(format, quality)); }
+        @JavascriptInterface public void saveEditedImage(String format, int quality, String dataUrl) { new Thread(() -> emit("aurionEditorResult", MediaTools.saveDataImage(MainActivity.this, format, quality, dataUrl).toString())).start(); }
+        @JavascriptInterface public void trimMedia(String kind, double start, double end) { runOnUiThread(() -> chooseTrimMedia(kind, start, end)); }
+        @JavascriptInterface public long memoryAdd(String type, String title, String body, String meta) { try { return store.add(type, title, body, meta); } catch (Exception e) { return -1; } }
+        @JavascriptInterface public String memoryList(String type, String query, int limit) { return store.list(type, query, limit).toString(); }
+        @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
+        @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
+        @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
+        @JavascriptInterface public void memoryImport() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE), PICK_MEMORY_IMPORT)); }
+        @JavascriptInterface public void setSecret(String service, String value) { try { store.setSecret(service, value == null ? "" : value.trim()); emit("aurionVaultResult", new JSONObject().put("ok", true).put("service", service).toString()); } catch (Exception e) { try { emit("aurionVaultResult", new JSONObject().put("ok", false).put("service", service).put("error", e.getMessage()).toString()); } catch (Exception ignored) { } } }
+        @JavascriptInterface public String accountStatus() { return store.accountStatus().toString(); }
+        @JavascriptInterface public void testAccount(String service) { MainActivity.this.testAccount(service); }
+        @JavascriptInterface public void runCloudAi(String provider, String model, String prompt, String memory) { MainActivity.this.runCloudAi(provider, model, prompt, memory); }
+        @JavascriptInterface public void downloadResource(String url, String filename, String sha256) { runOnUiThread(() -> MainActivity.this.downloadResource(url, filename, sha256)); }
         @JavascriptInterface public void shareProject(String title, String text) { shareText(title, text); }
         @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
         @JavascriptInterface public void scanBand() { runOnUiThread(MainActivity.this::requestBluetoothOrScan); }
@@ -395,6 +511,7 @@ public class MainActivity extends Activity {
             String script = "pkg update && pkg install -y python git curl openssh && mkdir -p \\\"$HOME/aurion-mobile\\\"/{logs,backups,media} && python --version && git --version";
             ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE); cm.setPrimaryClip(ClipData.newPlainText("AURION Termux", script)); toast("Comando copiado. Revise e execute manualmente no Termux.");
         }
+        @JavascriptInterface public void copyText(String label, String text) { ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE); cm.setPrimaryClip(ClipData.newPlainText(label == null ? "AURION" : label, text == null ? "" : text)); toast("Copiado. Revise antes de executar."); }
         @JavascriptInterface public void exportBackup(String json) {
             pendingBackup = json;
             runOnUiThread(() -> {
@@ -402,7 +519,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Mobile Final").setMessage("Versão 3.0.0\nFluxo móvel da câmera à entrega. Diagnóstico e ações explícitas, sem alterar silenciosamente o sistema.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Studio Mobile").setMessage("Versão 4.0.0\nEdição e conversão local, memória SQLite, cofre Android, laboratório de IA e pontes opcionais com o PC.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -422,6 +539,7 @@ public class MainActivity extends Activity {
         if (request == PICK_WORKSPACE && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
             try { getContentResolver().takePersistableUriPermission(uri, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)); } catch (Exception ignored) {}
+            getSharedPreferences("aurion_workspace", MODE_PRIVATE).edit().putString("tree", uri.toString()).apply();
             emit("aurionWorkspaceResult", uri.toString());
         }
         if (request == PICK_CONVERT_IMAGE && result == RESULT_OK && data != null && data.getData() != null) convertImage(data.getData());
@@ -429,6 +547,18 @@ public class MainActivity extends Activity {
             if (result == RESULT_OK && pendingCameraUri != null) emit("aurionCaptureResult", pendingCameraUri.toString());
             else if (pendingCameraUri != null) { try { getContentResolver().delete(pendingCameraUri, null, null); } catch (Exception ignored) {} }
             pendingCameraUri = null;
+        }
+        if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
+        }
+        if (request == PICK_MEMORY_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
+            new Thread(() -> {
+                JSONObject imported;
+                try (InputStream in = getContentResolver().openInputStream(data.getData()); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    StringBuilder raw = new StringBuilder(); String line; while ((line = br.readLine()) != null && raw.length() < 10000000) raw.append(line).append('\n'); imported = store.importAll(raw.toString());
+                } catch (Exception e) { imported = new JSONObject(); try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { } }
+                emit("aurionMemoryResult", imported.toString());
+            }).start();
         }
     }
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
