@@ -11,10 +11,12 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -28,6 +30,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.provider.MediaStore;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -42,6 +45,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -54,13 +60,20 @@ public class MainActivity extends Activity {
     private static final int PICK_FILE = 410;
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
+    private static final int PICK_WORKSPACE = 413;
+    private static final int PICK_CONVERT_IMAGE = 414;
+    private static final int CAPTURE_PHOTO = 415;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
+    private String pendingConvertFormat = "JPEG";
+    private int pendingConvertQuality = 94;
+    private Uri pendingCameraUri;
     private BluetoothLeScanner scanner;
     private ScanCallback scanCallback;
     private final Map<String, JSONObject> scanResults = new LinkedHashMap<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Bridge bridge = new Bridge();
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -77,8 +90,8 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Mobile-Fixo/2.0");
-        web.addJavascriptInterface(new Bridge(), "AurionAndroid");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Mobile-Final/3.0");
+        web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (selectedFiles != null) selectedFiles.onReceiveValue(null);
@@ -88,6 +101,11 @@ public class MainActivity extends Activity {
             }
         });
         web.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView v, String url, Bitmap favicon) {
+                if (url != null && url.startsWith("file:///android_asset/")) v.addJavascriptInterface(bridge, "AurionAndroid");
+                else v.removeJavascriptInterface("AurionAndroid");
+                super.onPageStarted(v, url, favicon);
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
@@ -119,7 +137,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "2.0.0");
+            j.put("appVersion", "3.0.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -247,6 +265,81 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private JSONObject httpJson(String method, String raw, String token, String body) {
+        JSONObject out = new JSONObject(); HttpURLConnection c = null;
+        try {
+            URL url = new URL(raw);
+            if (!isAllowedPanelHost(url.getHost())) throw new IllegalArgumentException("Use endereço local ou Tailscale");
+            c = (HttpURLConnection) url.openConnection(); c.setConnectTimeout(5000); c.setReadTimeout(120000); c.setUseCaches(false); c.setRequestMethod(method);
+            c.setRequestProperty("Accept", "application/json");
+            if (token != null && !token.trim().isEmpty()) c.setRequestProperty("Authorization", "Bearer " + token.trim());
+            if (body != null) {
+                c.setDoOutput(true); c.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                try (OutputStream os = c.getOutputStream()) { os.write(body.getBytes(StandardCharsets.UTF_8)); }
+            }
+            int code = c.getResponseCode(); InputStream stream = code >= 400 ? c.getErrorStream() : c.getInputStream();
+            StringBuilder text = new StringBuilder();
+            if (stream != null) try (BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                String line; while ((line = br.readLine()) != null && text.length() < 200000) text.append(line).append('\n');
+            }
+            out.put("ok", code >= 200 && code < 300); out.put("http", code); out.put("url", url.getPath()); out.put("body", text.toString().trim());
+        } catch (Exception e) { try { out.put("ok", false); out.put("error", e.getClass().getSimpleName() + ": " + e.getMessage()); } catch (Exception ignored) {} }
+        finally { if (c != null) c.disconnect(); }
+        return out;
+    }
+
+    private void chooseWorkspace() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        startActivityForResult(i, PICK_WORKSPACE);
+    }
+
+    private void capturePhoto() {
+        try {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, "AURION_" + System.currentTimeMillis() + ".jpg");
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            if (Build.VERSION.SDK_INT >= 29) values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/AURION");
+            pendingCameraUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            if (pendingCameraUri == null) throw new IllegalStateException("Destino da câmera indisponível");
+            Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraUri)
+                .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivityForResult(i, CAPTURE_PHOTO);
+        } catch (Exception e) { toast("Câmera indisponível: " + e.getClass().getSimpleName()); }
+    }
+
+    private void chooseImageForConversion(String format, int quality) {
+        pendingConvertFormat = format == null ? "JPEG" : format.toUpperCase(Locale.ROOT);
+        pendingConvertQuality = Math.max(1, Math.min(100, quality));
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(i, PICK_CONVERT_IMAGE);
+    }
+
+    private void convertImage(Uri source) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try (InputStream in = getContentResolver().openInputStream(source)) {
+                Bitmap bitmap = BitmapFactory.decodeStream(in); if (bitmap == null) throw new IllegalArgumentException("Formato não decodificado pelo Android");
+                String ext = pendingConvertFormat.equals("PNG") ? "png" : pendingConvertFormat.equals("WEBP") ? "webp" : "jpg";
+                String mime = ext.equals("png") ? "image/png" : ext.equals("webp") ? "image/webp" : "image/jpeg";
+                Bitmap.CompressFormat compress = ext.equals("png") ? Bitmap.CompressFormat.PNG : ext.equals("webp") ? Bitmap.CompressFormat.WEBP : Bitmap.CompressFormat.JPEG;
+                ContentValues values = new ContentValues(); values.put(MediaStore.Images.Media.DISPLAY_NAME, "AURION_CONVERT_" + System.currentTimeMillis() + "." + ext); values.put(MediaStore.Images.Media.MIME_TYPE, mime);
+                if (Build.VERSION.SDK_INT >= 29) values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/AURION/EXPORTS");
+                Uri target = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values); if (target == null) throw new IllegalStateException("Destino indisponível");
+                try (OutputStream out = getContentResolver().openOutputStream(target)) { if (out == null || !bitmap.compress(compress, pendingConvertQuality, out)) throw new IllegalStateException("Falha ao gravar"); }
+                bitmap.recycle(); result.put("ok", true); result.put("format", pendingConvertFormat); result.put("message", "Imagem salva em Pictures/AURION/EXPORTS");
+            } catch (Exception e) { try { result.put("ok", false); result.put("message", e.getMessage()); } catch (Exception ignored) {} }
+            emit("aurionConversionResult", result.toString());
+        }).start();
+    }
+
+    private void shareText(String title, String text) {
+        runOnUiThread(() -> {
+            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
+            startActivity(Intent.createChooser(send, "Compartilhar com cliente"));
+        });
+    }
+
     private void openPackage(String pkg, String fallback) {
         runOnUiThread(() -> {
             try {
@@ -278,6 +371,20 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
+        @JavascriptInterface public void testService(String label, String raw) { new Thread(() -> emit("aurionServiceResult", new JSONObjectResult(label, httpJson("GET", raw, "", null)).toString())).start(); }
+        @JavascriptInterface public void sendAgent(String base, String token, String text) { new Thread(() -> {
+            try { JSONObject body = new JSONObject(); body.put("text", text); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
+            catch (Exception e) { emit("aurionAgentResult", "{\"ok\":false,\"error\":\"Endereço inválido\"}"); }
+        }).start(); }
+        @JavascriptInterface public void queueComfy(String base, String workflow) { new Thread(() -> {
+            try { JSONObject parsed = new JSONObject(workflow); JSONObject body = parsed.has("prompt") ? parsed : new JSONObject().put("prompt", parsed); emit("aurionComfyResult", httpJson("POST", new URL(new URL(base), "/prompt").toString(), "", body.toString()).toString()); }
+            catch (Exception e) { emit("aurionComfyResult", "{\"ok\":false,\"error\":\"Workflow JSON inválido\"}"); }
+        }).start(); }
+        @JavascriptInterface public void chooseWorkspace() { runOnUiThread(MainActivity.this::chooseWorkspace); }
+        @JavascriptInterface public void capturePhoto() { runOnUiThread(MainActivity.this::capturePhoto); }
+        @JavascriptInterface public void convertImage(String format, int quality) { runOnUiThread(() -> chooseImageForConversion(format, quality)); }
+        @JavascriptInterface public void shareProject(String title, String text) { shareText(title, text); }
+        @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
         @JavascriptInterface public void scanBand() { runOnUiThread(MainActivity.this::requestBluetoothOrScan); }
         @JavascriptInterface public void notifyBand() { runOnUiThread(() -> BandNotificationTest.requestOrSend(MainActivity.this)); }
         @JavascriptInterface public void openMiFitness() { openPackage("com.xiaomi.wearable", "https://play.google.com/store/apps/details?id=com.xiaomi.wearable"); }
@@ -295,7 +402,13 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Mobile Fixo").setMessage("Versão 2.0.0\nCliente móvel local. Diagnóstico não altera o sistema sem sua ação.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Mobile Final").setMessage("Versão 3.0.0\nFluxo móvel da câmera à entrega. Diagnóstico e ações explícitas, sem alterar silenciosamente o sistema.").setPositiveButton("OK", null).show()); }
+    }
+
+    private static final class JSONObjectResult {
+        private final JSONObject value = new JSONObject();
+        JSONObjectResult(String label, JSONObject result) { try { value.put("label", label); value.put("result", result); } catch (Exception ignored) {} }
+        @Override public String toString() { return value.toString(); }
     }
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
@@ -305,6 +418,17 @@ public class MainActivity extends Activity {
             try (OutputStream out = getContentResolver().openOutputStream(data.getData())) { if (out != null) out.write(pendingBackup.getBytes(StandardCharsets.UTF_8)); toast("Backup salvo no local escolhido"); }
             catch (Exception e) { toast("Falha ao salvar backup: " + e.getClass().getSimpleName()); }
             pendingBackup = "";
+        }
+        if (request == PICK_WORKSPACE && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+            try { getContentResolver().takePersistableUriPermission(uri, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)); } catch (Exception ignored) {}
+            emit("aurionWorkspaceResult", uri.toString());
+        }
+        if (request == PICK_CONVERT_IMAGE && result == RESULT_OK && data != null && data.getData() != null) convertImage(data.getData());
+        if (request == CAPTURE_PHOTO) {
+            if (result == RESULT_OK && pendingCameraUri != null) emit("aurionCaptureResult", pendingCameraUri.toString());
+            else if (pendingCameraUri != null) { try { getContentResolver().delete(pendingCameraUri, null, null); } catch (Exception ignored) {} }
+            pendingCameraUri = null;
         }
     }
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
