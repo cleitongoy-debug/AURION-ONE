@@ -30,7 +30,7 @@ def main():
     html = HTML.read_text(encoding='utf-8')
     java = JAVA.read_text(encoding='utf-8')
     pattern = re.compile(r'<section id="t8i" class="page">.*?(?=<section id="agent" class="page">)', re.S)
-    replacement = '''<section id="t8i" class="page"><div class="card"><h1>Canon T8i · Oficina fotográfica</h1><p>RAW intacto, foto/editável em prévia, LUT, receitas e pasta de entrega escolhida no Android.</p><button class="primary" onclick="location.href='t8i.html'">ABRIR OFICINA T8i DENTRO DO APK</button><p class="muted">CR3: apenas prévia incorporada se disponível; revelação RAW completa exige ferramenta compatível no PC.</p></div></section>\n\n'''
+    replacement = '''<section id="t8i" class="page"><div class="card"><h1>Canon T8i · Oficina fotográfica</h1><p>RAW intacto, edição em prévia, LUT, receitas e pasta de entrega escolhida no Android.</p><button class="primary" onclick="location.href='t8i.html'">ABRIR OFICINA T8i DENTRO DO APK</button><p class="muted">CR3: apenas prévia incorporada se disponível; revelação RAW completa exige ferramenta compatível no PC.</p></div></section>\n\n'''
     if 'ABRIR OFICINA T8i DENTRO DO APK' not in html:
         if len(pattern.findall(html)) != 1:
             raise RuntimeError('T8i section anchors changed; refusing to patch')
@@ -42,6 +42,15 @@ def main():
     java = checked_replace(java,
         '        super.onActivityResult(request, result, data);',
         '        super.onActivityResult(request, result, data);\n        if (t8iBridge != null && t8iBridge.onActivityResult(request, result, data)) return;', 'bridge result')
+    java = checked_replace(java,
+        '        web.setWebViewClient(new WebViewClient() {\n',
+        '        web.setWebViewClient(new WebViewClient() {\n'
+        '            @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {\n'
+        '                if (t8iBridge != null) t8iBridge.setEditorActive("file:///android_asset/t8i.html".equals(url));\n'
+        '            }\n'
+        '            @Override public void onPageFinished(WebView v, String url) {\n'
+        '                if (t8iBridge != null) t8iBridge.setEditorActive("file:///android_asset/t8i.html".equals(url));\n'
+        '            }\n', 'bridge page scope')
     if '--check' in sys.argv:
         print('T8i patch anchors OK; dry run only')
         return
