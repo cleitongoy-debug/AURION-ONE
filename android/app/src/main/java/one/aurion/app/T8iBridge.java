@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 import java.io.OutputStream;
 
-/** User-picked Storage Access Framework destination. No all-files permission or Drive OAuth. */
+/** User-picked SAF destination. Only the bundled T8i page may call storage methods. */
 public final class T8iBridge {
     private static final int PICK_TREE = 462;
     private static final String PREFS = "aurion_t8i_storage";
@@ -25,11 +25,15 @@ public final class T8iBridge {
     private final Activity activity;
     private final WebView web;
     private final Handler main = new Handler(Looper.getMainLooper());
+    private volatile boolean editorActive = false;
 
     public T8iBridge(Activity activity, WebView web) {
         this.activity = activity;
         this.web = web;
     }
+
+    /** Main-thread navigation callback: turn off native storage access on any other page. */
+    public void setEditorActive(boolean active) { editorActive = active; }
 
     private void result(String event, boolean ok, String message) {
         try {
@@ -43,7 +47,9 @@ public final class T8iBridge {
     }
 
     @JavascriptInterface public void chooseFolder() {
+        if (!editorActive) return;
         main.post(() -> {
+            if (!editorActive) return;
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -54,6 +60,7 @@ public final class T8iBridge {
 
     /** Called on the WebView bridge thread. Saves only inside the user-granted tree. */
     @JavascriptInterface public void saveBase64(String mime, String filename, String payload) {
+        if (!editorActive) return;
         if (!("image/png".equals(mime) || "image/jpeg".equals(mime) || "application/json".equals(mime))) {
             result("save", false, "Formato não autorizado."); return;
         }
@@ -68,6 +75,7 @@ public final class T8iBridge {
         if (stored.isEmpty()) { result("save", false, "Escolha a pasta de destino primeiro."); return; }
         try {
             byte[] bytes = Base64.decode(payload, Base64.DEFAULT);
+            if (!editorActive) return;
             Uri tree = Uri.parse(stored);
             Uri parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
             ContentResolver resolver = activity.getContentResolver();
