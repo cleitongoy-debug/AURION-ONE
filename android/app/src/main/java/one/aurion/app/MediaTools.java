@@ -43,6 +43,20 @@ final class MediaTools {
         return result;
     }
 
+    static JSONObject saveBase64File(Context context, String filename, String mime, String base64) {
+        JSONObject result = new JSONObject();
+        try {
+            String clean = filename == null ? "aurion_export.bin" : filename.replaceAll("[^A-Za-z0-9._-]", "_");
+            byte[] bytes = Base64.decode(base64, Base64.DEFAULT); ContentValues v = new ContentValues();
+            v.put(MediaStore.Downloads.DISPLAY_NAME, clean); v.put(MediaStore.Downloads.MIME_TYPE, mime == null ? "application/octet-stream" : mime);
+            if (Build.VERSION.SDK_INT >= 29) v.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/AURION/EXPORTS");
+            Uri uri = context.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v); if (uri == null) throw new IllegalStateException("Destino indisponível");
+            try (OutputStream out = context.getContentResolver().openOutputStream(uri)) { if (out == null) throw new IllegalStateException("Saída indisponível"); out.write(bytes); }
+            result.put("ok", true); result.put("uri", uri.toString()); result.put("message", clean + " salvo em Downloads/AURION/EXPORTS");
+        } catch (Exception e) { putError(result, e); }
+        return result;
+    }
+
     private static JSONObject imageBytesToPdf(Context context, byte[] bytes) {
         JSONObject result = new JSONObject(); PdfDocument pdf = new PdfDocument();
         try {
