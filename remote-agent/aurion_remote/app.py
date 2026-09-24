@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse
 from .config import Settings, get_settings
 from .models import DeviceState, PromptRequest, PromptResponse
 from .manual_vault import router as manual_vault_router
-from .c4d_diagnostics import router as c4d_diagnostics_router
+from .c4d_diagnostics import router as c4d_diagnostics_router\nfrom .blender_studio import router as blender_studio_router
 
 app = FastAPI(title="AURION ONE Home Node", version="0.1.1")
 device_states: dict[str, dict] = {}
@@ -46,7 +46,7 @@ def require_token(
 
 
 app.include_router(manual_vault_router, dependencies=[Depends(require_token)])
-app.include_router(c4d_diagnostics_router, dependencies=[Depends(require_token)])
+app.include_router(c4d_diagnostics_router, dependencies=[Depends(require_token)])\napp.include_router(blender_studio_router, dependencies=[Depends(require_token)])
 
 
 @app.get("/health")
