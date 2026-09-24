@@ -15,7 +15,8 @@ from fastapi.responses import HTMLResponse
 from .config import Settings, get_settings
 from .models import DeviceState, PromptRequest, PromptResponse
 from .manual_vault import router as manual_vault_router
-from .c4d_diagnostics import router as c4d_diagnostics_router\nfrom .blender_studio import router as blender_studio_router
+from .c4d_diagnostics import router as c4d_diagnostics_router
+from .blender_studio import router as blender_studio_router
 
 app = FastAPI(title="AURION ONE Home Node", version="0.1.1")
 device_states: dict[str, dict] = {}
@@ -29,7 +30,8 @@ def load_context(path: Path) -> str:
         try:
             with zipfile.ZipFile(path) as archive:
                 root = ElementTree.fromstring(archive.read("word/document.xml"))
-            text = "\n".join(node.text for node in root.iter() if node.tag.endswith("}t") and node.text)
+            text = "
+".join(node.text for node in root.iter() if node.tag.endswith("}t") and node.text)
             return text[:50000]
         except (OSError, KeyError, zipfile.BadZipFile, ElementTree.ParseError):
             return "Você é o nó local AURION ONE. Seja preciso, seguro e auditável."
@@ -46,7 +48,8 @@ def require_token(
 
 
 app.include_router(manual_vault_router, dependencies=[Depends(require_token)])
-app.include_router(c4d_diagnostics_router, dependencies=[Depends(require_token)])\napp.include_router(blender_studio_router, dependencies=[Depends(require_token)])
+app.include_router(c4d_diagnostics_router, dependencies=[Depends(require_token)])
+app.include_router(blender_studio_router, dependencies=[Depends(require_token)])
 
 
 @app.get("/health")
