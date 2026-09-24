@@ -1,0 +1,4 @@
+rawpy==0.25.1
+numpy==2.3.3
+tifffile==2025.9.20
+imageio==2.37.0
