@@ -30,8 +30,7 @@ def load_context(path: Path) -> str:
         try:
             with zipfile.ZipFile(path) as archive:
                 root = ElementTree.fromstring(archive.read("word/document.xml"))
-            text = "
-".join(node.text for node in root.iter() if node.tag.endswith("}t") and node.text)
+            text = "\n".join(node.text for node in root.iter() if node.tag.endswith("}t") and node.text)
             return text[:50000]
         except (OSError, KeyError, zipfile.BadZipFile, ElementTree.ParseError):
             return "Você é o nó local AURION ONE. Seja preciso, seguro e auditável."
