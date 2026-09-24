@@ -64,6 +64,40 @@ Esses materiais são referência de diagnóstico, não autorização para execut
 - Integrações Google, GitHub e provedores de IA devem usar OAuth/API oficial; sessões pagas de aplicativos não equivalem a API.
 - Estados ON/OFF precisam vir de verificações reais com horário, nunca de simulação visual.
 
+## 4.1. Importação manual assistida obrigatória
+
+O novo painel deve oferecer uma alternativa segura para materiais que o operador já possui localmente, sem obrigá-lo a usar comandos frágeis ou copiar arquivos às cegas.
+
+Criar uma tela **IMPORTAR PACOTE LOCAL** com:
+
+- seleção manual de arquivo ou pasta pelo operador;
+- escolha do tipo: plugin, dependência, modelo, LUT, preset, workflow, nó, driver auxiliar ou documentação;
+- detecção do programa e versão de destino;
+- visualização completa de origem e destino antes da confirmação;
+- inventário do conteúdo, tamanho e hash SHA-256;
+- validação de extensões, estrutura esperada, arquitetura e compatibilidade;
+- aviso claro para arquivo duplicado, versão errada, origem desconhecida ou assinatura ausente;
+- backup automático do destino antes de qualquer cópia;
+- modo simulação que mostra as operações sem executá-las;
+- cópia transacional: preparar em pasta temporária, validar e somente depois promover;
+- bloqueio de sobrescrita silenciosa;
+- log de cada arquivo copiado, ignorado ou rejeitado;
+- botão de reversão para restaurar o backup anterior;
+- diagnóstico final e abertura controlada do programa correspondente.
+
+Para Cinema 4D 2023/Octane, o assistente deve:
+
+- localizar instalações e caminhos de preferências sem presumir uma pasta única;
+- identificar `c4dOctane-R2023.xdl64` como binário esperado para Cinema 4D 2023;
+- separar binários de outras versões sem apagá-los;
+- preservar `res` e `Lib300` pertencentes ao mesmo pacote validado;
+- oferecer importação de `cudnn_8_0_4` para `OctaneRender\\thirdparty` quando realmente exigido pela versão instalada;
+- validar driver NVIDIA, GPU, versão do Cinema 4D e versão do plugin;
+- usar autenticação/licença oficial e nunca armazenar credenciais no painel ou no Git;
+- funcionar em modo diagnóstico mesmo quando o Octane não estiver instalado.
+
+Materiais recusados pela validação não devem desaparecer: devem permanecer na origem ou ser colocados, com autorização explícita, em uma quarentena local fora do Git. A tela deve explicar o motivo da recusa e indicar a alternativa compatível/oficial.
+
 ## 5. Branch e método autorizados
 
 Branch recomendada:
@@ -173,6 +207,7 @@ Fluxo obrigatório:
 8. documentação de instalação, uso, backup e recuperação;
 9. Pull Request para revisão do operador;
 10. atualização do `LABORATORIO_IA.md` com resultados reais.
+11. módulo de importação manual assistida com simulação, backup, validação e rollback.
 
 ## 9. Regra final
 
