@@ -1,0 +1,29 @@
+NOVO AURION FINAL PART — PC v2.0.0
+
+1. Extraia o ZIP em uma pasta normal.
+2. Dê dois cliques em INSTALAR_E_ABRIR_SUPER_STUDIO_PC.cmd.
+3. O pacote procura a base real em:
+   C:\Users\ADM_PESS\Desktop\painelseguro#1 - Copia
+4. O painel abre em http://127.0.0.1:5060.
+5. A base ADAPTA.py e ADAPTA_BASE_TRAVADA.py não é substituída.
+
+MÓDULOS
+- Central, projetos e cliente.
+- Canon T8i / CR3, foto, cor, FX, vídeo, timeline, motion e áudio.
+- Conversões, Ollama, ComfyUI, memória permanente, laboratório e recursos.
+- POCO/Mi Band com estados honestos até verificação no dispositivo.
+- Blender 5.2 em C:\Program Files\Blender Foundation\Blender 5.2.
+- Render Blender de imagem/animação em segundo plano.
+- Bibliotecas 3D: Nodes, Texturas, Rigs, Roupas e Acessórios.
+- Cinema 4D/Octane: processo, caminhos, plugins, BugReport e soluções.
+
+IMPORTANTE
+- Render Blender só fica operacional se blender.exe existir no caminho indicado.
+- Octane só é marcado compatível quando o binário oficial R2023 for encontrado.
+- Nenhum crack, ativador ou credencial é incluído neste pacote.
+- Nenhum arquivo do usuário é apagado ou sobrescrito silenciosamente.
+
+VERSÃO: 2.0.0
+TESTES AUTOMATIZADOS: 10 aprovados no ambiente de build.
+VALIDAÇÃO DE HARDWARE: precisa acontecer no Windows do operador, pois o ambiente
+de build não possui o Blender, Cinema 4D, GPU ou arquivos locais do usuário.
