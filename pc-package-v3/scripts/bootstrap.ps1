@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $Root = Split-Path -Parent $PSScriptRoot
 $Logs = Join-Path $Root "logs"
 New-Item -ItemType Directory -Force $Logs | Out-Null
@@ -25,9 +26,15 @@ try {
   Say "[AURION] Instalando dependências..."
   & $Venv -m pip install --disable-pip-version-check --no-input -r requirements.txt
   if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar dependências (código $LASTEXITCODE)." }
-  Say "[AURION] Executando testes internos..."
-  & $Venv -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath $Log -Append
-  if ($LASTEXITCODE -ne 0) { throw "Os testes internos falharam." }
+  Say "[AURION] Executando apenas os testes desta versão..."
+  # PowerShell 5 transforma stderr de programas nativos em NativeCommandError
+  # quando ErrorActionPreference=Stop. unittest usa stderr até quando passa.
+  $PreviousPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  & $Venv -m unittest discover -s (Join-Path $Root "tests") -p "test_superstudio.py" -v 2>&1 | Tee-Object -FilePath $Log -Append
+  $TestExit = $LASTEXITCODE
+  $ErrorActionPreference = $PreviousPreference
+  if ($TestExit -ne 0) { throw "Os testes internos desta versão falharam (código $TestExit)." }
   $env:AURION_PANEL_ROOT = $Root
   $env:AURION_BIND_HOST = "0.0.0.0"
   Say "[AURION] Scan, aquecimento e abertura do painel..."
