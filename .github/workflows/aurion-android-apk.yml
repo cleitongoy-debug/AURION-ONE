@@ -42,14 +42,14 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.4.0-NAV-RECOVERY.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.4.0-NAV-RECOVERY.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.5.0-SUPER-AGENT.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.5.0-SUPER-AGENT.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Publish installable package
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-SUPER-STUDIO-v5.4.0-NAV-RECOVERY
+          name: AURION-ONE-SUPER-STUDIO-v5.5.0-SUPER-AGENT
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.4.0-NAV-RECOVERY.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.5.0-SUPER-AGENT.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
