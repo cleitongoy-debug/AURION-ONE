@@ -71,6 +71,44 @@ final class AurionStore extends SQLiteOpenHelper {
         return out;
     }
 
+    synchronized JSONArray contextPack(String query, int limit) {
+        JSONArray all = list("all", "", 500);
+        java.util.ArrayList<JSONObject> ranked = new java.util.ArrayList<>();
+        final String q = query == null ? "" : query.toLowerCase(java.util.Locale.ROOT);
+        final java.util.HashSet<String> terms = new java.util.HashSet<>();
+        for (String t : q.split("[^\\p{L}\\p{N}_-]+")) if (t.length() >= 3) terms.add(t);
+        for (int i=0;i<all.length();i++) {
+            JSONObject x=all.optJSONObject(i); if(x==null) continue;
+            String hay=(x.optString("title")+" "+x.optString("body")+" "+x.optString("type")).toLowerCase(java.util.Locale.ROOT);
+            int score=0; for(String t:terms) if(hay.contains(t)) score+=3;
+            String type=x.optString("type");
+            if("project".equals(type)||"memory".equals(type)||"evidence".equals(type)||"preset".equals(type)) score+=2;
+            if("conversation".equals(type)) score+=1;
+            try{x.put("_score",score);}catch(Exception ignored){}
+            ranked.add(x);
+        }
+        java.util.Collections.sort(ranked,(a,b)->{
+            int d=Integer.compare(b.optInt("_score"),a.optInt("_score"));
+            return d!=0?d:Long.compare(b.optLong("updatedAt"),a.optLong("updatedAt"));
+        });
+        JSONArray out=new JSONArray(); java.util.HashSet<String> seen=new java.util.HashSet<>();
+        for(JSONObject x:ranked){
+            String sig=(x.optString("type")+"|"+x.optString("title")+"|"+x.optString("body")).toLowerCase(java.util.Locale.ROOT);
+            if(seen.add(sig)){x.remove("_score");out.put(x);}
+            if(out.length()>=Math.max(1,Math.min(24,limit))) break;
+        }
+        return out;
+    }
+
+    synchronized JSONObject memoryStats() {
+        JSONObject o=new JSONObject(); JSONArray all=list("all","",500);
+        try{o.put("records",all.length()); JSONObject types=new JSONObject();
+            for(int i=0;i<all.length();i++){JSONObject x=all.optJSONObject(i);if(x==null)continue;String t=x.optString("type","memory");types.put(t,types.optInt(t)+1);}
+            o.put("types",types);
+        }catch(Exception ignored){}
+        return o;
+    }
+
     synchronized JSONObject exportAll() {
         JSONObject out = new JSONObject();
         try { out.put("format", "aurion-memory-v4"); out.put("exportedAt", System.currentTimeMillis()); out.put("records", list("all", "", 5000)); out.put("accounts", accountStatus()); }
@@ -114,7 +152,7 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized JSONObject accountStatus() {
         JSONObject j = new JSONObject();
-        for (String key : new String[]{"github","huggingface","openai","gemini","googleDrive"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
+        for (String key : new String[]{"github","huggingface","openai","gemini","googleDrive","groq","deepseek","pollinations","siliconflow","xai","neurotron","custom"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
         return j;
     }
 

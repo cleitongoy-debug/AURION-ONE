@@ -32,6 +32,10 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.MediaStore;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -68,6 +72,7 @@ public class MainActivity extends Activity {
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
+    private static final int REQUEST_AUDIO = 418;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -83,6 +88,8 @@ public class MainActivity extends Activity {
     private final Map<String, JSONObject> scanResults = new LinkedHashMap<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Bridge bridge = new Bridge();
+    private SpeechRecognizer speechRecognizer;
+    private TextToSpeech tts;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -100,7 +107,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.0");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE/6.0");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -126,6 +133,7 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        tts = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS) { tts.setLanguage(new Locale("pt","BR")); emit("aurionVoiceState", "{\"state\":\"ready\",\"message\":\"voz pronta\"}"); } });
         web.loadUrl("file:///android_asset/index.html");
     }
 
@@ -135,7 +143,7 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("localhost") || h.equals("127.0.0.1") || h.endsWith(".ts.net") || h.endsWith(".local") ||
-            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*");
+            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*") || h.matches("100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\..*");
     }
 
     private boolean has(String permission) { return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED; }
@@ -147,7 +155,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.0.0");
+            j.put("appVersion", "6.0.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -186,6 +194,8 @@ public class MainActivity extends Activity {
             j.put("bandBonded", bondedDevices());
             j.put("accounts", store.accountStatus());
             j.put("memoryRecords", store.list("all", "", 5000).length());
+            j.put("memoryStats", store.memoryStats());
+            j.put("audioInputPermission", has(Manifest.permission.RECORD_AUDIO));
         } catch (Exception e) { try { j.put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
         return j;
     }
@@ -207,6 +217,31 @@ public class MainActivity extends Activity {
     private void emit(String function, Object payload) {
         final String js = "window." + function + "(" + JSONObject.quote(String.valueOf(payload)) + ")";
         runOnUiThread(() -> web.evaluateJavascript(js, null));
+    }
+
+    private void startVoiceRecognition() {
+        if (!has(Manifest.permission.RECORD_AUDIO)) { requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_AUDIO); return; }
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) { emit("aurionVoiceError", "Reconhecimento de voz indisponível neste aparelho"); return; }
+        try {
+            if (speechRecognizer != null) speechRecognizer.destroy();
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                public void onReadyForSpeech(Bundle b){ emit("aurionVoiceState", "{\"state\":\"listening\",\"message\":\"ouvindo\"}"); }
+                public void onBeginningOfSpeech(){}
+                public void onRmsChanged(float rms){}
+                public void onBufferReceived(byte[] b){}
+                public void onEndOfSpeech(){ emit("aurionVoiceState", "{\"state\":\"processing\",\"message\":\"processando voz\"}"); }
+                public void onError(int e){ emit("aurionVoiceError", "Falha no reconhecimento de voz · código "+e); }
+                public void onResults(Bundle b){ java.util.ArrayList<String> r=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION); if(r!=null&&!r.isEmpty())emit("aurionVoiceResult",r.get(0)); else emit("aurionVoiceError","Nenhuma fala reconhecida"); }
+                public void onPartialResults(Bundle b){}
+                public void onEvent(int t, Bundle b){}
+            });
+            Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pt-BR");
+            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false);
+            speechRecognizer.startListening(i);
+        } catch(Exception e){ emit("aurionVoiceError","Voz: "+e.getClass().getSimpleName()); }
     }
 
     private void requestBluetoothOrScan() {
@@ -349,7 +384,7 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("api.github.com") || h.equals("huggingface.co") || h.equals("router.huggingface.co") ||
-            h.equals("api.openai.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
+            h.equals("api.openai.com") || h.equals("api.groq.com") || h.equals("api.deepseek.com") || h.equals("gen.pollinations.ai") || h.equals("api.siliconflow.cn") || h.equals("api.x.ai") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
             h.equals("github.com") || h.equals("raw.githubusercontent.com") || h.equals("codeload.github.com") || h.endsWith(".huggingface.co");
     }
 
@@ -376,6 +411,11 @@ public class MainActivity extends Activity {
             else if ("github".equals(service)) result = cloudJson("GET", "https://api.github.com/user", "Bearer " + key, "", null);
             else if ("huggingface".equals(service)) result = cloudJson("GET", "https://huggingface.co/api/whoami-v2", "Bearer " + key, "", null);
             else if ("openai".equals(service)) result = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+            else if ("groq".equals(service)) result = cloudJson("GET", "https://api.groq.com/openai/v1/models", "Bearer " + key, "", null);
+            else if ("deepseek".equals(service)) result = cloudJson("GET", "https://api.deepseek.com/models", "Bearer " + key, "", null);
+            else if ("pollinations".equals(service)) result = cloudJson("GET", "https://gen.pollinations.ai/v1/models", "Bearer " + key, "", null);
+            else if ("siliconflow".equals(service)) result = cloudJson("GET", "https://api.siliconflow.cn/v1/models", "Bearer " + key, "", null);
+            else if ("xai".equals(service)) result = cloudJson("GET", "https://api.x.ai/v1/models", "Bearer " + key, "", null);
             else if ("gemini".equals(service)) result = cloudJson("GET", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", "", key, null);
             else if ("googleDrive".equals(service)) result = cloudJson("GET", "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", "Bearer " + key, "", null);
             else { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Serviço desconhecido"); } catch (Exception ignored) { } }
@@ -397,11 +437,42 @@ public class MainActivity extends Activity {
                     JSONObject body = new JSONObject().put("contents", contents); String selected = model.isEmpty() ? "gemini-2.5-flash" : model;
                     result = cloudJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + selected + ":generateContent", "", key, body.toString());
                 } else if ("huggingface".equals(provider)) {
-                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 1200);
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 2400);
                     result = cloudJson("POST", "https://router.huggingface.co/v1/chat/completions", "Bearer " + key, "", body.toString());
+                } else if ("groq".equals(provider) || "deepseek".equals(provider) || "pollinations".equals(provider) || "siliconflow".equals(provider) || "xai".equals(provider)) {
+                    String endpoint = "groq".equals(provider) ? "https://api.groq.com/openai/v1/chat/completions" : "deepseek".equals(provider) ? "https://api.deepseek.com/chat/completions" : "pollinations".equals(provider) ? "https://gen.pollinations.ai/v1/chat/completions" : "siliconflow".equals(provider) ? "https://api.siliconflow.cn/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
+                    String selected = model == null || model.isEmpty() ? ("groq".equals(provider) ? "groq/compound" : "deepseek".equals(provider) ? "deepseek-v4-flash" : "pollinations".equals(provider) ? "openai" : "siliconflow".equals(provider) ? "Qwen/Qwen3-8B" : "grok-4") : model;
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role","system").put("content","Você é o motor conectado do AURION ONE. Use memória e referências fornecidas, não invente estado de ferramentas.")).put(new JSONObject().put("role","user").put("content",input));
+                    JSONObject body = new JSONObject().put("model",selected).put("messages",messages).put("max_tokens",2400);
+                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
                 } else throw new IllegalArgumentException("Provedor não suportado");
             } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
             emit("aurionAiResult", new JSONObjectResult(provider, result).toString());
+        }).start();
+    }
+
+    private void listModels(String provider) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                String key=store.getSecret(provider); if(key.isEmpty()) throw new IllegalStateException("Credencial ausente");
+                String url = "groq".equals(provider)?"https://api.groq.com/openai/v1/models":"deepseek".equals(provider)?"https://api.deepseek.com/models":"pollinations".equals(provider)?"https://gen.pollinations.ai/v1/models":"siliconflow".equals(provider)?"https://api.siliconflow.cn/v1/models":"xai".equals(provider)?"https://api.x.ai/v1/models":"openai".equals(provider)?"https://api.openai.com/v1/models":null;
+                if(url==null) throw new IllegalArgumentException("Catálogo automático não disponível para "+provider);
+                result=cloudJson("GET",url,"Bearer "+key,"",null);
+            } catch(Exception e){try{result.put("ok",false).put("error",e.getMessage());}catch(Exception ignored){}}
+            emit("aurionModelsResult",new JSONObjectResult(provider,result).toString());
+        }).start();
+    }
+
+    private void generateCloudImage(String prompt, String model, int width, int height) {
+        new Thread(() -> {
+            JSONObject result=new JSONObject();
+            try {
+                String key=store.getSecret("pollinations"); if(key.isEmpty()) throw new IllegalStateException("Configure Pollinations em Contas");
+                JSONObject body=new JSONObject().put("model",model==null||model.isEmpty()?"flux":model).put("prompt",prompt).put("n",1).put("size",Math.max(256,width)+"x"+Math.max(256,height)).put("response_format","b64_json");
+                result=cloudJson("POST","https://gen.pollinations.ai/v1/images/generations","Bearer "+key,"",body.toString());
+            }catch(Exception e){try{result.put("ok",false).put("error",e.getMessage());}catch(Exception ignored){}}
+            emit("aurionImageResult",result.toString());
         }).start();
     }
 
@@ -471,10 +542,17 @@ public class MainActivity extends Activity {
 
     public final class Bridge {
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
+        @JavascriptInterface public void startVoice() { runOnUiThread(MainActivity.this::startVoiceRecognition); }
+        @JavascriptInterface public void stopVoice() { runOnUiThread(() -> { try { if (speechRecognizer != null) speechRecognizer.stopListening(); } catch (Exception ignored) {} emit("aurionVoiceState", "{\"state\":\"stopped\",\"message\":\"escuta parada\"}"); }); }
+        @JavascriptInterface public void speak(String text) { runOnUiThread(() -> { if (tts != null && text != null && !text.trim().isEmpty()) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aurion_reply"); }); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
         @JavascriptInterface public void testService(String label, String raw) { new Thread(() -> emit("aurionServiceResult", new JSONObjectResult(label, httpJson("GET", raw, "", null)).toString())).start(); }
+        @JavascriptInterface public void sendAgentModel(String base, String token, String model, String text) { new Thread(() -> {
+            try { JSONObject body = new JSONObject(); body.put("text", text); body.put("model", model == null || model.trim().isEmpty() ? "qwen3.5:4b" : model.trim()); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
+            catch (Exception e) { emit("aurionAgentResult", "{\"ok\":false,\"error\":\"Endereço inválido\"}"); }
+        }).start(); }
         @JavascriptInterface public void sendAgent(String base, String token, String text) { new Thread(() -> {
             try { JSONObject body = new JSONObject(); body.put("text", text); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
             catch (Exception e) { emit("aurionAgentResult", "{\"ok\":false,\"error\":\"Endereço inválido\"}"); }
@@ -491,6 +569,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void trimMedia(String kind, double start, double end) { runOnUiThread(() -> chooseTrimMedia(kind, start, end)); }
         @JavascriptInterface public long memoryAdd(String type, String title, String body, String meta) { try { return store.add(type, title, body, meta); } catch (Exception e) { return -1; } }
         @JavascriptInterface public String memoryList(String type, String query, int limit) { return store.list(type, query, limit).toString(); }
+        @JavascriptInterface public String memoryContext(String query, int limit) { return store.contextPack(query, limit).toString(); }
+        @JavascriptInterface public String memoryStats() { return store.memoryStats().toString(); }
         @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
         @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
         @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
@@ -499,6 +579,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String accountStatus() { return store.accountStatus().toString(); }
         @JavascriptInterface public void testAccount(String service) { MainActivity.this.testAccount(service); }
         @JavascriptInterface public void runCloudAi(String provider, String model, String prompt, String memory) { MainActivity.this.runCloudAi(provider, model, prompt, memory); }
+        @JavascriptInterface public void listModels(String provider) { MainActivity.this.listModels(provider); }
+        @JavascriptInterface public void generateCloudImage(String prompt, String model, int width, int height) { MainActivity.this.generateCloudImage(prompt, model, width, height); }
         @JavascriptInterface public void downloadResource(String url, String filename, String sha256) { runOnUiThread(() -> MainActivity.this.downloadResource(url, filename, sha256)); }
         @JavascriptInterface public void shareProject(String title, String text) { shareText(title, text); }
         @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
@@ -520,7 +602,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.0.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.9.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -565,8 +647,10 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
         BandNotificationTest.onPermissionResult(this, code, results);
+        if (code == REQUEST_AUDIO) { boolean ok = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED; if (ok) startVoiceRecognition(); else emit("aurionVoiceError", "Permissão de microfone negada"); }
         if (code == REQUEST_BLUETOOTH) { boolean ok = true; for (int r : results) ok &= r == PackageManager.PERMISSION_GRANTED; if (ok) startBleScan(); else emit("aurionBandResult", "{\"status\":\"blocked\",\"message\":\"Permissão Bluetooth negada\"}"); }
     }
+    @Override protected void onDestroy() { try { if (speechRecognizer != null) speechRecognizer.destroy(); } catch(Exception ignored){} try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch(Exception ignored){} super.onDestroy(); }
     @Override public void onBackPressed() {
         if (web != null && web.getUrl() != null && !web.getUrl().startsWith("file:///android_asset/")) web.loadUrl("file:///android_asset/index.html");
         else if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
