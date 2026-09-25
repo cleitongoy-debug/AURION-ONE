@@ -13,3 +13,20 @@ const oldAccountResult=window.aurionAccountResult;
 window.aurionAccountResult=function(raw){if(oldAccountResult)oldAccountResult(raw);const x=JSON.parse(raw),r=x.result||{};showDialog(r.ok?"CONEXÃO CONFIRMADA":"CONEXÃO FALHOU",(x.label||"API")+" — "+(r.ok?("HTTP "+(r.http||"OK")):(r.error||r.body||"sem resposta")))};
 const oldServiceResult=window.aurionServiceResult;
 window.aurionServiceResult=function(raw){if(oldServiceResult)oldServiceResult(raw);const x=JSON.parse(raw),r=x.result||{};showDialog(r.ok?"NÓ CONECTADO":"NÓ INDISPONÍVEL",(x.label||"serviço")+" — "+(r.ok?("HTTP "+(r.http||"OK")):(r.error||r.body||"sem resposta")))};
+
+let lastAgentReply="";
+function chatAdd(role,text){const box=document.getElementById("agentChat");if(!box)return;const d=document.createElement("div");d.className="chatBubble "+role;d.textContent=text;box.appendChild(d);box.scrollTop=box.scrollHeight}
+function setAgentOnline(ok,label,detail){const dot=document.getElementById("agentOnlineDot"),t=document.getElementById("agentOnlineText"),d=document.getElementById("agentOnlineDetail");if(dot)dot.classList.toggle("ok",!!ok);if(t)t.textContent=label;if(d)d.textContent=detail||""}
+function startVoice(){setAgentOnline(false,"VOZ · OUVINDO","aguardando reconhecimento");native("startVoice")}
+function stopVoice(){native("stopVoice");document.getElementById("voiceState").textContent="PARADO"}
+function speakLast(){if(lastAgentReply)native("speak",lastAgentReply)}
+window.aurionVoiceState=function(raw){let x={};try{x=JSON.parse(raw)}catch(e){x={state:"error",message:raw}};document.getElementById("voiceState").textContent=(x.message||x.state||"VOZ").toUpperCase();if(x.state==="ready")setAgentOnline(true,"VOZ · PRONTA","microfone autorizado")};
+window.aurionVoiceResult=function(text){document.getElementById("agentText").value=text;chatAdd("user","🎙 "+text);sendAgent()};
+window.aurionVoiceError=function(text){document.getElementById("voiceState").textContent="ERRO · "+text;showDialog("VOZ",text)};
+const baseSendAgent=window.sendAgent;
+window.sendAgent=function(){const el=document.getElementById("agentText"),text=(el?.value||"").trim();if(!text)return;if(!el.dataset.voiceEcho){chatAdd("user",text)}el.dataset.voiceEcho="";setAgentOnline(false,"AGENTE · PROCESSANDO","aguardando resposta");baseSendAgent();el.value=""};
+const baseAiResult=window.aurionAiResult;
+window.aurionAiResult=function(raw){baseAiResult(raw);let x=JSON.parse(raw),r=x.result||{},body=r.body||r.error||JSON.stringify(r);lastAgentReply=body;chatAdd(r.ok===false?"system":"assistant",body);setAgentOnline(r.ok!==false,r.ok===false?"AGENTE · FALHA":"AGENTE · ONLINE",(x.label||"rota")+" · HTTP "+(r.http||"—"));if(document.getElementById("autoSpeak")?.checked&&r.ok!==false)native("speak",body)};
+const baseAgentResult=window.aurionAgentResult;
+window.aurionAgentResult=function(raw){baseAgentResult(raw);let x={};try{x=JSON.parse(raw)}catch(e){};let body=x.body||x.reply||x.error||raw;lastAgentReply=body;chatAdd(x.ok===false?"system":"assistant",body);setAgentOnline(x.ok!==false,x.ok===false?"HOME NODE · FALHA":"HOME NODE · ONLINE",x.http?"HTTP "+x.http:"resposta recebida");if(document.getElementById("autoSpeak")?.checked&&x.ok!==false)native("speak",body)};
+setTimeout(()=>{try{let d=JSON.parse(native("getDiagnostics")||"{}");document.getElementById("voiceState").textContent=d.audioInputPermission?"MIC AUTORIZADO":"TOQUE FALAR PARA AUTORIZAR"}catch(e){}},900);
