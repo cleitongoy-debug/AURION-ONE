@@ -9,3 +9,7 @@ function octaneToAgent(){const b=document.getElementById('octaneBrief').value;go
 function schoolSearch(){const q=document.getElementById('schoolQuery').value,m=rankedMemories(q,20),out=document.getElementById('schoolOut');out.innerHTML=m.map(x=>'<div class="memory"><b>'+esc(x.title)+'</b><div>'+esc(x.body).slice(0,700)+'</div></div>').join('')||'Nenhum registro local relacionado.'}
 function renderEvidence(){const m=getMemories('evidence','',100),out=document.getElementById('evidenceList');out.innerHTML=m.map(x=>'<div class="memory"><small>'+new Date(x.updatedAt).toLocaleString('pt-BR')+'</small><b>'+esc(x.title)+'</b><div>'+esc(x.body).slice(0,900)+'</div></div>').join('')||'Nenhuma evidência registrada.'}
 setTimeout(drawQuantumSphere,700);
+const oldAccountResult=window.aurionAccountResult;
+window.aurionAccountResult=function(raw){if(oldAccountResult)oldAccountResult(raw);const x=JSON.parse(raw),r=x.result||{};showDialog(r.ok?"CONEXÃO CONFIRMADA":"CONEXÃO FALHOU",(x.label||"API")+" — "+(r.ok?("HTTP "+(r.http||"OK")):(r.error||r.body||"sem resposta")))};
+const oldServiceResult=window.aurionServiceResult;
+window.aurionServiceResult=function(raw){if(oldServiceResult)oldServiceResult(raw);const x=JSON.parse(raw),r=x.result||{};showDialog(r.ok?"NÓ CONECTADO":"NÓ INDISPONÍVEL",(x.label||"serviço")+" — "+(r.ok?("HTTP "+(r.http||"OK")):(r.error||r.body||"sem resposta")))};
