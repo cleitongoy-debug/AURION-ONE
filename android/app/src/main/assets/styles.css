@@ -22,3 +22,9 @@ input,select,textarea{background:#080909;border-color:#4d4631;border-radius:11px
 .agentCore small{color:#a99b71;letter-spacing:2.2px}.agentCore h1{font-size:30px;letter-spacing:2px;margin:4px}.agentCore p{margin:0;color:#d7c99e;font-size:11px}
 .contextRack{max-height:300px;overflow:auto;margin:10px 0;padding:8px;border:1px solid #403b2c;border-radius:12px;background:#070808;color:#aaa79b}
 .contextRack .memory{padding:8px;margin:5px 0}.contextRack b{display:block;color:#e2b53e;margin:2px 0}
+
+.aurionIdentity{text-align:center;background:radial-gradient(circle at 50% 0,#d5a52e24,transparent 52%),linear-gradient(145deg,#17191b,#080909)}
+.aurionIdentity>small{letter-spacing:2.4px;color:#9c8b59}.aurionIdentity h1{font-size:28px;letter-spacing:3px;margin:7px 0}
+.protocolStrip,.historyCases{display:flex;gap:6px;overflow:auto;padding:8px 0}.protocolStrip span,.historyCases span{white-space:nowrap;border:1px solid #665526;background:#17140c;color:#e2b53e;border-radius:999px;padding:6px 9px;font:10px ui-monospace,monospace}
+.historyGrid{display:grid;grid-template-columns:1fr;gap:8px}.historyGrid article{border:1px solid #403b2c;background:#090a0b;border-radius:12px;padding:10px}.historyGrid small{color:#e2b53e;letter-spacing:2px}.historyGrid h3{margin:3px 0;color:#f0eee8}
+@media(min-width:760px){.historyGrid{grid-template-columns:repeat(3,1fr)}}
