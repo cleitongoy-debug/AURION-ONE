@@ -15,3 +15,10 @@ input,select,textarea{background:#080909;border-color:#4d4631;border-radius:11px
 .tabs button{flex-basis:72px;border-radius:12px;color:#9d9c96}.tabs button.active{color:#f5cf61;background:linear-gradient(180deg,#332811,#17140c);border:1px solid #b88b28;box-shadow:inset 0 0 16px #d5a52e18}
 .log{background:#050606;border-color:#403b2c;color:#d8c27c}
 .canvasWrap{border-color:#554a2d}.chip{border-color:#51482f}
+
+.agentHero{overflow:hidden;min-height:230px;padding:0;background:radial-gradient(circle at 50% 55%,#6e501833,transparent 42%),linear-gradient(180deg,#101112,#060707)}
+.agentHero:before{width:100%;opacity:.65}.agentHero canvas{width:100%;height:210px;display:block;filter:drop-shadow(0 0 8px #d5a52e55)}
+.agentCore{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none;text-shadow:0 2px 12px #000}
+.agentCore small{color:#a99b71;letter-spacing:2.2px}.agentCore h1{font-size:30px;letter-spacing:2px;margin:4px}.agentCore p{margin:0;color:#d7c99e;font-size:11px}
+.contextRack{max-height:300px;overflow:auto;margin:10px 0;padding:8px;border:1px solid #403b2c;border-radius:12px;background:#070808;color:#aaa79b}
+.contextRack .memory{padding:8px;margin:5px 0}.contextRack b{display:block;color:#e2b53e;margin:2px 0}
