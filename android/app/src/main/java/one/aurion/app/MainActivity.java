@@ -186,6 +186,8 @@ public class MainActivity extends Activity {
             j.put("bandBonded", bondedDevices());
             j.put("accounts", store.accountStatus());
             j.put("memoryRecords", store.list("all", "", 5000).length());
+            j.put("memoryStats", store.memoryStats());
+            j.put("audioInputPermission", has(Manifest.permission.RECORD_AUDIO));
         } catch (Exception e) { try { j.put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
         return j;
     }
@@ -491,6 +493,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void trimMedia(String kind, double start, double end) { runOnUiThread(() -> chooseTrimMedia(kind, start, end)); }
         @JavascriptInterface public long memoryAdd(String type, String title, String body, String meta) { try { return store.add(type, title, body, meta); } catch (Exception e) { return -1; } }
         @JavascriptInterface public String memoryList(String type, String query, int limit) { return store.list(type, query, limit).toString(); }
+        @JavascriptInterface public String memoryContext(String query, int limit) { return store.contextPack(query, limit).toString(); }
+        @JavascriptInterface public String memoryStats() { return store.memoryStats().toString(); }
         @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
         @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
         @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
