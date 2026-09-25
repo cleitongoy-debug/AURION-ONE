@@ -10,6 +10,9 @@
 - gera `CONECTAR_CELULAR.txt` com endereço e token do POCO;
 - permite conexão autenticada do aplicativo móvel na mesma rede Wi-Fi;
 - painel continua local e não abre portas no roteador.
+- correção 25/09/2026: o bootstrap executa somente `test_superstudio.py`, ignorando testes antigos que possam existir na pasta escolhida;
+- correção 25/09/2026: saída normal do `unittest` não é mais convertida em `NativeCommandError` pelo Windows PowerShell 5;
+- terminal configurado para UTF-8 para evitar textos como `dependÃªncias`.
 
 ## Diagnóstico
 
