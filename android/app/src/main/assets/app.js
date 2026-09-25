@@ -6,7 +6,8 @@ function data(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{ret
 function save(d){localStorage.setItem(KEY,JSON.stringify(d));renderAll()}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function native(name,...args){try{return AurionAndroid[name](...args)}catch(e){$('diagLog').textContent='Ponte Android indisponível: '+e.message}}
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo(0,0);if(id==='memory')renderMemories();if(id==='accounts')refreshAccounts();if(['band','diag'].includes(id))refreshDiag()}
+function toggleMenu(force){let m=$('appMenu');if(!m)return;let open=typeof force==='boolean'?force:!m.classList.contains('open');m.classList.toggle('open',open)}
+function go(id){toggleMenu(false);document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo(0,0);if(id==='memory')renderMemories();if(id==='accounts')refreshAccounts();if(['band','diag'].includes(id))refreshDiag()}
 
 function saveProject(){let d=data();d.project={name:$('projectName').value.trim(),client:$('clientName').value.trim(),brief:$('brief').value,deadline:$('deadline').value};d.stages=d.stages||{};d.stages.Projeto=true;save(d);native('memoryAdd','project',d.project.name||'Projeto',JSON.stringify(d.project),'{}')}
 function setStage(name,value){let d=data();d.stages=d.stages||{};d.stages[name]=value;save(d)}
