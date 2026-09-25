@@ -100,7 +100,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.0");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.5");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -147,7 +147,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.0.0");
+            j.put("appVersion", "5.5.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -351,7 +351,7 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("api.github.com") || h.equals("huggingface.co") || h.equals("router.huggingface.co") ||
-            h.equals("api.openai.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
+            h.equals("api.openai.com") || h.equals("api.groq.com") || h.equals("api.deepseek.com") || h.equals("gen.pollinations.ai") || h.equals("api.siliconflow.cn") || h.equals("api.x.ai") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
             h.equals("github.com") || h.equals("raw.githubusercontent.com") || h.equals("codeload.github.com") || h.endsWith(".huggingface.co");
     }
 
@@ -378,6 +378,11 @@ public class MainActivity extends Activity {
             else if ("github".equals(service)) result = cloudJson("GET", "https://api.github.com/user", "Bearer " + key, "", null);
             else if ("huggingface".equals(service)) result = cloudJson("GET", "https://huggingface.co/api/whoami-v2", "Bearer " + key, "", null);
             else if ("openai".equals(service)) result = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+            else if ("groq".equals(service)) result = cloudJson("GET", "https://api.groq.com/openai/v1/models", "Bearer " + key, "", null);
+            else if ("deepseek".equals(service)) result = cloudJson("GET", "https://api.deepseek.com/models", "Bearer " + key, "", null);
+            else if ("pollinations".equals(service)) result = cloudJson("GET", "https://gen.pollinations.ai/v1/models", "Bearer " + key, "", null);
+            else if ("siliconflow".equals(service)) result = cloudJson("GET", "https://api.siliconflow.cn/v1/models", "Bearer " + key, "", null);
+            else if ("xai".equals(service)) result = cloudJson("GET", "https://api.x.ai/v1/models", "Bearer " + key, "", null);
             else if ("gemini".equals(service)) result = cloudJson("GET", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", "", key, null);
             else if ("googleDrive".equals(service)) result = cloudJson("GET", "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", "Bearer " + key, "", null);
             else { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Serviço desconhecido"); } catch (Exception ignored) { } }
@@ -399,11 +404,42 @@ public class MainActivity extends Activity {
                     JSONObject body = new JSONObject().put("contents", contents); String selected = model.isEmpty() ? "gemini-2.5-flash" : model;
                     result = cloudJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + selected + ":generateContent", "", key, body.toString());
                 } else if ("huggingface".equals(provider)) {
-                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 1200);
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 2400);
                     result = cloudJson("POST", "https://router.huggingface.co/v1/chat/completions", "Bearer " + key, "", body.toString());
+                } else if ("groq".equals(provider) || "deepseek".equals(provider) || "pollinations".equals(provider) || "siliconflow".equals(provider) || "xai".equals(provider)) {
+                    String endpoint = "groq".equals(provider) ? "https://api.groq.com/openai/v1/chat/completions" : "deepseek".equals(provider) ? "https://api.deepseek.com/chat/completions" : "pollinations".equals(provider) ? "https://gen.pollinations.ai/v1/chat/completions" : "siliconflow".equals(provider) ? "https://api.siliconflow.cn/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
+                    String selected = model == null || model.isEmpty() ? ("groq".equals(provider) ? "groq/compound" : "deepseek".equals(provider) ? "deepseek-v4-flash" : "pollinations".equals(provider) ? "openai" : "siliconflow".equals(provider) ? "Qwen/Qwen3-8B" : "grok-4") : model;
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role","system").put("content","Você é o motor conectado do AURION ONE. Use memória e referências fornecidas, não invente estado de ferramentas.")).put(new JSONObject().put("role","user").put("content",input));
+                    JSONObject body = new JSONObject().put("model",selected).put("messages",messages).put("max_tokens",2400);
+                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
                 } else throw new IllegalArgumentException("Provedor não suportado");
             } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
             emit("aurionAiResult", new JSONObjectResult(provider, result).toString());
+        }).start();
+    }
+
+    private void listModels(String provider) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                String key=store.getSecret(provider); if(key.isEmpty()) throw new IllegalStateException("Credencial ausente");
+                String url = "groq".equals(provider)?"https://api.groq.com/openai/v1/models":"deepseek".equals(provider)?"https://api.deepseek.com/models":"pollinations".equals(provider)?"https://gen.pollinations.ai/v1/models":"siliconflow".equals(provider)?"https://api.siliconflow.cn/v1/models":"xai".equals(provider)?"https://api.x.ai/v1/models":"openai".equals(provider)?"https://api.openai.com/v1/models":null;
+                if(url==null) throw new IllegalArgumentException("Catálogo automático não disponível para "+provider);
+                result=cloudJson("GET",url,"Bearer "+key,"",null);
+            } catch(Exception e){try{result.put("ok",false).put("error",e.getMessage());}catch(Exception ignored){}}
+            emit("aurionModelsResult",new JSONObjectResult(provider,result).toString());
+        }).start();
+    }
+
+    private void generateCloudImage(String prompt, String model, int width, int height) {
+        new Thread(() -> {
+            JSONObject result=new JSONObject();
+            try {
+                String key=store.getSecret("pollinations"); if(key.isEmpty()) throw new IllegalStateException("Configure Pollinations em Contas");
+                JSONObject body=new JSONObject().put("model",model==null||model.isEmpty()?"flux":model).put("prompt",prompt).put("n",1).put("size",Math.max(256,width)+"x"+Math.max(256,height)).put("response_format","b64_json");
+                result=cloudJson("POST","https://gen.pollinations.ai/v1/images/generations","Bearer "+key,"",body.toString());
+            }catch(Exception e){try{result.put("ok",false).put("error",e.getMessage());}catch(Exception ignored){}}
+            emit("aurionImageResult",result.toString());
         }).start();
     }
 
@@ -503,6 +539,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String accountStatus() { return store.accountStatus().toString(); }
         @JavascriptInterface public void testAccount(String service) { MainActivity.this.testAccount(service); }
         @JavascriptInterface public void runCloudAi(String provider, String model, String prompt, String memory) { MainActivity.this.runCloudAi(provider, model, prompt, memory); }
+        @JavascriptInterface public void listModels(String provider) { MainActivity.this.listModels(provider); }
+        @JavascriptInterface public void generateCloudImage(String prompt, String model, int width, int height) { MainActivity.this.generateCloudImage(prompt, model, width, height); }
         @JavascriptInterface public void downloadResource(String url, String filename, String sha256) { runOnUiThread(() -> MainActivity.this.downloadResource(url, filename, sha256)); }
         @JavascriptInterface public void shareProject(String title, String text) { shareText(title, text); }
         @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
@@ -524,7 +562,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.0.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.5.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
