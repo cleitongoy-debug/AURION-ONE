@@ -4,9 +4,9 @@ Pacote independente para Windows 11 com scan, pré-voo, painel web, chat Ollama,
 
 ## Iniciar
 
-Extraia em `C:\AURION-ONE-PC` e execute `INICIAR_AURION.cmd`.
+Extraia na Área de Trabalho. O ZIP cria `AURION_ONE_PC_v3`; execute o `INICIAR_AURION.cmd` somente dentro dessa pasta nova. Não misture com `painelseguro#1 - Copia`.
 
-O inicializador detecta Python 3.11–3.13, instala Python 3.12 por `winget` quando necessário, cria `.venv`, instala dependências, executa 12 testes, escaneia o PC e só abre o navegador após confirmar o servidor.
+O inicializador detecta Python 3.11–3.13, instala Python 3.12 por `winget` quando necessário, cria `.venv`, instala dependências, valida os arquivos, escaneia o PC e só abre o navegador após confirmar o servidor. Se a porta 5060 estiver ocupada por uma versão antiga, usa automaticamente 5061–5069.
 
 ## Celular
 
