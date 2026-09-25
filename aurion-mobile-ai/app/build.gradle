@@ -3,11 +3,11 @@ android {
     namespace 'one.aurion.mobileai'
     compileSdk 35
     defaultConfig {
-        applicationId 'one.aurion.mobileai'
+        applicationId 'one.aurion.mobileai.final'
         minSdk 26
         targetSdk 35
-        versionCode 110
-        versionName '1.1.0'
+        versionCode 111
+        versionName '1.1.1'
     }
 }
 dependencies {
