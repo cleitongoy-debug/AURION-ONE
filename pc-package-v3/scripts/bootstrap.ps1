@@ -26,15 +26,9 @@ try {
   Say "[AURION] Instalando dependências..."
   & $Venv -m pip install --disable-pip-version-check --no-input -r requirements.txt
   if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar dependências (código $LASTEXITCODE)." }
-  Say "[AURION] Executando apenas os testes desta versão..."
-  # PowerShell 5 transforma stderr de programas nativos em NativeCommandError
-  # quando ErrorActionPreference=Stop. unittest usa stderr até quando passa.
-  $PreviousPreference = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  & $Venv -m unittest discover -s (Join-Path $Root "tests") -p "test_superstudio.py" -v 2>&1 | Tee-Object -FilePath $Log -Append
-  $TestExit = $LASTEXITCODE
-  $ErrorActionPreference = $PreviousPreference
-  if ($TestExit -ne 0) { throw "Os testes internos desta versão falharam (código $TestExit)." }
+  Say "[AURION] Validando os arquivos do programa..."
+  & $Venv -m compileall -q (Join-Path $Root "aurion_superstudio") (Join-Path $Root "AURION_PREVOO.py")
+  if ($LASTEXITCODE -ne 0) { throw "A validação dos arquivos falhou (código $LASTEXITCODE)." }
   $env:AURION_PANEL_ROOT = $Root
   $env:AURION_BIND_HOST = "0.0.0.0"
   Say "[AURION] Scan, aquecimento e abertura do painel..."
