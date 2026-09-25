@@ -13,6 +13,9 @@
 - correção 25/09/2026: o bootstrap executa somente `test_superstudio.py`, ignorando testes antigos que possam existir na pasta escolhida;
 - correção 25/09/2026: saída normal do `unittest` não é mais convertida em `NativeCommandError` pelo Windows PowerShell 5;
 - terminal configurado para UTF-8 para evitar textos como `dependÃªncias`.
+- correção 25/09/2026 12h: testes de desenvolvimento removidos da partida normal; o boot faz apenas validação de sintaxe;
+- pacote passa a ser distribuído dentro da pasta própria `AURION_ONE_PC_v3`, impedindo mistura com `painelseguro#1 - Copia`;
+- se a porta 5060 estiver ocupada por painel antigo, a nova versão escolhe automaticamente uma porta livre até 5069.
 
 ## Diagnóstico
 
