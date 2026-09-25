@@ -1,8 +1,8 @@
 AURION ONE PC v3.0
 
-1. Extraia este ZIP para C:\AURION-ONE-PC.
-2. Dê dois cliques em INICIAR_AURION.cmd.
-3. Aguarde o scan e os 12 testes. O navegador abrirá somente quando o servidor responder.
+1. Extraia este ZIP na Área de Trabalho. Ele criará a pasta AURION_ONE_PC_v3.
+2. Entre somente nessa pasta nova e dê dois cliques em INICIAR_AURION.cmd.
+3. Aguarde o scan e a validação. O navegador abrirá somente quando o servidor responder.
 4. Para usar o POCO na mesma rede Wi-Fi, abra CONECTAR_CELULAR.txt depois que o painel iniciar e copie ENDERECO e TOKEN no aplicativo.
 
 Se algo falhar, envie:
@@ -10,4 +10,4 @@ Se algo falhar, envie:
 - logs\aurion-errors.log
 - _aurion_superstudio\LOGS\server.log
 
-O inicializador não apaga sua instalação antiga e não abre portas no roteador.
+Não extraia por cima de painelseguro#1 - Copia. O inicializador não apaga sua instalação antiga e não abre portas no roteador.
