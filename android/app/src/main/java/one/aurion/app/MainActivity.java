@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.8");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.9");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -155,7 +155,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.8.0");
+            j.put("appVersion", "5.9.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -549,6 +549,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
         @JavascriptInterface public void testService(String label, String raw) { new Thread(() -> emit("aurionServiceResult", new JSONObjectResult(label, httpJson("GET", raw, "", null)).toString())).start(); }
+        @JavascriptInterface public void sendAgentModel(String base, String token, String model, String text) { new Thread(() -> {
+            try { JSONObject body = new JSONObject(); body.put("text", text); body.put("model", model == null || model.trim().isEmpty() ? "qwen3.5:4b" : model.trim()); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
+            catch (Exception e) { emit("aurionAgentResult", "{\"ok\":false,\"error\":\"Endereço inválido\"}"); }
+        }).start(); }
         @JavascriptInterface public void sendAgent(String base, String token, String text) { new Thread(() -> {
             try { JSONObject body = new JSONObject(); body.put("text", text); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
             catch (Exception e) { emit("aurionAgentResult", "{\"ok\":false,\"error\":\"Endereço inválido\"}"); }
@@ -598,7 +602,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.8.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.9.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
