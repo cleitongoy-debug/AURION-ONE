@@ -54,14 +54,19 @@ def port_in_use(port: int) -> bool:
 def main() -> int:
     print("[AURION] PRÉ-VOO v3.0 — a página só abrirá após o servidor responder.")
     run_preflight(PANEL_ROOT, DATA_ROOT, config())
-    port = int(os.environ.get("AURION_STUDIO_PORT", "5060"))
+    preferred_port = int(os.environ.get("AURION_STUDIO_PORT", "5060"))
+    port = preferred_port
+    if port_in_use(port) and studio_ready(port):
+        print("[AURION] Esta versão do painel já está ligada; abrindo a janela existente.")
+        webbrowser.open(f"http://127.0.0.1:{port}/")
+        return 0
+    while port_in_use(port) and port < preferred_port + 10:
+        print(f"[AURION] Porta {port} ocupada por outra versão; tentando {port + 1}.")
+        port += 1
     if port_in_use(port):
-        if studio_ready(port):
-            print("[AURION] O painel já está ligado; abrindo a janela existente.")
-            webbrowser.open(f"http://127.0.0.1:{port}/")
-            return 0
-        print(f"[ERRO] A porta {port} está ocupada por outro programa. Consulte logs\\startup.log.")
+        print(f"[ERRO] As portas {preferred_port} a {port} estão ocupadas. Consulte logs\\startup.log.")
         return 2
+    os.environ["AURION_STUDIO_PORT"] = str(port)
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
     token = (DATA_ROOT / "session.token").read_text(encoding="utf-8").strip() if (DATA_ROOT / "session.token").exists() else "será criado no primeiro início"
     try:
@@ -88,7 +93,7 @@ def main() -> int:
             return process.wait()
         time.sleep(0.25)
     process.terminate()
-    print("[ERRO] O servidor não respondeu em 45 segundos.")
+    print(f"[ERRO] O servidor não respondeu em 45 segundos. Consulte {log}.")
     return 1
 
 
