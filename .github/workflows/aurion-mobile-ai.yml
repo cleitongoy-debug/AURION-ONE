@@ -1,7 +1,7 @@
 name: Build AURION Mobile AI APK
 on:
   push:
-    branches: [main, feat/aurion-mobile-ai]
+    branches: [main, 'feat/**']
     paths: ['aurion-mobile-ai/**', '.github/workflows/aurion-mobile-ai.yml']
   workflow_dispatch:
 permissions: { contents: read }
