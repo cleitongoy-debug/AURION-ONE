@@ -6,11 +6,9 @@ android {
         applicationId 'one.aurion.mobile.superstudio'
         minSdk 26
         targetSdk 35
-        versionCode 60
-        versionName '6.0.0'
-        manifestPlaceholders = [appLabel: 'AURION ONE']
+        versionCode 61
+        versionName '6.1.0-zero'
+        manifestPlaceholders = [appLabel: 'AURION ONE ZERO']
     }
 }
-dependencies {
-    implementation 'androidx.documentfile:documentfile:1.0.1'
-}
+dependencies { implementation 'androidx.documentfile:documentfile:1.0.1' }
