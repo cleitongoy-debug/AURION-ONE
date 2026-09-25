@@ -20,11 +20,11 @@ foreach($k in $svc.Keys){try{$q=Invoke-WebRequest -UseBasicParsing $svc[$k] -Tim
 try{$tags=Invoke-RestMethod 'http://127.0.0.1:11434/api/tags' -TimeoutSec 4;$out.models=@($tags.models|ForEach-Object{$_.name})}catch{}
 $out|ConvertTo-Json -Depth 8|Set-Content -Encoding UTF8 (Join-Path $log 'AURION_RUNTIME.json')
 $envfile=Join-Path $base 'aurion.env'
-@("AURION_LAN=$ip","AURION_TAILSCALE=$tail","AURION_GATEWAY_PORT=5060","OLLAMA=http://127.0.0.1:11434","COMFYUI=http://127.0.0.1:8188","OPENWEBUI=http://127.0.0.1:8080")|Set-Content $envfile
+@("AURION_LAN=$ip","AURION_TAILSCALE=$tail","AURION_GATEWAY_PORT=5057","OLLAMA=http://127.0.0.1:11434","COMFYUI=http://127.0.0.1:8188","OPENWEBUI=http://127.0.0.1:8080")|Set-Content $envfile
 $gw=Join-Path $base 'gateway.py'
 if(Test-Path $gw){
- $old=Get-NetTCPConnection -LocalPort 5060 -State Listen -ErrorAction SilentlyContinue
- if(!$old){Say 'Ligando Gateway PC-POCO na porta 5060';Start-Process -WindowStyle Hidden python -ArgumentList @($gw)}
+ $old=Get-NetTCPConnection -LocalPort 5057 -State Listen -ErrorAction SilentlyContinue
+ if(!$old){Say 'Ligando Gateway PC-POCO na porta 5057';Start-Process -WindowStyle Hidden python -ArgumentList @($gw)}
 }
 Start-Sleep 2
 if($adb){
