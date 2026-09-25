@@ -1,0 +1,944 @@
+﻿{
+    "time":  "2026-09-25T18:22:13.5943248-03:00",
+    "os":  {
+               "caption":  "Microsoft Windows 11 Pro",
+               "build":  "26100",
+               "version":  "10.0.26100"
+           },
+    "hardware":  {
+                     "cpu":  "Intel(R) Xeon(R) CPU E5-2640 v3 @ 2.60GHz",
+                     "ramGB":  39.84
+                 },
+    "gpu":  [
+                {
+                    "driver":  "32.0.16.1047",
+                    "name":  "NVIDIA GeForce RTX 2060"
+                }
+            ],
+    "disks":  [
+                  {
+                      "label":  "",
+                      "drive":  "C:",
+                      "sizeGB":  952.89,
+                      "freeGB":  113.17
+                  },
+                  {
+                      "label":  "",
+                      "drive":  "D:",
+                      "sizeGB":  0.88,
+                      "freeGB":  0.11
+                  },
+                  {
+                      "label":  "",
+                      "drive":  "E:",
+                      "sizeGB":  298.09,
+                      "freeGB":  182.84
+                  },
+                  {
+                      "label":  "",
+                      "drive":  "F:",
+                      "sizeGB":  7.5,
+                      "freeGB":  5.1
+                  }
+              ],
+    "processes":  [
+                      {
+                          "path":  "C:\\Program Files\\Maxon Cinema 4D 2023\\Cinema 4D.exe",
+                          "pid":  7808,
+                          "name":  "Cinema 4D"
+                      },
+                      {
+                          "path":  null,
+                          "pid":  17308,
+                          "name":  "git"
+                      },
+                      {
+                          "path":  "C:\\Program Files\\MariaDB 12.3\\bin\\mysqld.exe",
+                          "pid":  5820,
+                          "name":  "mysqld"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+                          "pid":  8436,
+                          "name":  "ollama"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\ollama app.exe",
+                          "pid":  15856,
+                          "name":  "ollama app"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\bin\\opencode.exe",
+                          "pid":  17500,
+                          "name":  "opencode"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\open-webui.exe",
+                          "pid":  14344,
+                          "name":  "open-webui"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Launcher\\py.exe",
+                          "pid":  15644,
+                          "name":  "py"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\Desktop\\painelseguro#1 - Copia\\.venv\\Scripts\\python.exe",
+                          "pid":  2712,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  4840,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  11452,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  15512,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\Desktop\\painelseguro#1 - Copia\\.venv\\Scripts\\python.exe",
+                          "pid":  16324,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  19040,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  21312,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\COMFYUI\\ComfyUI_windows_portable\\python_embeded\\python.exe",
+                          "pid":  22416,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                          "pid":  22704,
+                          "name":  "python"
+                      },
+                      {
+                          "path":  "C:\\Users\\Public\\Python312-32\\pythonw.exe",
+                          "pid":  16512,
+                          "name":  "pythonw"
+                      },
+                      {
+                          "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                          "pid":  4596,
+                          "name":  "tailscaled"
+                      },
+                      {
+                          "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                          "pid":  5556,
+                          "name":  "tailscaled"
+                      },
+                      {
+                          "path":  "C:\\Program Files\\Tailscale\\tailscale-ipn.exe",
+                          "pid":  8928,
+                          "name":  "tailscale-ipn"
+                      }
+                  ],
+    "ports":  [
+                  {
+                      "port":  135,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  1652,
+                      "address":  "::",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  135,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  1652,
+                      "address":  "0.0.0.0",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  139,
+                      "path":  null,
+                      "pid":  4,
+                      "address":  "192.168.1.2",
+                      "process":  "System"
+                  },
+                  {
+                      "port":  139,
+                      "path":  null,
+                      "pid":  4,
+                      "address":  "100.126.102.94",
+                      "process":  "System"
+                  },
+                  {
+                      "port":  443,
+                      "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                      "pid":  5556,
+                      "address":  "fd7a:115c:a1e0::eb01:66c7",
+                      "process":  "tailscaled"
+                  },
+                  {
+                      "port":  443,
+                      "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                      "pid":  5556,
+                      "address":  "100.126.102.94",
+                      "process":  "tailscaled"
+                  },
+                  {
+                      "port":  445,
+                      "path":  null,
+                      "pid":  4,
+                      "address":  "::",
+                      "process":  "System"
+                  },
+                  {
+                      "port":  3306,
+                      "path":  "C:\\Program Files\\MariaDB 12.3\\bin\\mysqld.exe",
+                      "pid":  5820,
+                      "address":  "::",
+                      "process":  "mysqld"
+                  },
+                  {
+                      "port":  3306,
+                      "path":  "C:\\Program Files\\MariaDB 12.3\\bin\\mysqld.exe",
+                      "pid":  5820,
+                      "address":  "0.0.0.0",
+                      "process":  "mysqld"
+                  },
+                  {
+                      "port":  5000,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                      "pid":  15512,
+                      "address":  "127.0.0.1",
+                      "process":  "python"
+                  },
+                  {
+                      "port":  5040,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  7904,
+                      "address":  "0.0.0.0",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  5060,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                      "pid":  19040,
+                      "address":  "0.0.0.0",
+                      "process":  "python"
+                  },
+                  {
+                      "port":  5357,
+                      "path":  null,
+                      "pid":  4,
+                      "address":  "::",
+                      "process":  "System"
+                  },
+                  {
+                      "port":  7680,
+                      "path":  null,
+                      "pid":  2112,
+                      "address":  "::",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  8080,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                      "pid":  21312,
+                      "address":  "0.0.0.0",
+                      "process":  "python"
+                  },
+                  {
+                      "port":  8188,
+                      "path":  "C:\\COMFYUI\\ComfyUI_windows_portable\\python_embeded\\python.exe",
+                      "pid":  22416,
+                      "address":  "127.0.0.1",
+                      "process":  "python"
+                  },
+                  {
+                      "port":  11434,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+                      "pid":  8436,
+                      "address":  "127.0.0.1",
+                      "process":  "ollama"
+                  },
+                  {
+                      "port":  42050,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Microsoft\\OneDrive\\26.163.0823.0004\\OneDrive.Sync.Service.exe",
+                      "pid":  1924,
+                      "address":  "::1",
+                      "process":  "OneDrive.Sync.Service"
+                  },
+                  {
+                      "port":  43031,
+                      "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                      "pid":  5556,
+                      "address":  "fd7a:115c:a1e0::eb01:66c7",
+                      "process":  "tailscaled"
+                  },
+                  {
+                      "port":  44186,
+                      "path":  "C:\\Program Files\\Tailscale\\tailscaled.exe",
+                      "pid":  5556,
+                      "address":  "100.126.102.94",
+                      "process":  "tailscaled"
+                  },
+                  {
+                      "port":  49664,
+                      "path":  null,
+                      "pid":  1356,
+                      "address":  "::",
+                      "process":  "lsass"
+                  },
+                  {
+                      "port":  49664,
+                      "path":  null,
+                      "pid":  1356,
+                      "address":  "0.0.0.0",
+                      "process":  "lsass"
+                  },
+                  {
+                      "port":  49665,
+                      "path":  null,
+                      "pid":  1212,
+                      "address":  "::",
+                      "process":  "wininit"
+                  },
+                  {
+                      "port":  49665,
+                      "path":  null,
+                      "pid":  1212,
+                      "address":  "0.0.0.0",
+                      "process":  "wininit"
+                  },
+                  {
+                      "port":  49666,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  1960,
+                      "address":  "::",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  49666,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  1960,
+                      "address":  "0.0.0.0",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  49667,
+                      "path":  "C:\\WINDOWS\\System32\\svchost.exe",
+                      "pid":  2600,
+                      "address":  "::",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  49667,
+                      "path":  "C:\\WINDOWS\\System32\\svchost.exe",
+                      "pid":  2600,
+                      "address":  "0.0.0.0",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  49668,
+                      "path":  "C:\\WINDOWS\\System32\\spoolsv.exe",
+                      "pid":  3612,
+                      "address":  "0.0.0.0",
+                      "process":  "spoolsv"
+                  },
+                  {
+                      "port":  49668,
+                      "path":  "C:\\WINDOWS\\System32\\spoolsv.exe",
+                      "pid":  3612,
+                      "address":  "::",
+                      "process":  "spoolsv"
+                  },
+                  {
+                      "port":  49677,
+                      "path":  null,
+                      "pid":  1300,
+                      "address":  "0.0.0.0",
+                      "process":  "services"
+                  },
+                  {
+                      "port":  49677,
+                      "path":  null,
+                      "pid":  1300,
+                      "address":  "::",
+                      "process":  "services"
+                  },
+                  {
+                      "port":  49680,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  4240,
+                      "address":  "::",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  49680,
+                      "path":  "C:\\WINDOWS\\system32\\svchost.exe",
+                      "pid":  4240,
+                      "address":  "0.0.0.0",
+                      "process":  "svchost"
+                  },
+                  {
+                      "port":  51348,
+                      "path":  "C:\\Program Files\\Maxon Cinema 4D 2023\\Cinema 4D.exe",
+                      "pid":  7808,
+                      "address":  "0.0.0.0",
+                      "process":  "Cinema 4D"
+                  },
+                  {
+                      "port":  55916,
+                      "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\ollama app.exe",
+                      "pid":  15856,
+                      "address":  "127.0.0.1",
+                      "process":  "ollama app"
+                  }
+              ],
+    "software":  [
+                     {
+                         "name":  "Adobe After Effects 2022",
+                         "version":  "22.2",
+                         "location":  "C:\\Program Files\\Adobe"
+                     },
+                     {
+                         "name":  "Adobe Media Encoder 2022",
+                         "version":  "22.2",
+                         "location":  "C:\\Program Files\\Adobe"
+                     },
+                     {
+                         "name":  "Adobe Photoshop 2021",
+                         "version":  "22.1.0.94",
+                         "location":  "C:\\Program Files\\Adobe\\Adobe Photoshop 2021"
+                     },
+                     {
+                         "name":  "Adobe Premiere Pro 2022",
+                         "version":  "22.2",
+                         "location":  "C:\\Program Files\\Adobe"
+                     },
+                     {
+                         "name":  "Blender",
+                         "version":  "5.2.2",
+                         "location":  "C:\\Program Files\\Blender Foundation\\Blender 5.2\\"
+                     },
+                     {
+                         "name":  "CameraSurveyProgram",
+                         "version":  "2.16.10.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Discord",
+                         "version":  "1.0.9259",
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Discord"
+                     },
+                     {
+                         "name":  "Docker Desktop",
+                         "version":  "4.89.0",
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\DockerDesktop"
+                     },
+                     {
+                         "name":  "EOS Lens Registration Tool",
+                         "version":  "1.20.20.2",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "EOS Utility 3",
+                         "version":  "3.20.21.1",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Epic Games Launcher",
+                         "version":  "1.3.176.0",
+                         "location":  "C:\\Program Files\\Epic Games\\"
+                     },
+                     {
+                         "name":  "Epic Online Services",
+                         "version":  "5.3.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "FiveM",
+                         "version":  null,
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\FiveM"
+                     },
+                     {
+                         "name":  "Git",
+                         "version":  "2.54.0",
+                         "location":  "C:\\Program Files\\Git\\"
+                     },
+                     {
+                         "name":  "Google Chrome",
+                         "version":  "153.0.8010.54",
+                         "location":  "C:\\Program Files\\Google\\Chrome\\Application"
+                     },
+                     {
+                         "name":  "Intel(R) C++ Redistributables on Intel(R) 64",
+                         "version":  "19.0.324",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Lightshot-5.5.0.7",
+                         "version":  "5.5.0.7",
+                         "location":  "C:\\Program Files (x86)\\Skillbrains\\lightshot\\"
+                     },
+                     {
+                         "name":  "Magic Bullet Suite",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "MariaDB 12.3 (x64)",
+                         "version":  "12.3.2.0",
+                         "location":  "C:\\Program Files\\MariaDB 12.3\\"
+                     },
+                     {
+                         "name":  "Maxon App",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "Maxon Cinema 4D 2023",
+                         "version":  "2023",
+                         "location":  "C:\\Program Files\\Maxon Cinema 4D 2023"
+                     },
+                     {
+                         "name":  "Medal",
+                         "version":  "2639.498.1",
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Medal"
+                     },
+                     {
+                         "name":  "Microsoft Edge",
+                         "version":  "153.0.4234.48",
+                         "location":  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application"
+                     },
+                     {
+                         "name":  "Microsoft Edge WebView2 Runtime",
+                         "version":  "154.0.4258.37",
+                         "location":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application"
+                     },
+                     {
+                         "name":  "Microsoft OneDrive",
+                         "version":  "26.163.0823.0004",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.61030",
+                         "version":  "11.0.61030.0",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2012 x64 Additional Runtime - 11.0.61030",
+                         "version":  "11.0.61030",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2012 x64 Minimum Runtime - 11.0.61030",
+                         "version":  "11.0.61030",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.44.35211",
+                         "version":  "14.44.35211.0",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2022 X64 Additional Runtime - 14.50.35719",
+                         "version":  "14.50.35719",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.50.35719",
+                         "version":  "14.50.35719",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2022 X86 Additional Runtime - 14.44.35211",
+                         "version":  "14.44.35211",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ 2022 X86 Minimum Runtime - 14.44.35211",
+                         "version":  "14.44.35211",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Microsoft Visual C++ v14 Redistributable (x64) - 14.50.35719",
+                         "version":  "14.50.35719.0",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Microsoft Windows Application Compatibility Fix Database",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "Mister Horse Product Manager",
+                         "version":  "3.7.2",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Node.js",
+                         "version":  "24.21.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Notion 7.34.0",
+                         "version":  "7.34.0",
+                         "location":  null
+                     },
+                     {
+                         "name":  "NvCpl",
+                         "version":  "1.0",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\Display.NvApp.NvCPL.{48FC961A-45E4-47DD-B728-2552C1663022}"
+                     },
+                     {
+                         "name":  "NVIDIA AIUser Container",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvContainer.AIUser.{C0C87A9D-CEA8-442D-9670-32E9EB100391}"
+                     },
+                     {
+                         "name":  "NVIDIA App 11.0.7.247",
+                         "version":  "11.0.7.247",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\Display.NvApp.{75037895-C2CA-4AFE-ADD2-248983104511}"
+                     },
+                     {
+                         "name":  "NVIDIA Backend",
+                         "version":  "11.0.7.247",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\Display.NvApp.NvBackend.{E86FF1C3-8427-4241-A532-5281E7A2B594}"
+                     },
+                     {
+                         "name":  "NVIDIA Container",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\NvContainer"
+                     },
+                     {
+                         "name":  "NVIDIA Driver de áudio HD 1.4.5.7",
+                         "version":  "1.4.5.7",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\HDAudio.Driver.{397479E3-60AC-42D6-BA9F-22FC8ED2D8DF}"
+                     },
+                     {
+                         "name":  "NVIDIA Driver de gráficos 610.47",
+                         "version":  "610.47",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\Display.Driver.{16155C89-7285-4EE4-817E-01863E38AC15}"
+                     },
+                     {
+                         "name":  "NVIDIA FrameView SDK 1.7.12227.37421622",
+                         "version":  "1.7.12227.37421622",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\FrameViewSDK"
+                     },
+                     {
+                         "name":  "NVIDIA Install Application",
+                         "version":  "2.1002.461.0",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\InstallerCore"
+                     },
+                     {
+                         "name":  "NVIDIA LocalSystem Container",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvContainer.LocalSystem.{F677F277-3054-4C66-A2E6-9CF236722FE6}"
+                     },
+                     {
+                         "name":  "NVIDIA MessageBus 3 for NvApp",
+                         "version":  "3.21",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\Display.NvApp.MessageBus.{9768D75F-95A0-4B35-BD45-84BDEC1EC65B}"
+                     },
+                     {
+                         "name":  "NVIDIA NvDLISR",
+                         "version":  "1.0",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvDLISR.{E4E0659B-D039-4D7B-B130-C08D13DCB07F}"
+                     },
+                     {
+                         "name":  "NVIDIA Session Container",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvContainer.Session.{5241A5C4-86D9-4D0F-AB31-85AB574B7928}"
+                     },
+                     {
+                         "name":  "NVIDIA ShadowPlay 11.0.7.0",
+                         "version":  "11.0.7.0",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\ShadowPlay"
+                     },
+                     {
+                         "name":  "NVIDIA Software do sistema PhysX 9.23.1019",
+                         "version":  "9.23.1019",
+                         "location":  "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX"
+                     },
+                     {
+                         "name":  "NVIDIA Telemetry Client",
+                         "version":  "19.5.13.0",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\NvTelemetry"
+                     },
+                     {
+                         "name":  "NVIDIA USBC Driver 1.52.831.832",
+                         "version":  "1.52.831.832",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\USBC.{DC47E80F-BA66-4C28-8C56-DD89E464B5D6}"
+                     },
+                     {
+                         "name":  "NVIDIA User Container",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvContainer.User.{7801D3C2-68BC-482F-8A70-914C202CEED1}"
+                     },
+                     {
+                         "name":  "NVIDIA Virtual Audio 4.65.0.12",
+                         "version":  "4.65.0.12",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\VirtualAudio.Driver.{4BF88A16-B62D-4E6F-8799-F1688BE5EAB3}"
+                     },
+                     {
+                         "name":  "NVIDIA Watchdog Plugin for NvContainer",
+                         "version":  "1.48",
+                         "location":  "C:\\Program Files\\NVIDIA Corporation\\Installer2\\NvPlugin.Watchdog.{B6871AED-40E1-4D16-846D-B22329B04BEF}"
+                     },
+                     {
+                         "name":  "OBS Studio",
+                         "version":  "32.2.2",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Ollama version 0.33.3",
+                         "version":  "0.33.3",
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\"
+                     },
+                     {
+                         "name":  "OpenCode 1.18.31",
+                         "version":  "1.18.31",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Python 3.12.9 (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Python 3.12.9 Add to Path (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Core Interpreter (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Development Libraries (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Documentation (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Executables (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 pip Bootstrap (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Standard Library (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Tcl/Tk Support (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python 3.12.9 Test Suite (64-bit)",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Python Launcher",
+                         "version":  "3.12.9150.0",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Rclone",
+                         "version":  "1.75.1",
+                         "location":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe"
+                     },
+                     {
+                         "name":  "Realtek Audio Driver",
+                         "version":  "6.0.9239.1",
+                         "location":  "C:\\Program Files\\Realtek\\Audio\\HDA"
+                     },
+                     {
+                         "name":  "Realtek Ethernet Controller Driver",
+                         "version":  "11.29.50.0202",
+                         "location":  "C:\\Program Files (x86)\\Realtek\\NICDRV_8169"
+                     },
+                     {
+                         "name":  "Rockstar Games Launcher",
+                         "version":  "1.0.108.2970",
+                         "location":  "C:\\Program Files\\Rockstar Games\\Launcher"
+                     },
+                     {
+                         "name":  "Rockstar Games SDK",
+                         "version":  "2.4.0.240",
+                         "location":  null
+                     },
+                     {
+                         "name":  "Tailscale",
+                         "version":  "1.102.4",
+                         "location":  ""
+                     },
+                     {
+                         "name":  "Trapcode Suite",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "Universe",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "VFX Suite",
+                         "version":  null,
+                         "location":  null
+                     },
+                     {
+                         "name":  "WinRAR 5.20 (64-bit)",
+                         "version":  "5.20.0",
+                         "location":  "C:\\Program Files\\WinRAR\\"
+                     }
+                 ],
+    "tools":  {
+                  "git":  {
+                              "version":  "git version 2.54.0.windows.1",
+                              "path":  "C:\\Program Files\\Git\\cmd\\git.exe"
+                          },
+                  "docker":  {
+                                 "version":  "Docker version 29.7.2, build a7dcaa6",
+                                 "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe"
+                             },
+                  "java":  {
+                               "found":  false
+                           },
+                  "adb":  {
+                              "found":  false
+                          },
+                  "node":  {
+                               "version":  "v24.21.0",
+                               "path":  "C:\\Program Files\\nodejs\\node.exe"
+                           },
+                  "ffmpeg":  {
+                                 "found":  false
+                             },
+                  "nvidia-smi":  {
+                                     "version":  "NVIDIA-SMI version  : 610.47 NVML version        : 610.47 DRIVER version      : Deprecated, see \"KMD version\" instead",
+                                     "path":  "C:\\WINDOWS\\system32\\nvidia-smi.exe"
+                                 },
+                  "python":  {
+                                 "version":  "Python 3.12.9",
+                                 "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+                             },
+                  "wsl":  {
+                              "version":  " \u0000 \u0000",
+                              "path":  "C:\\WINDOWS\\system32\\wsl.exe"
+                          },
+                  "ollama":  {
+                                 "version":  "ollama version is 0.33.3",
+                                 "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Ollama\\ollama.exe"
+                             },
+                  "tailscale":  {
+                                    "version":  "1.102.4   tailscale commit: 3caf7d9e7dcaba589cfc58beda596929733e4fea   long version: 1.102.4-t3caf7d9e7-g084ee3b64",
+                                    "path":  "C:\\Program Files\\Tailscale\\tailscale.exe"
+                                },
+                  "npm":  {
+                              "version":  "11.19.0",
+                              "path":  "C:\\Program Files\\nodejs\\npm.ps1"
+                          },
+                  "py":  {
+                             "version":  "Python 3.12.9",
+                             "path":  "C:\\Users\\ADM_PESS\\AppData\\Local\\Programs\\Python\\Launcher\\py.exe"
+                         }
+              },
+    "adb":  {
+
+            },
+    "ollama":  {
+                   "list":  "NAME                                    ID              SIZE      MODIFIED     | qwen3-4b-thinking-2507.Q4_K_M:latest    c5814da56fd4    2.5 GB    2 weeks ago     | qwen3.5:4b                              2a654d98e6fb    3.4 GB    2 weeks ago     | llava:7b                                8dd30f6b0cb1    4.7 GB    2 weeks ago     | deepseek-r1:7b                          755ced02ce7b    4.7 GB    2 weeks ago    ",
+                   "ps":  "NAME    ID    SIZE    PROCESSOR    CONTEXT    UNTIL "
+               },
+    "services":  {
+                     "OpenWebUI":  {
+                                       "sample":  "\u003c!doctype html\u003e\n\u003chtml lang=\"en\"\u003e\n\t\u003chead\u003e\n\t\t\u003cmeta charset=\"utf-8\" /\u003e\n\t\t\u003c!-- LICENSE covers this Open WebUI branding surface, including name, logo,\n\t\tvisual, textual, symbolic identifiers, metadata, and surrounding UI.\n\t\tDo not alter, remove, obscure, or replace it except as LICENSE permits:\n\t\thttps://docs.openwebui.com/license. --\u003e\n\t\t\u003clink rel=\"icon\" type=\"image/png\" href=\"/static/favicon.png\" crossorigin=\"use-credentials\" /\u003e\n\t\t\u003clink\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/png\"\n\t\t\thref=\"/static/favicon-96x96.png\"\n\t\t\tsizes=\"96x96\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/\u003e\n\t\t\u003clink\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/svg+xml\"\n\t\t\thref=\"/static/favicon.svg\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/\u003e\n\t\t\u003clink rel=\"shortcut icon\" href=\"/static/favicon.ico\" crossorigin=\"use-credentials\" /\u003e\n\t\t\u003clink\n\t\t\trel=\"apple-touch-icon\"\n\t\t",
+                                       "ok":  true,
+                                       "url":  "http://127.0.0.1:8080",
+                                       "http":  200
+                                   },
+                     "Aurion8765":  {
+                                        "ok":  false,
+                                        "url":  "http://127.0.0.1:8765/health",
+                                        "error":  "Impossível conectar-se ao servidor remoto"
+                                    },
+                     "ComfyUI":  {
+                                     "sample":  "{\"system\": {\"os\": \"win32\", \"ram_total\": 42781466624, \"ram_free\": 25805828096, \"comfyui_version\": \"0.36.0\", \"required_frontend_version\": \"1.52.7\", \"installed_templates_version\": \"0.11.62\", \"required_templates_version\": \"0.11.62\", \"comfy_package_versions\": [{\"name\": \"comfyui-frontend-package\", \"installed\": \"1.52.7\", \"required\": \"1.52.7\"}, {\"name\": \"comfyui-workflow-templates\", \"installed\": \"0.11.62\", \"required\": \"0.11.62\"}, {\"name\": \"comfyui-embedded-docs\", \"installed\": \"0.5.11\", \"required\": \"0.5.11\"}, {\"name\": \"comfy-kitchen\", \"installed\": \"0.2.34\", \"required\": \"0.2.34\"}, {\"name\": \"comfy-aimdo\", \"installed\": \"0.5.5\", \"required\": \"0.5.5\"}], \"python_version\": \"3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]\", \"pytorch_version\": \"2.14.0+cu130\", \"embedded_pyth",
+                                     "ok":  true,
+                                     "url":  "http://127.0.0.1:8188/system_stats",
+                                     "http":  200
+                                 },
+                     "P5055":  {
+                                   "ok":  false,
+                                   "url":  "http://127.0.0.1:5055",
+                                   "error":  "Impossível conectar-se ao servidor remoto"
+                               },
+                     "Aurion5000":  {
+                                        "sample":  "\u003c!doctype html\u003e\u003chtml lang=\"pt-BR\"\u003e\u003chead\u003e\u003cmeta charset=\"utf-8\"\u003e\u003cmeta name=\"viewport\" content=\"width=device-width,initial-scale=1\"\u003e\u003ctitle\u003eAURION DYNAMIC\u003c/title\u003e\u003cstyle\u003e\n:root{--bg:#080c11;--side:#0d141d;--p:#111a25;--p2:#172231;--line:#253446;--txt:#eef5ff;--muted:#8ea0b5;--cyan:#55c8ff;--ok:#4cda86;--warn:#ffd166;--bad:#ff6277}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px Segoe UI,Arial,sans-serif;overflow:hidden}.app{display:flex;height:100vh}.side{width:245px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:18px 12px;overflow:auto}.brand{font-size:22px;font-weight:800;padding:6px 10px}.brand small{display:block;font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px}.nav{margin-top:18px}.nav button{width:100%;te",
+                                        "ok":  true,
+                                        "url":  "http://127.0.0.1:5000",
+                                        "http":  200
+                                    },
+                     "P5056":  {
+                                   "ok":  false,
+                                   "url":  "http://127.0.0.1:5056",
+                                   "error":  "Impossível conectar-se ao servidor remoto"
+                               },
+                     "P5057":  {
+                                   "ok":  false,
+                                   "url":  "http://127.0.0.1:5057",
+                                   "error":  "Impossível conectar-se ao servidor remoto"
+                               },
+                     "Ollama":  {
+                                    "sample":  "{\"models\":[{\"name\":\"qwen3-4b-thinking-2507.Q4_K_M:latest\",\"model\":\"qwen3-4b-thinking-2507.Q4_K_M:latest\",\"modified_at\":\"2026-09-07T16:31:45.7015291-03:00\",\"size\":2497280525,\"digest\":\"c5814da56fd49796384d7e44950192a1314487cc009486c6183ffb629da417e6\",\"details\":{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"qwen3\",\"families\":[\"qwen3\"],\"parameter_size\":\"4.0B\",\"quantization_level\":\"Q4_K_M\",\"context_length\":262144,\"embedding_length\":2560},\"capabilities\":[\"completion\"]},{\"name\":\"qwen3.5:4b\",\"model\":\"qwen3.5:4b\",\"modified_at\":\"2026-09-06T16:15:42.2411423-03:00\",\"size\":3389983735,\"digest\":\"2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd\",\"details\":{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"qwen35\",\"families\":[\"qwen35\"],\"parameter_size\":\"4.7B\",\"quantization_level\":\"Q4_K_M\",\"context_",
+                                    "ok":  true,
+                                    "url":  "http://127.0.0.1:11434/api/tags",
+                                    "http":  200
+                                }
+                 },
+    "paths":  [
+                  {
+                      "path":  "C:\\AURION-ONE",
+                      "items":  20,
+                      "exists":  true
+                  },
+                  {
+                      "path":  "C:\\COMFYUI",
+                      "items":  1,
+                      "exists":  true
+                  },
+                  {
+                      "path":  "C:\\######AGENTE#####STATUS######\\base#777\\models",
+                      "items":  27,
+                      "exists":  true
+                  },
+                  {
+                      "path":  "C:\\Program Files\\Maxon Cinema 4D 2023",
+                      "items":  17,
+                      "exists":  true
+                  }
+              ],
+    "nvidia":  "NVIDIA GeForce RTX 2060, 610.47, 6144 MiB, 4363 MiB, 20 %, 53"
+}

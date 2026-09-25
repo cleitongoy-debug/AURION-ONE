@@ -1,0 +1,82 @@
+﻿Adobe After Effects 2022 | 22.2 | C:\Program Files\Adobe
+Adobe Media Encoder 2022 | 22.2 | C:\Program Files\Adobe
+Adobe Photoshop 2021 | 22.1.0.94 | C:\Program Files\Adobe\Adobe Photoshop 2021
+Adobe Premiere Pro 2022 | 22.2 | C:\Program Files\Adobe
+Blender | 5.2.2 | C:\Program Files\Blender Foundation\Blender 5.2\
+CameraSurveyProgram | 2.16.10.0 | 
+Discord | 1.0.9259 | C:\Users\ADM_PESS\AppData\Local\Discord
+Docker Desktop | 4.89.0 | C:\Users\ADM_PESS\AppData\Local\Programs\DockerDesktop
+EOS Lens Registration Tool | 1.20.20.2 | 
+EOS Utility 3 | 3.20.21.1 | 
+Epic Games Launcher | 1.3.176.0 | C:\Program Files\Epic Games\
+Epic Online Services | 5.3.0 | 
+FiveM |  | C:\Users\ADM_PESS\AppData\Local\FiveM
+Git | 2.54.0 | C:\Program Files\Git\
+Google Chrome | 153.0.8010.54 | C:\Program Files\Google\Chrome\Application
+Intel(R) C++ Redistributables on Intel(R) 64 | 19.0.324 | 
+Lightshot-5.5.0.7 | 5.5.0.7 | C:\Program Files (x86)\Skillbrains\lightshot\
+Magic Bullet Suite |  | 
+MariaDB 12.3 (x64) | 12.3.2.0 | C:\Program Files\MariaDB 12.3\
+Maxon App |  | 
+Maxon Cinema 4D 2023 | 2023 | C:\Program Files\Maxon Cinema 4D 2023
+Medal | 2639.498.1 | C:\Users\ADM_PESS\AppData\Local\Medal
+Microsoft Edge | 153.0.4234.48 | C:\Program Files (x86)\Microsoft\Edge\Application
+Microsoft Edge WebView2 Runtime | 154.0.4258.37 | C:\Program Files (x86)\Microsoft\EdgeWebView\Application
+Microsoft OneDrive | 26.163.0823.0004 | 
+Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.61030 | 11.0.61030.0 | 
+Microsoft Visual C++ 2012 x64 Additional Runtime - 11.0.61030 | 11.0.61030 | 
+Microsoft Visual C++ 2012 x64 Minimum Runtime - 11.0.61030 | 11.0.61030 | 
+Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.44.35211 | 14.44.35211.0 | 
+Microsoft Visual C++ 2022 X64 Additional Runtime - 14.50.35719 | 14.50.35719 | 
+Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.50.35719 | 14.50.35719 | 
+Microsoft Visual C++ 2022 X86 Additional Runtime - 14.44.35211 | 14.44.35211 | 
+Microsoft Visual C++ 2022 X86 Minimum Runtime - 14.44.35211 | 14.44.35211 | 
+Microsoft Visual C++ v14 Redistributable (x64) - 14.50.35719 | 14.50.35719.0 | 
+Microsoft Windows Application Compatibility Fix Database |  | 
+Mister Horse Product Manager | 3.7.2 | 
+Node.js | 24.21.0 | 
+Notion 7.34.0 | 7.34.0 | 
+NvCpl | 1.0 | C:\Program Files\NVIDIA Corporation\Installer2\Display.NvApp.NvCPL.{48FC961A-45E4-47DD-B728-2552C1663022}
+NVIDIA AIUser Container | 1.48 | C:\Program Files\NVIDIA Corporation\Installer2\NvContainer.AIUser.{C0C87A9D-CEA8-442D-9670-32E9EB100391}
+NVIDIA App 11.0.7.247 | 11.0.7.247 | C:\Program Files\NVIDIA Corporation\Installer2\Display.NvApp.{75037895-C2CA-4AFE-ADD2-248983104511}
+NVIDIA Backend | 11.0.7.247 | C:\Program Files\NVIDIA Corporation\Installer2\Display.NvApp.NvBackend.{E86FF1C3-8427-4241-A532-5281E7A2B594}
+NVIDIA Container | 1.48 | C:\Program Files\NVIDIA Corporation\NvContainer
+NVIDIA Driver de áudio HD 1.4.5.7 | 1.4.5.7 | C:\Program Files\NVIDIA Corporation\Installer2\HDAudio.Driver.{397479E3-60AC-42D6-BA9F-22FC8ED2D8DF}
+NVIDIA Driver de gráficos 610.47 | 610.47 | C:\Program Files\NVIDIA Corporation\Installer2\Display.Driver.{16155C89-7285-4EE4-817E-01863E38AC15}
+NVIDIA FrameView SDK 1.7.12227.37421622 | 1.7.12227.37421622 | C:\Program Files\NVIDIA Corporation\FrameViewSDK
+NVIDIA Install Application | 2.1002.461.0 | C:\Program Files\NVIDIA Corporation\Installer2\InstallerCore
+NVIDIA LocalSystem Container | 1.48 | C:\Program Files\NVIDIA Corporation\Installer2\NvContainer.LocalSystem.{F677F277-3054-4C66-A2E6-9CF236722FE6}
+NVIDIA MessageBus 3 for NvApp | 3.21 | C:\Program Files\NVIDIA Corporation\Installer2\Display.NvApp.MessageBus.{9768D75F-95A0-4B35-BD45-84BDEC1EC65B}
+NVIDIA NvDLISR | 1.0 | C:\Program Files\NVIDIA Corporation\Installer2\NvDLISR.{E4E0659B-D039-4D7B-B130-C08D13DCB07F}
+NVIDIA Session Container | 1.48 | C:\Program Files\NVIDIA Corporation\Installer2\NvContainer.Session.{5241A5C4-86D9-4D0F-AB31-85AB574B7928}
+NVIDIA ShadowPlay 11.0.7.0 | 11.0.7.0 | C:\Program Files\NVIDIA Corporation\NVIDIA App\ShadowPlay
+NVIDIA Software do sistema PhysX 9.23.1019 | 9.23.1019 | C:\Program Files (x86)\NVIDIA Corporation\PhysX
+NVIDIA Telemetry Client | 19.5.13.0 | C:\Program Files\NVIDIA Corporation\NvTelemetry
+NVIDIA USBC Driver 1.52.831.832 | 1.52.831.832 | C:\Program Files\NVIDIA Corporation\Installer2\USBC.{DC47E80F-BA66-4C28-8C56-DD89E464B5D6}
+NVIDIA User Container | 1.48 | C:\Program Files\NVIDIA Corporation\Installer2\NvContainer.User.{7801D3C2-68BC-482F-8A70-914C202CEED1}
+NVIDIA Virtual Audio 4.65.0.12 | 4.65.0.12 | C:\Program Files\NVIDIA Corporation\Installer2\VirtualAudio.Driver.{4BF88A16-B62D-4E6F-8799-F1688BE5EAB3}
+NVIDIA Watchdog Plugin for NvContainer | 1.48 | C:\Program Files\NVIDIA Corporation\Installer2\NvPlugin.Watchdog.{B6871AED-40E1-4D16-846D-B22329B04BEF}
+OBS Studio | 32.2.2 | 
+Ollama version 0.33.3 | 0.33.3 | C:\Users\ADM_PESS\AppData\Local\Programs\Ollama\
+OpenCode 1.18.31 | 1.18.31 | 
+Python 3.12.9 (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Add to Path (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Core Interpreter (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Development Libraries (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Documentation (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Executables (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 pip Bootstrap (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Standard Library (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Tcl/Tk Support (64-bit) | 3.12.9150.0 | 
+Python 3.12.9 Test Suite (64-bit) | 3.12.9150.0 | 
+Python Launcher | 3.12.9150.0 | 
+Rclone | 1.75.1 | C:\Users\ADM_PESS\AppData\Local\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe
+Realtek Audio Driver | 6.0.9239.1 | C:\Program Files\Realtek\Audio\HDA
+Realtek Ethernet Controller Driver | 11.29.50.0202 | C:\Program Files (x86)\Realtek\NICDRV_8169
+Rockstar Games Launcher | 1.0.108.2970 | C:\Program Files\Rockstar Games\Launcher
+Rockstar Games SDK | 2.4.0.240 | 
+Tailscale | 1.102.4 | 
+Trapcode Suite |  | 
+Universe |  | 
+VFX Suite |  | 
+WinRAR 5.20 (64-bit) | 5.20.0 | C:\Program Files\WinRAR\
