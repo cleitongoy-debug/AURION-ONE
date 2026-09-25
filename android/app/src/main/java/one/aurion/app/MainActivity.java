@@ -32,6 +32,10 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.MediaStore;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -68,6 +72,7 @@ public class MainActivity extends Activity {
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
+    private static final int REQUEST_AUDIO = 418;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -83,6 +88,8 @@ public class MainActivity extends Activity {
     private final Map<String, JSONObject> scanResults = new LinkedHashMap<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Bridge bridge = new Bridge();
+    private SpeechRecognizer speechRecognizer;
+    private TextToSpeech tts;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -100,7 +107,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.6");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.7");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -126,6 +133,7 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        tts = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS) { tts.setLanguage(new Locale("pt","BR")); emit("aurionVoiceState", "{\"state\":\"ready\",\"message\":\"voz pronta\"}"); } });
         web.loadUrl("file:///android_asset/index.html");
     }
 
@@ -147,7 +155,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.6.0");
+            j.put("appVersion", "5.7.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -209,6 +217,31 @@ public class MainActivity extends Activity {
     private void emit(String function, Object payload) {
         final String js = "window." + function + "(" + JSONObject.quote(String.valueOf(payload)) + ")";
         runOnUiThread(() -> web.evaluateJavascript(js, null));
+    }
+
+    private void startVoiceRecognition() {
+        if (!has(Manifest.permission.RECORD_AUDIO)) { requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_AUDIO); return; }
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) { emit("aurionVoiceError", "Reconhecimento de voz indisponível neste aparelho"); return; }
+        try {
+            if (speechRecognizer != null) speechRecognizer.destroy();
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                public void onReadyForSpeech(Bundle b){ emit("aurionVoiceState", "{\"state\":\"listening\",\"message\":\"ouvindo\"}"); }
+                public void onBeginningOfSpeech(){}
+                public void onRmsChanged(float rms){}
+                public void onBufferReceived(byte[] b){}
+                public void onEndOfSpeech(){ emit("aurionVoiceState", "{\"state\":\"processing\",\"message\":\"processando voz\"}"); }
+                public void onError(int e){ emit("aurionVoiceError", "Falha no reconhecimento de voz · código "+e); }
+                public void onResults(Bundle b){ java.util.ArrayList<String> r=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION); if(r!=null&&!r.isEmpty())emit("aurionVoiceResult",r.get(0)); else emit("aurionVoiceError","Nenhuma fala reconhecida"); }
+                public void onPartialResults(Bundle b){}
+                public void onEvent(int t, Bundle b){}
+            });
+            Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pt-BR");
+            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false);
+            speechRecognizer.startListening(i);
+        } catch(Exception e){ emit("aurionVoiceError","Voz: "+e.getClass().getSimpleName()); }
     }
 
     private void requestBluetoothOrScan() {
@@ -509,6 +542,9 @@ public class MainActivity extends Activity {
 
     public final class Bridge {
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
+        @JavascriptInterface public void startVoice() { runOnUiThread(MainActivity.this::startVoiceRecognition); }
+        @JavascriptInterface public void stopVoice() { runOnUiThread(() -> { try { if (speechRecognizer != null) speechRecognizer.stopListening(); } catch (Exception ignored) {} emit("aurionVoiceState", "{\"state\":\"stopped\",\"message\":\"escuta parada\"}"); }); }
+        @JavascriptInterface public void speak(String text) { runOnUiThread(() -> { if (tts != null && text != null && !text.trim().isEmpty()) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aurion_reply"); }); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
@@ -562,7 +598,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.6.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.7.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -607,8 +643,10 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
         BandNotificationTest.onPermissionResult(this, code, results);
+        if (code == REQUEST_AUDIO) { boolean ok = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED; if (ok) startVoiceRecognition(); else emit("aurionVoiceError", "Permissão de microfone negada"); }
         if (code == REQUEST_BLUETOOTH) { boolean ok = true; for (int r : results) ok &= r == PackageManager.PERMISSION_GRANTED; if (ok) startBleScan(); else emit("aurionBandResult", "{\"status\":\"blocked\",\"message\":\"Permissão Bluetooth negada\"}"); }
     }
+    @Override protected void onDestroy() { try { if (speechRecognizer != null) speechRecognizer.destroy(); } catch(Exception ignored){} try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch(Exception ignored){} super.onDestroy(); }
     @Override public void onBackPressed() {
         if (web != null && web.getUrl() != null && !web.getUrl().startsWith("file:///android_asset/")) web.loadUrl("file:///android_asset/index.html");
         else if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
