@@ -1,0 +1,15 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'one.aurion.mobileai'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'one.aurion.mobileai'
+        minSdk 26
+        targetSdk 35
+        versionCode 100
+        versionName '1.0.0'
+    }
+}
+dependencies {
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+}
