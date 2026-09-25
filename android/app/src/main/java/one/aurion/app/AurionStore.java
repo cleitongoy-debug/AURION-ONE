@@ -152,7 +152,7 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized JSONObject accountStatus() {
         JSONObject j = new JSONObject();
-        for (String key : new String[]{"github","huggingface","openai","gemini","googleDrive"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
+        for (String key : new String[]{"github","huggingface","openai","gemini","googleDrive","groq","deepseek","pollinations","siliconflow","xai","neurotron","custom"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
         return j;
     }
 
