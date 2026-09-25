@@ -1,6 +1,6 @@
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 import json,urllib.request,urllib.error
-HOST='0.0.0.0';PORT=5060
+HOST='0.0.0.0';PORT=5057
 def req(url,method='GET',body=None):
     data=None if body is None else json.dumps(body).encode()
     r=urllib.request.Request(url,data=data,method=method,headers={'Content-Type':'application/json'})
