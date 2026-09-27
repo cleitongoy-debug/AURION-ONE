@@ -1,4 +1,4 @@
-# AURION ONE vNext 0.4 — painel paralelo
+# AURION ONE vNext 0.5 — painel paralelo
 
 Esta versão não altera `AURION_ONE.py`, `ADAPTA.py`, a base travada ou o painel
 estável. Foi feita para a reunião de 24/09/2026, como etapa verificável.
@@ -11,6 +11,11 @@ estável. Foi feita para a reunião de 24/09/2026, como etapa verificável.
 3. Ollama, ComfyUI e Open WebUI existentes são reutilizados. O iniciador tenta
    iniciar somente os executáveis conhecidos quando porta e endpoint estão livres.
 4. Escolha um modelo real no chat. O histórico é salvo em `data/aurion.sqlite3`.
+   O agente consulta trechos das fontes listadas em **CHAT & AGENTES**. O resumo
+   inicial fica em `knowledge/PROJECT_CONTEXT.md`. Se existir `C:\AURION-ONE`,
+   a Bíblia DOCX, LABORATORIO e reuniões conhecidas são indexados automaticamente.
+   Para importar outros documentos, coloque arquivos .md, .txt ou .docx em
+   `data/context` e clique **RELER FONTES** ou F5. Não copia nem altera originais.
 5. Para render, coloque uma cena `.c4d` configurada com Octane em
    `data/projects`, escolha a cena e clique **RENDER FRAME 0**. Saídas e logs
    ficam em `data/renders` e `data/logs`.
@@ -29,7 +34,8 @@ plugins, não faz `git pull` e não altera arquivos antigos.
 - Imagem/vídeo, Google Drive, GitHub OAuth, POCO e Mi Band aparecem como
   indisponíveis até haver integração e teste específico. Não há APK nesta etapa.
 - Nota manual e histórico persistem localmente. O chat ainda não indexa a Bíblia
-  nem memórias externas automaticamente.
+  quando o repositório `C:\AURION-ONE` não existe; nesse caso a aba mostra
+  exatamente as fontes carregadas. Nenhum documento do Drive é baixado sozinho.
 
 ## Testes e reversão
 
