@@ -6,8 +6,8 @@ android {
         applicationId 'one.aurion.mobile.superstudio'
         minSdk 26
         targetSdk 35
-        versionCode 65
-        versionName '6.5.0-mobile-photo-fix'
+        versionCode 66
+        versionName '6.6.0-mobile-photo-lab'
         manifestPlaceholders = [appLabel: 'AURION ONE']
     }
 }
