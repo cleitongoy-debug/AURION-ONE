@@ -51,3 +51,11 @@ Atualizado em 2026-09-18. Documento de passagem de contexto para ChatGPT, Gemini
 
 ### Pendências e limitações
 Este documento não é a totalidade da 'bíblia' histórica. Para recuperar fatos antigos, ler documentos originais e acrescentar somente o que for verificado. Nenhuma IA tem acesso automático às sessões pagas das outras. GitHub Pages, PC, relógio, login unificado e autorreparo completo NÃO estão confirmados como funcionais.
+
+
+## 27/09/2026 — AURION vNext paralelo (PR #26)
+- **Fonte:** reunião de autorização de 24/09, reuniões operacionais e referência visual principal. A base estável no `main` não foi alterada.
+- **Implementado nesta branch:** `vnext/` em 127.0.0.1:8766; HUD, sondas HTTP locais, seleção de modelos Ollama, chat e notas persistentes em SQLite, exportação de histórico, e render C4D frame 0 com log/progresso/PNG. Credenciais recebidas no chat não foram incorporadas.
+- **Testes por ferramenta:** cinco testes `unittest` passaram em Linux; compilação Python e checagem sintática JavaScript passaram. Nenhum teste Windows/GPU/render real ou comparação pixel a pixel com imagens originais foi feito neste ambiente.
+- **Pendente/bloqueado:** validar no PC, testar cena Octane, instalar/parear APK/POCO/Band, fluxo de geração ComfyUI, OAuth Drive/GitHub e memória da Bíblia. Tais módulos aparecem como indisponíveis. `F5` apenas reconsulta e não instala nem promove código.
+- **Reversão:** encerrar `START_VNEXT.cmd` e remover somente `vnext/` após preservar `vnext/data/` se desejado. Revisar PR #26 antes de qualquer merge.
