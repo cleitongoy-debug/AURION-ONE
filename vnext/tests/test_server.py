@@ -71,6 +71,30 @@ class LocalPanelTests(unittest.TestCase):
         after = len(json.load(self.request("/api/notes"))["notes"])
         self.assertEqual(before, after)
 
+    def test_chat_receives_retrieved_history(self):
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self, *_):
+                return b'{"message":{"content":"A reuniao esta no contexto."}}'
+
+        def fake_ollama(request, timeout):
+            captured.update(json.loads(request.data))
+            return FakeResponse()
+
+        with patch.object(server, "models", return_value=["local:one"]):
+            with patch.object(server.urllib.request, "urlopen", side_effect=fake_ollama):
+                result = server.chat("Qual nossa história AURION ANARK?", "local:one")
+        self.assertTrue(result["sources"])
+        self.assertIn("PROJECT_CONTEXT.md", captured["messages"][0]["content"])
+        self.assertTrue(any(row.get("sources") for row in json.load(self.request("/api/history"))["messages"]))
+
 
 if __name__ == "__main__":
     unittest.main()
