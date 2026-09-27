@@ -15,11 +15,8 @@ android {
         minSdk 26
         targetSdk 35
         versionCode 67
-        versionName '6.7.0-signed-install'
+        versionName '6.7.0-install-test'
         manifestPlaceholders = [appLabel: 'AURION ONE']
-    }
-    buildTypes {
-        debug { signingConfig signingConfigs.stableDebug }
     }
 }
 dependencies { implementation 'androidx.documentfile:documentfile:1.0.1' }
