@@ -1,0 +1,4 @@
+rawpy>=0.24,<1
+Pillow>=10,<13
+numpy>=1.26,<3
+exifread>=3,<4
