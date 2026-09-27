@@ -55,3 +55,48 @@ input,textarea,select{border-radius:11px!important}.primary{box-shadow:0 0 18px 
 
 /* PHOTO WORKFLOW v6.6 */
 .colorDots{display:flex;gap:10px;overflow:auto;padding:10px 2px}.colorDots button{min-width:42px;width:42px;height:42px;border-radius:50%;min-height:42px;padding:0}.colorDots button[data-band=red]{background:#d84b4b}.colorDots button[data-band=orange]{background:#e38a34}.colorDots button[data-band=yellow]{background:#d8c64b}.colorDots button[data-band=green]{background:#52b86a}.colorDots button[data-band=cyan]{background:#49bfc7}.colorDots button[data-band=blue]{background:#5479d9}.colorDots button[data-band=magenta]{background:#bd54c9}.colorDots button.active{outline:3px solid #f1d57d;outline-offset:2px}.gradeTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}.gradeTabs button{min-height:40px;font-size:9px;padding:4px}.gradeTabs button.active{border-color:#e2b53e;color:#e2b53e;background:#28210f}#gradeWheel{display:block;width:min(78vw,340px);height:auto;aspect-ratio:1;margin:8px auto 14px;border-radius:50%;box-shadow:0 0 28px #000 inset,0 0 20px #0008;touch-action:none}.toolTabs{scrollbar-width:none}.toolTabs::-webkit-scrollbar{display:none}@media(max-width:560px){main{padding-left:7px;padding-right:7px}.photoSticky{top:52px;padding:5px}.photoSticky .canvasWrap{height:36vh;min-height:190px}.toolTabs{top:auto;position:sticky;bottom:64px;padding:5px;background:#070808f2}.toolTabs button{min-width:74px;min-height:40px;font-size:8px}.sliderGrid{grid-template-columns:1fr}.projectRibbon{font-size:9px}.photoViewer .grid3 button,.photoViewer .grid button{min-height:38px;font-size:9px}}
+
+/* AURION QUANTUM MOBILE THEME v6.8 */
+:root{
+ --q-bg:#05040A;--q-panel:#0D0B14;--q-card:#181421;--q-gold:#B8902E;
+ --q-violet:#8B5CF6;--q-indigo:#4F46E5;--q-cyan:#00C8FF;--q-glow:#74F7FF;--q-text:#F3E7B3
+}
+body{background:
+ radial-gradient(circle at 82% -8%,#8B5CF622 0,transparent 28%),
+ radial-gradient(circle at 8% 18%,#00C8FF18 0,transparent 24%),
+ linear-gradient(180deg,#05040A,#090711 45%,#030307);
+ overflow-x:hidden}
+header{background:#07060df2;border-bottom:1px solid #4f4668;box-shadow:0 0 28px #8b5cf61f}
+.card{background:linear-gradient(145deg,#181421,#0D0B14 78%);border-color:#3d3553}
+.card:before{background:linear-gradient(90deg,#B8902E,#8B5CF6,#00C8FF);box-shadow:0 0 16px #74F7FF33}
+h1,.metric b,.sliderGrid output,.stage i{color:#F3E7B3}
+button,.btn{background:linear-gradient(180deg,#1b1727,#11101a);border-color:#51476d}
+button.primary{background:linear-gradient(120deg,#8B5CF6,#4F46E5 52%,#00C8FF);border-color:#74F7FF;color:white;box-shadow:0 0 22px #00c8ff22}
+.tabs{background:#07060df6;border-top-color:#4f4668}
+.tabs button.active{color:#fff;background:linear-gradient(180deg,#241a3b,#101626);border-color:#8B5CF6;box-shadow:inset 0 0 18px #00c8ff14,0 0 14px #8b5cf620}
+input,select,textarea{background:#090711;border-color:#49405f}
+input[type=range]{accent-color:#8B5CF6}
+.toolTabs button.active,.curveChannels button.active,.gradeTabs button.active{
+ border-color:#74F7FF;color:#F3E7B3;background:linear-gradient(180deg,#241a3b,#121321);
+ box-shadow:0 0 12px #00c8ff22
+}
+.photoSticky{background:#090711;border-color:#49405f}
+.photoTools{min-width:0}
+.page,.card,.photoWorkbench,.photoSticky,.photoTools,.toolPanel,.canvasWrap{max-width:100%;min-width:0}
+canvas,img,video{max-width:100%}
+@media(max-width:560px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ main{width:100%;max-width:100%;padding:7px 7px 90px}
+ .card{padding:10px;border-radius:12px}
+ .grid,.grid3,.sliderGrid{grid-template-columns:1fr!important}
+ .photoWorkbench{display:block}
+ .photoSticky{position:sticky;top:48px;z-index:15}
+ .photoSticky .canvasWrap{height:34vh;min-height:180px;overflow:hidden}
+ .photoSticky .canvasWrap canvas{max-width:100%;max-height:100%;width:auto;height:auto}
+ .toolTabs{position:sticky;bottom:64px;z-index:16;display:flex;overflow-x:auto;gap:5px;padding:6px;background:#080611f4}
+ .toolTabs button{flex:0 0 auto;min-width:76px;width:auto;min-height:42px;font-size:8px}
+ .curveCanvas,#gradeWheel{width:100%!important;max-width:100%}
+ .projectRibbon{font-size:8px}
+ header{padding:8px}
+ .brand{font-size:12px}.brand small{font-size:7px}
+}
