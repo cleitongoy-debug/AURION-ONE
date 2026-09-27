@@ -820,6 +820,310 @@ def program_open():
         return jsonify({"ok":True,"message":"Abertura solicitada; verifique a janela do programa.","program":kind}),202
     except (OSError,ValueError) as e:return jsonify({"error":"Falha ao abrir: "+str(e)[:180]}),502
 
+
+# ---------- AURION T8I / CR3 WORKSPACE ----------
+# Isolado do núcleo: RAW nunca é movido/apagado; ferramentas ficam em .venv_t8i.
+T8I_CFG_FILE = ROOT/"config"/"t8i_workspace.json"
+T8I_VENV = ROOT/".venv_t8i"
+T8I_WORKER = ROOT/"vnext"/"t8i_worker.py"
+T8I_REQUIREMENTS = ROOT/"vnext"/"t8i_requirements.txt"
+T8I_DEFAULT_WORKSPACE = PROJECT/"T8i"
+T8I_BUCKETS = ("RAW","PREVIEWS","EXPORTS","CONVERSAS","PRESETS","LOGS","BACKUPS","SIDECARS")
+
+def _atomic_json(path: Path, data: dict):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=path.with_suffix(path.suffix+".tmp")
+    tmp.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
+    os.replace(tmp,path)
+
+def _t8i_cfg():
+    default={"workspace":str(T8I_DEFAULT_WORKSPACE),"last_source":"","updated_at":None}
+    try:
+        if T8I_CFG_FILE.exists():
+            d=json.loads(T8I_CFG_FILE.read_text(encoding="utf-8"))
+            if isinstance(d,dict): default.update(d)
+    except Exception as e: log("T8i config: "+str(e),True)
+    return default
+
+def _t8i_workspace(create=False):
+    cfg=_t8i_cfg()
+    root=Path(str(cfg.get("workspace") or T8I_DEFAULT_WORKSPACE)).expanduser()
+    if create:
+        root.mkdir(parents=True,exist_ok=True)
+        for name in T8I_BUCKETS:(root/name).mkdir(parents=True,exist_ok=True)
+        info=root/"README_AURION_T8I.txt"
+        if not info.exists():
+            info.write_text(
+                "AURION ONE / Canon T8i\\n"
+                "RAW = cópias de trabalho; PREVIEWS/EXPORTS = derivados; CONVERSAS = histórico; "
+                "PRESETS = ajustes; SIDECARS = parâmetros + hash; BACKUPS = segurança.\\n"
+                "O original selecionado nunca é movido ou apagado.\\n",encoding="utf-8")
+    return root
+
+def _t8i_bucket(name,create=True):
+    key=str(name or "").upper()
+    if key not in T8I_BUCKETS: raise ValueError("Depósito T8i inválido")
+    p=_t8i_workspace(create=create)/key
+    if create:p.mkdir(parents=True,exist_ok=True)
+    return p
+
+def _safe_name(name):
+    return re.sub(r"[^A-Za-z0-9._-]+","_",str(name or "arquivo")).strip("._") or "arquivo"
+
+def _unique_path(folder: Path, name: str):
+    p=folder/_safe_name(name)
+    if not p.exists(): return p
+    stem,suf=p.stem,p.suffix
+    stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
+    n=folder/f"{stem}_{stamp}{suf}"
+    i=1
+    while n.exists():
+        n=folder/f"{stem}_{stamp}_{i}{suf}";i+=1
+    return n
+
+def _sha256(path: Path,block=1024*1024):
+    h=hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda:fh.read(block),b""):h.update(chunk)
+    return h.hexdigest()
+
+def _ps_dialog(kind="folder"):
+    if os.name!="nt": return ""
+    if kind=="folder":
+        ps=r'''Add-Type -AssemblyName System.Windows.Forms
+$d=New-Object System.Windows.Forms.FolderBrowserDialog
+$d.Description='Escolha o workspace da Canon T8i'
+$d.ShowNewFolderButton=$true
+if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.SelectedPath}'''
+    else:
+        ps=r'''Add-Type -AssemblyName System.Windows.Forms
+$d=New-Object System.Windows.Forms.OpenFileDialog
+$d.Title='Escolha um RAW/arquivo da Canon'
+$d.Filter='Canon RAW (*.CR3;*.CR2)|*.CR3;*.CR2|Imagens RAW|*.CR3;*.CR2;*.DNG;*.NEF;*.ARW;*.RAF;*.RW2;*.ORF|Todos os arquivos|*.*'
+if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.FileName}'''
+    try:
+        r=subprocess.run(["powershell","-NoProfile","-STA","-ExecutionPolicy","Bypass","-Command",ps],
+                         capture_output=True,text=True,timeout=300,encoding="utf-8",errors="ignore")
+        return (r.stdout or "").strip().splitlines()[-1].strip() if (r.stdout or "").strip() else ""
+    except Exception as e:
+        log("T8i seletor: "+str(e),True);return ""
+
+def _t8i_python():
+    return T8I_VENV/("Scripts/python.exe" if os.name=="nt" else "bin/python")
+
+def _t8i_tools_status():
+    py=_t8i_python()
+    status={"venv":str(T8I_VENV),"python":str(py),"ready":False,"worker":T8I_WORKER.exists(),
+            "requirements":T8I_REQUIREMENTS.exists(),"detail":""}
+    if py.exists():
+        try:
+            r=subprocess.run([str(py),"-c","import rawpy,PIL,numpy,exifread; print('rawpy='+rawpy.__version__+' Pillow='+PIL.__version__)"],
+                             capture_output=True,text=True,timeout=20,encoding="utf-8",errors="ignore")
+            status["ready"]=r.returncode==0
+            status["detail"]=(r.stdout or r.stderr or "").strip()[:500]
+        except Exception as e:status["detail"]=str(e)
+    return status
+
+def _t8i_install_tools():
+    if not T8I_WORKER.exists() or not T8I_REQUIREMENTS.exists():
+        return {"ok":False,"error":"Arquivos vnext/t8i_* não encontrados no pacote atual."}
+    py=_t8i_python()
+    steps=[]
+    try:
+        if not py.exists():
+            r=subprocess.run([sys.executable,"-m","venv",str(T8I_VENV)],capture_output=True,text=True,timeout=180,encoding="utf-8",errors="ignore")
+            steps.append({"step":"venv","code":r.returncode,"out":(r.stdout or r.stderr or "")[-1200:]})
+            if r.returncode!=0:return {"ok":False,"steps":steps,"error":"Falha ao criar .venv_t8i"}
+        r=subprocess.run([str(py),"-m","pip","install","--upgrade","pip"],capture_output=True,text=True,timeout=300,encoding="utf-8",errors="ignore")
+        steps.append({"step":"pip","code":r.returncode,"out":(r.stdout or r.stderr or "")[-1200:]})
+        r=subprocess.run([str(py),"-m","pip","install","-r",str(T8I_REQUIREMENTS)],capture_output=True,text=True,timeout=900,encoding="utf-8",errors="ignore")
+        steps.append({"step":"deps","code":r.returncode,"out":(r.stdout or r.stderr or "")[-1800:]})
+        st=_t8i_tools_status()
+        log("T8i ferramentas: "+("OK" if st["ready"] else "FALHOU"),not st["ready"])
+        return {"ok":st["ready"],"status":st,"steps":steps}
+    except Exception as e:return {"ok":False,"error":str(e),"steps":steps}
+
+def _t8i_worker(args,timeout=240):
+    st=_t8i_tools_status()
+    if not st["ready"]:raise RuntimeError("Ferramentas RAW não instaladas. Use INSTALAR / REPARAR FERRAMENTAS.")
+    cmd=[str(_t8i_python()),str(T8I_WORKER)]+[str(x) for x in args]
+    r=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout,encoding="utf-8",errors="ignore")
+    text=(r.stdout or "").strip().splitlines()
+    try:data=json.loads(text[-1]) if text else {"ok":False,"error":(r.stderr or "worker sem saída")}
+    except Exception:data={"ok":False,"error":(r.stdout or r.stderr or "")[-2000:]}
+    if r.returncode!=0 and data.get("ok",True):data={"ok":False,"error":data}
+    return data
+
+def _t8i_detect_camera():
+    devices=[]
+    if os.name=="nt":
+        try:
+            ps="Get-PnpDevice -PresentOnly | Where-Object { $_.FriendlyName -match 'Canon|EOS|T8i|850D' } | Select-Object Status,Class,FriendlyName,InstanceId | ConvertTo-Json -Compress"
+            r=subprocess.run(["powershell","-NoProfile","-ExecutionPolicy","Bypass","-Command",ps],capture_output=True,text=True,timeout=15,encoding="utf-8",errors="ignore")
+            raw=(r.stdout or "").strip()
+            if raw:
+                obj=json.loads(raw);devices=obj if isinstance(obj,list) else [obj]
+        except Exception as e:log("T8i PnP: "+str(e),True)
+    return devices
+
+def _t8i_list():
+    root=_t8i_workspace(create=True)
+    out={}
+    for b in T8I_BUCKETS:
+        p=root/b;rows=[]
+        try:
+            for x in sorted((y for y in p.iterdir() if y.is_file()),key=lambda z:z.stat().st_mtime,reverse=True)[:250]:
+                rows.append({"name":x.name,"path":str(x),"bytes":x.stat().st_size,
+                             "modified":datetime.fromtimestamp(x.stat().st_mtime).astimezone().isoformat(timespec="seconds")})
+        except Exception:pass
+        out[b]=rows
+    return out
+
+@app.get("/api/one/t8i/status")
+def api_one_t8i_status():
+    cfg=_t8i_cfg();root=_t8i_workspace(create=True)
+    return jsonify({"ok":True,"camera":_t8i_detect_camera(),"config":cfg,"workspace":str(root),
+                    "folders":{b:str(root/b) for b in T8I_BUCKETS},"tools":_t8i_tools_status(),"files":_t8i_list()})
+
+@app.post("/api/one/t8i/pick-workspace")
+def api_one_t8i_pick_workspace():
+    path=_ps_dialog("folder")
+    if not path:return jsonify({"ok":False,"cancelled":True,"message":"Seleção cancelada."})
+    root=Path(path).expanduser()
+    root.mkdir(parents=True,exist_ok=True)
+    cfg=_t8i_cfg();cfg.update({"workspace":str(root),"updated_at":datetime.now().astimezone().isoformat(timespec="seconds")})
+    _atomic_json(T8I_CFG_FILE,cfg);_t8i_workspace(create=True)
+    log("T8i workspace: "+str(root))
+    return jsonify({"ok":True,"workspace":str(root),"folders":{b:str(root/b) for b in T8I_BUCKETS}})
+
+@app.post("/api/one/t8i/pick-source")
+def api_one_t8i_pick_source():
+    path=_ps_dialog("file")
+    if not path:return jsonify({"ok":False,"cancelled":True,"message":"Seleção cancelada."})
+    p=Path(path)
+    cfg=_t8i_cfg();cfg["last_source"]=str(p);cfg["updated_at"]=datetime.now().astimezone().isoformat(timespec="seconds");_atomic_json(T8I_CFG_FILE,cfg)
+    return jsonify({"ok":True,"path":str(p),"name":p.name,"bytes":p.stat().st_size if p.exists() else 0})
+
+@app.post("/api/one/t8i/tools/install")
+def api_one_t8i_tools_install():
+    return jsonify(_t8i_install_tools())
+
+@app.post("/api/one/t8i/import")
+def api_one_t8i_import():
+    d=request.get_json(silent=True) or {};src=Path(str(d.get("path") or _t8i_cfg().get("last_source") or "")).expanduser()
+    if not src.exists() or not src.is_file():return jsonify({"ok":False,"error":"Origem não encontrada."}),404
+    if src.suffix.lower() not in {".cr3",".cr2",".dng",".nef",".arw",".raf",".rw2",".orf",".jpg",".jpeg",".png",".mp4",".mov"}:
+        return jsonify({"ok":False,"error":"Extensão não autorizada nesta aba."}),400
+    target=_unique_path(_t8i_bucket("RAW"),src.name)
+    shutil.copy2(src,target)  # cópia: origem permanece intacta
+    record={"source":str(src),"copy":str(target),"sha256":_sha256(src),"bytes":src.stat().st_size,
+            "imported_at":datetime.now().astimezone().isoformat(timespec="seconds")}
+    side=_t8i_bucket("SIDECARS")/(target.name+".import.json");_atomic_json(side,record)
+    log("T8i importou por CÓPIA: "+src.name)
+    return jsonify({"ok":True,**record})
+
+@app.post("/api/one/t8i/probe")
+def api_one_t8i_probe():
+    d=request.get_json(silent=True) or {};p=Path(str(d.get("path") or "")).expanduser()
+    if not p.exists():return jsonify({"ok":False,"error":"Arquivo não encontrado."}),404
+    try:return jsonify(_t8i_worker(["probe","--input",str(p)],90))
+    except Exception as e:return jsonify({"ok":False,"error":str(e)}),409
+
+def _t8i_params(d,fmt):
+    return {"format":fmt,"use_camera_wb":bool(d.get("use_camera_wb",True)),
+            "no_auto_bright":bool(d.get("no_auto_bright",False)),
+            "exposure":float(d.get("exposure",0) or 0),"brightness":float(d.get("brightness",1) or 1),
+            "contrast":float(d.get("contrast",1) or 1),"saturation":float(d.get("saturation",1) or 1),
+            "quality":int(d.get("quality",94) or 94)}
+
+@app.post("/api/one/t8i/preview")
+def api_one_t8i_preview():
+    d=request.get_json(silent=True) or {};src=Path(str(d.get("path") or "")).expanduser()
+    if not src.exists():return jsonify({"ok":False,"error":"RAW não encontrado."}),404
+    name=f"{src.stem}_{datetime.now():%Y%m%d_%H%M%S}_preview.jpg";out=_t8i_bucket("PREVIEWS")/name
+    params=_t8i_params(d,"JPEG")
+    try:r=_t8i_worker(["develop","--input",str(src),"--output",str(out),"--params-json",json.dumps(params,ensure_ascii=False)],300)
+    except Exception as e:return jsonify({"ok":False,"error":str(e)}),409
+    if r.get("ok"):
+        side=_t8i_bucket("SIDECARS")/(name+".json");_atomic_json(side,r)
+        r["url"]="/api/one/t8i/media/PREVIEWS/"+urllib.parse.quote(name)
+    return jsonify(r), (200 if r.get("ok") else 400)
+
+@app.post("/api/one/t8i/export")
+def api_one_t8i_export():
+    d=request.get_json(silent=True) or {};src=Path(str(d.get("path") or "")).expanduser()
+    if not src.exists():return jsonify({"ok":False,"error":"RAW não encontrado."}),404
+    fmt=str(d.get("format") or "JPEG").upper();ext={"JPEG":".jpg","JPG":".jpg","PNG":".png","TIFF":".tif"}.get(fmt)
+    if not ext:return jsonify({"ok":False,"error":"Formato permitido: JPEG, PNG ou TIFF."}),400
+    name=f"{src.stem}_{datetime.now():%Y%m%d_%H%M%S}{ext}";out=_t8i_bucket("EXPORTS")/name
+    params=_t8i_params(d,"JPEG" if fmt=="JPG" else fmt)
+    try:r=_t8i_worker(["develop","--input",str(src),"--output",str(out),"--params-json",json.dumps(params,ensure_ascii=False)],420)
+    except Exception as e:return jsonify({"ok":False,"error":str(e)}),409
+    if r.get("ok"):
+        side=_t8i_bucket("SIDECARS")/(name+".json");_atomic_json(side,r)
+        r["url"]="/api/one/t8i/media/EXPORTS/"+urllib.parse.quote(name)
+    return jsonify(r), (200 if r.get("ok") else 400)
+
+@app.get("/api/one/t8i/media/<bucket>/<path:name>")
+def api_one_t8i_media(bucket,name):
+    try:
+        base=_t8i_bucket(bucket).resolve();p=(base/name).resolve()
+        p.relative_to(base)
+        if not p.exists() or not p.is_file():return jsonify({"error":"Arquivo não encontrado"}),404
+        return send_file(str(p),conditional=True,max_age=0)
+    except Exception:return jsonify({"error":"Caminho inválido"}),400
+
+@app.get("/api/one/t8i/list")
+def api_one_t8i_list():return jsonify({"ok":True,"files":_t8i_list(),"workspace":str(_t8i_workspace(create=True))})
+
+@app.post("/api/one/t8i/conversation/draft")
+def api_one_t8i_conversation_draft():
+    d=request.get_json(silent=True) or {}
+    payload={"title":str(d.get("title") or "Conversa T8i")[:180],"text":str(d.get("text") or ""),
+             "updated_at":datetime.now().astimezone().isoformat(timespec="seconds")}
+    _atomic_json(_t8i_bucket("CONVERSAS")/"_RASCUNHO_ATUAL.json",payload)
+    return jsonify({"ok":True,"path":str(_t8i_bucket("CONVERSAS")/"_RASCUNHO_ATUAL.json")})
+
+@app.get("/api/one/t8i/conversation/draft")
+def api_one_t8i_conversation_draft_get():
+    p=_t8i_bucket("CONVERSAS")/"_RASCUNHO_ATUAL.json"
+    try:return jsonify({"ok":True,"draft":json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}})
+    except Exception:return jsonify({"ok":True,"draft":{}})
+
+@app.post("/api/one/t8i/conversation/save")
+def api_one_t8i_conversation_save():
+    d=request.get_json(silent=True) or {};title=str(d.get("title") or "Conversa T8i").strip()[:180];txt=str(d.get("text") or "")
+    stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
+    name=f"{stamp}_{_safe_name(title)[:80]}.md";p=_t8i_bucket("CONVERSAS")/name
+    p.write_text(f"# {title}\\n\\nSalvo: {datetime.now().astimezone().isoformat(timespec='seconds')}\\n\\n{txt}\\n",encoding="utf-8")
+    _atomic_json(_t8i_bucket("CONVERSAS")/(name+".json"),{"title":title,"text":txt,"saved_at":datetime.now().astimezone().isoformat(timespec="seconds")})
+    return jsonify({"ok":True,"name":name,"path":str(p)})
+
+@app.post("/api/one/t8i/preset/save")
+def api_one_t8i_preset_save():
+    d=request.get_json(silent=True) or {};name=_safe_name(str(d.get("name") or "preset"))[:80];params=d.get("params") or {}
+    p=_unique_path(_t8i_bucket("PRESETS"),name+".json")
+    _atomic_json(p,{"name":name,"params":params,"saved_at":datetime.now().astimezone().isoformat(timespec="seconds")})
+    return jsonify({"ok":True,"name":p.name,"path":str(p)})
+
+@app.post("/api/one/t8i/open-folder")
+def api_one_t8i_open_folder():
+    d=request.get_json(silent=True) or {};bucket=str(d.get("bucket") or "").upper()
+    try:p=_t8i_workspace(create=True) if bucket=="ROOT" else _t8i_bucket(bucket)
+    except Exception:return jsonify({"ok":False,"error":"Depósito inválido"}),400
+    if os.name=="nt":
+        try:os.startfile(str(p));return jsonify({"ok":True,"path":str(p)})
+        except Exception as e:return jsonify({"ok":False,"error":str(e)}),500
+    return jsonify({"ok":False,"error":"Abrir pasta automaticamente está disponível no Windows."}),409
+
+@app.post("/api/one/t8i/canon-software")
+def api_one_t8i_canon_software():
+    # Página oficial do modelo; instalação proprietária requer confirmação do operador no site da Canon.
+    url="https://cam.start.canon/C002/"
+    webbrowser.open(url)
+    return jsonify({"ok":True,"url":url,"message":"Página oficial Canon aberta. DPP/EOS Utility exigem instalação oficial."})
+
+
 # ---------- HTML ----------
 HTML = r"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AURION ONE · 2026.09.21-PALETA-FANTA</title><meta http-equiv="Cache-Control" content="no-store"><style>
 :root{--bg:#050505;--side:#101010;--p:#151116;--line:#513048;--txt:#ffffff;--muted:#c5b7c6;--cyan:#38cfff;--orange:#ff7300;--ok:#4cda86;--warn:#ffd166;--bad:#ff6277}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px Segoe UI,Arial,sans-serif;overflow:hidden}.app{display:flex;height:100vh}.side{width:200px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:16px 10px}.brand{font-size:20px;font-weight:800;color:var(--orange)}.brand small{display:block;font-size:10px;color:var(--muted);letter-spacing:2px}.nav button{width:100%;text-align:left;margin:4px 0;padding:10px;background:transparent;border:1px solid transparent;color:var(--muted);border-radius:8px;cursor:pointer;font-weight:600}.nav button:hover,.nav button.active{background:#2c1625;border-color:var(--orange);color:var(--txt)}.main{flex:1;min-width:0;display:flex;flex-direction:column}.top{height:56px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px}.content{flex:1;overflow:auto;padding:16px}.tab{display:none}.tab.active{display:block}.card{background:var(--p);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}.card h3{margin:0 0 10px;font-size:12px;color:var(--muted);letter-spacing:.4px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.dot.on{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.off{background:var(--bad)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.node{position:absolute;width:170px;background:linear-gradient(140deg,#281525,#0e0c11);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:grab;user-select:none;z-index:10}.node.dragging{z-index:100;opacity:.85;border-color:var(--orange)}.node .lbl{font-weight:700}.node .st{font-size:11px;color:var(--muted)}.port{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--orange);border:2px solid #000;cursor:crosshair;margin:2px}.port.out{background:var(--cyan)}#canvas{position:relative;height:560px;background:radial-gradient(circle at 50% 30%,#281323,#050505 70%);border:1px solid var(--line);border-radius:12px;overflow:hidden}svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}textarea,input,select{width:100%;background:#120d13;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;outline:none}textarea{min-height:120px}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}button{background:#291622;border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:600;margin:3px}button:hover{border-color:var(--orange)}button.primary{border-color:var(--orange);background:#b94e00;color:#fff}.chatlog{height:280px;overflow:auto;background:#0a0a0a;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}.msg{padding:8px;border-radius:8px;margin:5px 0;white-space:pre-wrap}.user{background:#1a1a1a}.agent{background:#141414;border-left:3px solid var(--orange)}.result{min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted)}.bar{height:8px;background:#1a1a1a;border-radius:99px;overflow:hidden}.fill{height:100%;width:0;background:var(--orange);transition:.2s}
@@ -836,7 +1140,7 @@ body{background:repeating-linear-gradient(0deg,transparent 0 39px,#ffffff05 40px
 <button class="active" onclick="tab('home',this)">PAINEL</button>
 <button onclick="tab('conn',this)">CONEXOES</button>
 <button onclick="tab('discovery',this)">SCAN GERAL & RASTROS</button><button onclick="tab('visual',this)">ESFERA & VISUAL</button><button onclick="tab('integrations',this)">LIGAÇÕES & DISPOSITIVOS</button><button onclick="tab('library',this)">SKILLS & BIBLIOTECA</button>
-<button onclick="tab('central',this)">+ CENTRAL & @</button><button onclick="tab('bridge',this);loadBridge()">MODELOS · ENCAIXE REAL</button><button onclick="tab('programas',this);loadPrograms()">PROGRAMAS & LOGIN</button><button onclick="tab('knowledge',this)">BÍBLIA & REUNIÕES</button><button onclick="tab('video',this)">VÍDEO & WORKFLOWS</button><button onclick="tab('marketing',this)">COR & MARKETING</button><button onclick="tab('editor',this)">EDITOR PY SEGURO</button><button onclick="tab('spaces',this)">ESPACOS</button><button onclick="tab('library',this);libraryLoad()">BIBLIOTECA</button><button onclick="tab('favorites',this);favLoad()">FAVORITOS & ESTUDOS</button><button onclick="tab('poco',this)">POCO · CONEXÃO</button><button onclick="tab('band',this)">MI BAND · CONEXÃO</button>
+<button onclick="tab('central',this)">+ CENTRAL & @</button><button onclick="tab('bridge',this);loadBridge()">MODELOS · ENCAIXE REAL</button><button onclick="tab('programas',this);loadPrograms()">PROGRAMAS & LOGIN</button><button onclick="tab('knowledge',this)">BÍBLIA & REUNIÕES</button><button onclick="tab('t8i',this);t8iLoad()">CANON T8i · CR3</button><button onclick="tab('video',this)">VÍDEO & WORKFLOWS</button><button onclick="tab('marketing',this)">COR & MARKETING</button><button onclick="tab('editor',this)">EDITOR PY SEGURO</button><button onclick="tab('spaces',this)">ESPACOS</button><button onclick="tab('library',this);libraryLoad()">BIBLIOTECA</button><button onclick="tab('favorites',this);favLoad()">FAVORITOS & ESTUDOS</button><button onclick="tab('poco',this)">POCO · CONEXÃO</button><button onclick="tab('band',this)">MI BAND · CONEXÃO</button>
 <button onclick="tab('school',this);schoolLoad()">ESCOLA · MAPA & SKILLS</button><button onclick="tab('sessions',this);studyLoad()">ESTUDO · RELÓGIO</button>
 <button onclick="tab('chat',this)">AGENTE</button>
 <button onclick="tab('image',this)">GERAR IMAGEM</button><button onclick="tab('comfy',this)">COMFYUI REAL</button><button onclick="tab('manager',this)">MANAGER / SCAN</button>
@@ -860,6 +1164,44 @@ body{background:repeating-linear-gradient(0deg,transparent 0 39px,#ffffff05 40px
 <section id="video" class="tab"><div class="card"><h3>GERAÇÃO DE VÍDEO · WORKFLOW API REAL</h3><p>Importe um workflow API de vídeo compatível com seus nós instalados. O painel envia ao ComfyUI, acompanha fila e mostra arquivos retornados; não inventa vídeo nem instala modelos.</p><button onclick="loadLocalWorkflows()">BUSCAR WORKFLOWS DO SCAN</button><select id="localWorkflowPick"><option value="">Selecione workflow encontrado</option></select><button onclick="readLocalWorkflow()">CARREGAR WORKFLOW LOCAL</button><input type="file" id="workflowFile" accept=".json"><button onclick="loadWorkflowFile()">+ CARREGAR WORKFLOW</button><textarea id="workflowJson" style="min-height:180px" placeholder="JSON workflow API do ComfyUI"></textarea><button onclick="submitWorkflow()">EXECUTAR WORKFLOW NO COMFYUI</button><button onclick="showCatalog()">@ MODELOS E NÓS RECONHECIDOS</button><pre id="workflowResult" style="white-space:pre-wrap;overflow:auto"></pre></div></section>
 <section id="marketing" class="tab"><div class="card"><h3>TRATAMENTO DE COR · COMPOSIÇÃO · MARKETING</h3><p>Briefing e biblioteca de prompts; execução de composição depende de workflow ComfyUI ou programa instalado.</p><div class="row"><select id="marketingFormat"><option>Instagram 1080x1350</option><option>Story 1080x1920</option><option>Vídeo 1920x1080</option><option>Quadrado 1080x1080</option></select><select id="marketingTone"><option>Fanta · laranja / roxo / preto</option><option>Azul / ciano / roxo</option><option>Neutro / institucional</option></select></div><textarea id="marketingBrief" placeholder="Produto, mensagem, público, materiais e referências"></textarea><button onclick="marketingPrompt()">CRIAR BRIEFING PARA O AGENTE</button><button onclick="tab('image')">GERAR IMAGEM</button><button onclick="tab('video')">WORKFLOW VÍDEO</button><pre id="marketingOutput" style="white-space:pre-wrap"></pre></div></section>
 <section id="library" class="tab"><div class="card"><h3>◈ BIBLIOTECA · CATÁLOGO CRUZADO</h3><p>Metadados de discos acessíveis; pares por nome semelhante são hipóteses, não provas. Nenhum arquivo é executado ou enviado ao Git.</p><button onclick="libraryScan()">CATALOGAR DISCO LOCAL E EXTERNO</button><button onclick="libraryLoad()">ABRIR CATÁLOGO SALVO</button><input id="libraryQuery" placeholder="Filtrar catálogo" oninput="libraryRender()"><pre id="librarySummary">Aguardando...</pre><div id="libraryItems"></div></div></section><section id="favorites" class="tab"><div class="card"><h3>FAVORITOS & ESTUDOS · INVENTÁRIO PRIVADO</h3><p>Importa marcadores Chrome/Edge/Brave, sem ler cookies, senhas ou histórico. Clique ESTUDAR AGORA para abrir o curso e iniciar o relógio; finalização é manual. Favorito não comprova compra, matrícula nem conclusão. Dados permanecem neste PC.</p><button onclick="favImport()">LOCALIZAR E IMPORTAR FAVORITOS</button><button onclick="favLoad()">ATUALIZAR LISTA</button><input id="favQuery" placeholder="Filtrar título, pasta, endereço" oninput="favRender()"><select id="favFilter" onchange="favRender()"><option value="">Todos</option><option value="curso">Cursos identificados para revisão</option><option value="outro">Outros favoritos</option></select><p id="favSummary"></p><div id="favItems"></div><pre id="favFeedback" style="white-space:pre-wrap"></pre></div></section><section id="editor" class="tab"><div class="card"><h3>EDITOR PY · BACKUP + PRÉVIA + PROPOSTA</h3><p>Não altera o PY em execução. Prévia compila sem executar; salva backup e proposta separados para teste e retorno. Base ADAPTA protegida.</p><button onclick="sourceInfo()">IDENTIFICAR VERSÃO</button><div class="card"><h3>EVOLUÇÃO · ESTUDAR PY ANTIGOS</h3><p>Busca limitada nas pastas conhecidas, compara funções, preserva a versão atual e cria uma proposta a partir de uma versão histórica selecionada. F5 reconsulta o estudo; não executa código desconhecido nem substitui o painel automaticamente.</p><button onclick="evolveStudy()">ESTUDAR VERSÕES E SKILLS</button><select id="evolveVersions" style="width:100%"><option value="">Clique em ESTUDAR VERSÕES</option></select><button onclick="evolveStage()">CRIAR NOVA VERSÃO + BACKUP</button><pre id="evolveResult" style="white-space:pre-wrap;max-height:320px;overflow:auto"></pre></div><textarea id="sourceCode" style="min-height:200px" placeholder="Cole a versão proposta do AURION_ONE.py (não ADAPTA)"></textarea><button onclick="sourcePreview()">1 · VERIFICAR E COMPARAR</button><button onclick="sourceStage()">2 · SALVAR BACKUP + PROPOSTA</button><pre id="sourceResult" style="white-space:pre-wrap;max-height:45vh;overflow:auto"></pre></div></section>
+
+<section id="t8i" class="tab"><div class="card"><h3>CANON T8i · LAB RAW / CR3 · SEM PERDER ORIGINAL</h3>
+<p><b>CR3 é RAW fotográfico.</b> A EOS Rebel T8i / 850D grava fotos RAW em .CR3. Vídeo/Log é um fluxo separado; esta área não chama CR3 de “Log”.</p>
+<div class="hero">
+  <div class="hudcard"><h3>WORKSPACE</h3><strong id="t8iWorkspace">não escolhido</strong><p>Você escolhe onde salvar. AURION cria depósitos sem mover originais.</p><button class="primary" onclick="t8iPickWorkspace()">ESCOLHER / CRIAR PASTA 🗂️</button><button onclick="t8iOpen('ROOT')">ABRIR PASTA</button></div>
+  <div class="hudcard"><h3>FERRAMENTAS RAW</h3><strong id="t8iTools">verificando...</strong><p>Ambiente isolado .venv_t8i: rawpy + LibRaw, Pillow, NumPy e ExifRead.</p><button class="primary" onclick="t8iInstallTools()">INSTALAR / REPARAR FERRAMENTAS</button><button onclick="t8iCanonSoftware()">CANON DPP / EOS UTILITY ↗</button></div>
+  <div class="hudcard"><h3>CÂMERA</h3><strong id="t8iCamera">verificando...</strong><p>Detecção PnP. Conexão detectada não significa captura remota ativa.</p><button onclick="t8iLoad()">REDETECTAR</button></div>
+  <div class="hudcard"><h3>SEGURANÇA</h3><strong>ORIGINAL PRESERVADO</strong><p>Importação por cópia + SHA-256 + sidecar. Exportações e previews ganham nome novo.</p></div>
+</div>
+
+<div class="grid2">
+ <div class="card"><h3>1 · IMPORTAR RAW POR CÓPIA</h3>
+   <div class="row"><input id="t8iSource" placeholder="Escolha o .CR3 no computador"><button onclick="t8iPickSource()">ESCOLHER RAW</button></div>
+   <button class="primary" onclick="t8iImport()">COPIAR PARA RAW (NUNCA MOVER)</button><button onclick="t8iProbe()">LER METADADOS RAW</button>
+   <pre id="t8iImportResult" style="white-space:pre-wrap;max-height:250px;overflow:auto">Aguardando.</pre>
+ </div>
+ <div class="card"><h3>2 · REVELAÇÃO / PREVIEW</h3>
+   <label>Exposição EV (-5 a +5)</label><input id="t8iExposure" type="number" step="0.1" min="-5" max="5" value="0">
+   <div class="row"><div><label>Brilho</label><input id="t8iBrightness" type="number" step="0.05" min="0" max="3" value="1"></div><div><label>Contraste</label><input id="t8iContrast" type="number" step="0.05" min="0" max="3" value="1"></div><div><label>Saturação</label><input id="t8iSaturation" type="number" step="0.05" min="0" max="3" value="1"></div></div>
+   <label><input id="t8iCameraWB" type="checkbox" checked style="width:auto"> usar balanço de branco da câmera</label>
+   <button class="primary" onclick="t8iPreview()">GERAR PREVIEW</button>
+   <select id="t8iFormat"><option>JPEG</option><option>PNG</option><option>TIFF</option></select><button onclick="t8iExport()">EXPORTAR DERIVADO</button>
+   <div id="t8iPreviewBox" class="result">Preview aparece aqui; o CR3 continua intacto.</div>
+ </div>
+</div>
+
+<div class="grid2">
+ <div class="card"><h3>DEPÓSITOS DO PROJETO</h3><div id="t8iFolders"></div><div class="row"><button onclick="t8iOpen('RAW')">RAW</button><button onclick="t8iOpen('PREVIEWS')">PREVIEWS</button><button onclick="t8iOpen('EXPORTS')">EXPORTS</button><button onclick="t8iOpen('CONVERSAS')">CONVERSAS</button></div><div class="row"><button onclick="t8iOpen('PRESETS')">PRESETS</button><button onclick="t8iOpen('LOGS')">LOGS</button><button onclick="t8iOpen('BACKUPS')">BACKUPS</button><button onclick="t8iOpen('SIDECARS')">SIDECARS</button></div><pre id="t8iFiles" style="white-space:pre-wrap;max-height:280px;overflow:auto"></pre></div>
+ <div class="card"><h3>CONVERSAS / CADERNO T8i · SALVAMENTO DUPLO</h3>
+   <input id="t8iConvTitle" placeholder="Nome desta conversa / ensaio">
+   <textarea id="t8iConvText" style="min-height:230px" placeholder="Cole aqui conversa, receita de cor, decisão, observações do ensaio. O rascunho é salvo automaticamente."></textarea>
+   <button class="primary" onclick="t8iSaveConversation()">💾 SALVAR SNAPSHOT AGORA</button><button onclick="t8iSaveDraft()">SALVAR RASCUNHO</button>
+   <div class="row"><input id="t8iPresetName" placeholder="Nome do preset"><button onclick="t8iSavePreset()">SALVAR AJUSTES COMO PRESET</button></div>
+   <p id="t8iConvStatus">Rascunho: aguardando.</p>
+ </div>
+</div>
+<div class="card"><h3>VÍDEO / “LOG”</h3><p>Aba separada do RAW fotográfico. Para MP4/MOV, use VÍDEO & WORKFLOWS. Não aplicamos LUT C‑Log automaticamente a um CR3.</p><button onclick="tab('video')">ABRIR VÍDEO & WORKFLOWS</button></div>
+</div></section>
 </div></main></div>
 <div id="aurionFloat" class="aurionFloat"><div class="floatHead" id="floatHandle"><b>◉ AURION · AGENTE LOCAL</b><span><button onclick="floatToggle()" title="Expandir/recolher">▣</button><button onclick="floatClose()" title="Recolher">−</button></span></div><div id="floatBody"><div id="floatLog" class="floatLog">Conectando ao Ollama somente ao enviar mensagem. Ações no PC exigem autorização e integração própria.</div><div class="row"><select id="floatModel"><option value="">Detectando modelos...</option></select></div><textarea id="floatInput" placeholder="Pergunte ao seu agente Ollama" style="min-height:55px"></textarea><button class="primary" onclick="floatSend()">ENVIAR AO AGENTE</button></div></div><button id="floatBubble" onclick="floatClose()" title="Abrir agente">◉ AGENTE</button>
 <script>
@@ -1119,6 +1461,26 @@ if(localStorage.getItem('aurion-float-open')==='0'){document.getElementById('aur
 floatModels();studyLoad();schoolLoad();
 
 hubInit();listKnowledge();loadPrograms();loadBridge();
+
+let T8I_LAST_IMPORTED='';
+function t8iParams(){return {path:T8I_LAST_IMPORTED||document.getElementById('t8iSource').value,exposure:Number(document.getElementById('t8iExposure').value||0),brightness:Number(document.getElementById('t8iBrightness').value||1),contrast:Number(document.getElementById('t8iContrast').value||1),saturation:Number(document.getElementById('t8iSaturation').value||1),use_camera_wb:document.getElementById('t8iCameraWB').checked,quality:94}}
+async function t8iLoad(){try{const d=await(await fetch('/api/one/t8i/status',{cache:'no-store'})).json();document.getElementById('t8iWorkspace').textContent=d.workspace||'não escolhido';document.getElementById('t8iTools').textContent=d.tools?.ready?'PRONTO · '+(d.tools.detail||''):'NÃO INSTALADO';document.getElementById('t8iCamera').textContent=(d.camera||[]).length?((d.camera[0].FriendlyName||'Canon detectada')+' · '+(d.camera[0].Status||'')):'NÃO DETECTADA';document.getElementById('t8iFolders').innerHTML=Object.entries(d.folders||{}).map(([k,v])=>'<div class="card"><b>'+esc(k)+'</b><br><small>'+esc(v)+'</small></div>').join('');t8iRenderFiles(d.files||{});const dr=await(await fetch('/api/one/t8i/conversation/draft')).json();if(dr.draft&&Object.keys(dr.draft).length){document.getElementById('t8iConvTitle').value=dr.draft.title||'';document.getElementById('t8iConvText').value=dr.draft.text||'';document.getElementById('t8iConvStatus').textContent='Rascunho recuperado: '+(dr.draft.updated_at||'')}}catch(e){document.getElementById('global').textContent='T8i: '+e.message}}
+function t8iRenderFiles(files){const parts=[];for(const k of ['RAW','PREVIEWS','EXPORTS','CONVERSAS','PRESETS']){const rows=(files[k]||[]).slice(0,20);parts.push(k+'\\n'+(rows.length?rows.map(x=>'  '+x.name).join('\\n'):'  vazio'))}document.getElementById('t8iFiles').textContent=parts.join('\\n\\n')}
+async function t8iPickWorkspace(){const d=await(await fetch('/api/one/t8i/pick-workspace',{method:'POST'})).json();if(d.ok){document.getElementById('t8iWorkspace').textContent=d.workspace;t8iLoad()}else if(!d.cancelled)alert(d.error||d.message||'Falha')}
+async function t8iPickSource(){const d=await(await fetch('/api/one/t8i/pick-source',{method:'POST'})).json();if(d.ok){document.getElementById('t8iSource').value=d.path;document.getElementById('t8iImportResult').textContent='Selecionado: '+d.path}else if(!d.cancelled)alert(d.error||d.message||'Falha')}
+async function t8iInstallTools(){document.getElementById('t8iTools').textContent='INSTALANDO...';const d=await(await fetch('/api/one/t8i/tools/install',{method:'POST'})).json();document.getElementById('t8iImportResult').textContent=JSON.stringify(d,null,2);await t8iLoad()}
+async function t8iImport(){const path=document.getElementById('t8iSource').value.trim();if(!path)return alert('Escolha um RAW primeiro.');const d=await(await fetch('/api/one/t8i/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})})).json();document.getElementById('t8iImportResult').textContent=JSON.stringify(d,null,2);if(d.ok){T8I_LAST_IMPORTED=d.copy;document.getElementById('t8iSource').value=d.copy;await t8iLoad()}}
+async function t8iProbe(){const path=T8I_LAST_IMPORTED||document.getElementById('t8iSource').value.trim();if(!path)return;const d=await(await fetch('/api/one/t8i/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})})).json();document.getElementById('t8iImportResult').textContent=JSON.stringify(d,null,2)}
+async function t8iPreview(){const p=t8iParams();if(!p.path)return alert('Importe ou selecione o RAW.');const box=document.getElementById('t8iPreviewBox');box.textContent='Revelando preview...';const d=await(await fetch('/api/one/t8i/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();if(d.ok&&d.url)box.innerHTML='<div><img src="'+d.url+'?t='+Date.now()+'" style="max-width:100%;max-height:65vh;border:1px solid var(--line)"><pre>'+esc(JSON.stringify({output:d.output,sha256_source:d.sha256_source,params:d.params},null,2))+'</pre></div>';else box.textContent=d.error||'Falha';t8iLoad()}
+async function t8iExport(){const p=t8iParams();p.format=document.getElementById('t8iFormat').value;const d=await(await fetch('/api/one/t8i/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();document.getElementById('t8iImportResult').textContent=JSON.stringify(d,null,2);if(d.ok){document.getElementById('global').textContent='T8i exportado: '+d.output;t8iLoad()}}
+async function t8iSaveDraft(){const d=await(await fetch('/api/one/t8i/conversation/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:document.getElementById('t8iConvTitle').value,text:document.getElementById('t8iConvText').value})})).json();document.getElementById('t8iConvStatus').textContent=d.ok?'Rascunho salvo no disco: '+new Date().toLocaleTimeString():(d.error||'Falha')}
+async function t8iSaveConversation(){await t8iSaveDraft();const d=await(await fetch('/api/one/t8i/conversation/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:document.getElementById('t8iConvTitle').value,text:document.getElementById('t8iConvText').value})})).json();document.getElementById('t8iConvStatus').textContent=d.ok?'Snapshot permanente: '+d.name:(d.error||'Falha');t8iLoad()}
+async function t8iSavePreset(){const params=t8iParams();delete params.path;const d=await(await fetch('/api/one/t8i/preset/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('t8iPresetName').value,params})})).json();document.getElementById('t8iConvStatus').textContent=d.ok?'Preset salvo: '+d.name:(d.error||'Falha');t8iLoad()}
+async function t8iOpen(bucket){const d=await(await fetch('/api/one/t8i/open-folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bucket})})).json();if(!d.ok)alert(d.error||'Falha')}
+async function t8iCanonSoftware(){const d=await(await fetch('/api/one/t8i/canon-software',{method:'POST'})).json();document.getElementById('global').textContent=d.message||'Canon'}
+let _t8iDraftTimer=null;document.addEventListener('input',e=>{if(e.target?.id==='t8iConvText'||e.target?.id==='t8iConvTitle'){clearTimeout(_t8iDraftTimer);_t8iDraftTimer=setTimeout(()=>{if(document.getElementById('t8i')?.classList.contains('active'))t8iSaveDraft()},1500)}});
+
+
 </script></body></html>"""
 
 # Módulo de evolução: estudo sob demanda, sem executar versões antigas.
