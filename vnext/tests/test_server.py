@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import server
+from sources import SourceIndex
 
 
 class LocalPanelTests(unittest.TestCase):
@@ -56,6 +57,19 @@ class LocalPanelTests(unittest.TestCase):
     def test_memory_persists(self):
         self.assertTrue(json.load(self.request("/api/notes", "POST", {"text": "teste local"}))["saved"])
         self.assertTrue(any(row["text"] == "teste local" for row in json.load(self.request("/api/notes"))["notes"]))
+
+    def test_project_history_is_indexed(self):
+        found = server.SOURCES.search("Nossa história AURION ANARK")
+        self.assertTrue(found)
+        self.assertTrue(any("PROJECT_CONTEXT.md" == row["source"] for row in found))
+        summary = json.load(self.request("/api/sources"))
+        self.assertGreaterEqual(summary["chunks"], 1)
+
+    def test_refresh_keeps_notes_and_history(self):
+        before = len(json.load(self.request("/api/notes"))["notes"])
+        self.request("/api/sources/refresh", "POST", {})
+        after = len(json.load(self.request("/api/notes"))["notes"])
+        self.assertEqual(before, after)
 
 
 if __name__ == "__main__":
