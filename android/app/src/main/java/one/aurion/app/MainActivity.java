@@ -341,6 +341,26 @@ public class MainActivity extends Activity {
         startActivityForResult(i, PICK_WORKSPACE);
     }
 
+    private void createProjectFolders(String projectName) {
+        JSONObject out = new JSONObject();
+        try {
+            String tree = getSharedPreferences("aurion_workspace", MODE_PRIVATE).getString("tree", "");
+            if (tree == null || tree.isEmpty()) throw new IllegalStateException("Use LIGAR PASTA primeiro e escolha uma pasta visível no celular");
+            DocumentFile root = DocumentFile.fromTreeUri(this, Uri.parse(tree));
+            if (root == null || !root.canWrite()) throw new IllegalStateException("Pasta base sem permissão de escrita");
+            String safe = (projectName == null ? "Projeto" : projectName.trim()).replaceAll("[\\\\/:*?\"<>|]", "_");
+            if (safe.isEmpty()) safe = "Projeto";
+            DocumentFile project = root.findFile(safe);
+            if (project == null || !project.isDirectory()) project = root.createDirectory(safe);
+            if (project == null) throw new IllegalStateException("Não foi possível criar a pasta do projeto");
+            String[] dirs = {"Originais","Selecao","Em_Edicao","Revisao","Aprovadas","Exportadas","Entrega"};
+            for (String d : dirs) if (project.findFile(d) == null) project.createDirectory(d);
+            out.put("ok", true).put("name", safe).put("uri", project.getUri().toString())
+               .put("display", "Pasta base escolhida / " + safe + " / {Originais, Selecao, Em_Edicao, Revisao, Aprovadas, Exportadas, Entrega}");
+        } catch (Exception e) { try { out.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+        emit("aurionProjectFolderResult", out.toString());
+    }
+
     private void capturePhoto() {
         try {
             ContentValues values = new ContentValues();
@@ -562,6 +582,7 @@ public class MainActivity extends Activity {
             catch (Exception e) { emit("aurionComfyResult", "{\"ok\":false,\"error\":\"Workflow JSON inválido\"}"); }
         }).start(); }
         @JavascriptInterface public void chooseWorkspace() { runOnUiThread(MainActivity.this::chooseWorkspace); }
+        @JavascriptInterface public void createProjectFolders(String projectName) { new Thread(() -> MainActivity.this.createProjectFolders(projectName)).start(); }
         @JavascriptInterface public void capturePhoto() { runOnUiThread(MainActivity.this::capturePhoto); }
         @JavascriptInterface public void convertImage(String format, int quality) { runOnUiThread(() -> chooseImageForConversion(format, quality)); }
         @JavascriptInterface public void saveEditedImage(String format, int quality, String dataUrl) { new Thread(() -> emit("aurionEditorResult", MediaTools.saveDataImage(MainActivity.this, format, quality, dataUrl).toString())).start(); }
