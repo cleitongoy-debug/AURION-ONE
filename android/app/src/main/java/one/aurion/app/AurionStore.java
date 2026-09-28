@@ -47,6 +47,15 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized boolean remove(long id) { return getWritableDatabase().delete("records", "id=?", new String[]{String.valueOf(id)}) > 0; }
 
+    synchronized long upsertReference(String title, String body, String meta) {
+        long now = System.currentTimeMillis();
+        ContentValues v = new ContentValues(); v.put("body", body); v.put("meta", meta); v.put("updated_at", now);
+        int updated = getWritableDatabase().update("records", v, "type=? AND title=?", new String[]{"reference", title});
+        return updated > 0 ? updated : add("reference", title, body, meta);
+    }
+
+
+
     synchronized JSONArray list(String type, String query, int limit) {
         JSONArray out = new JSONArray();
         String selection = null; java.util.ArrayList<String> args = new java.util.ArrayList<>();
@@ -114,7 +123,7 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized JSONObject accountStatus() {
         JSONObject j = new JSONObject();
-        for (String key : new String[]{"github","huggingface","openai","gemini","googleDrive"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
+        for (String key : new String[]{"github","huggingface","openai","groq","nvidia","gemini","googleDrive"}) try { j.put(key, !getSecret(key).isEmpty()); } catch (Exception ignored) { }
         return j;
     }
 

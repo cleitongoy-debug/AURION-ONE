@@ -19,7 +19,7 @@ DEFAULT_PANEL = Path(r"C:\Users\ADM_PESS\Desktop\painelseguro#1 - Copia")
 BASE_ROOT = Path(os.environ.get("AURION_PANEL_ROOT", str(DEFAULT_PANEL if DEFAULT_PANEL.exists() else MODULE_ROOT))).resolve()
 DATA_ROOT = BASE_ROOT / "_aurion_superstudio"
 WORKSPACE = DATA_ROOT / "workspace"
-for name in ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS", "PROJETOS", "IMPORTS"):
+for name in ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS", "PROJETOS", "IMPORTS", "CERTIFICADOS"):
     (WORKSPACE / name).mkdir(parents=True, exist_ok=True)
 ensure_3d_workspace(WORKSPACE)
 
@@ -128,6 +128,49 @@ def records():
         return jsonify(ok=False, error="Título obrigatório."), 400
     row = STORE.add(str(body.get("kind", "memory")), str(body["title"]), str(body.get("body", "")), body.get("metadata") or {})
     return jsonify(ok=True, record=row), 201
+
+
+@app.route("/api/mobile/dedication", methods=["GET", "POST"])
+def dedication():
+    if request.method == "POST":
+        body = request.get_json(silent=True) or {}
+        events = body.get("events", [])
+        if not isinstance(events, list) or len(events) > 200:
+            return jsonify(ok=False, error="Lote inválido (máximo 200 registros)."), 400
+        inserted = STORE.put_dedication(events)
+        return jsonify(ok=True, inserted=inserted, events=STORE.dedication())
+    return jsonify(ok=True, events=STORE.dedication())
+
+
+@app.route("/api/mobile/certificates", methods=["GET", "POST"])
+def certificates():
+    if request.method == "GET":
+        return jsonify(ok=True, certificates=STORE.list("certificate", limit=500))
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename:
+        return jsonify(ok=False, error="Escolha o certificado ou print."), 400
+    original = uploaded.filename
+    if Path(original).suffix.lower() not in {".pdf", ".png", ".jpg", ".jpeg", ".webp"}:
+        return jsonify(ok=False, error="Formato aceito: PDF, PNG, JPG ou WebP."), 400
+    target = unique_path(WORKSPACE / "CERTIFICADOS", original)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    uploaded.save(target)
+    try:
+        hours = float(request.form.get("hours", "0") or 0)
+        if not 0 <= hours <= 100000:
+            raise ValueError()
+    except ValueError:
+        target.unlink(missing_ok=True)
+        return jsonify(ok=False, error="Horas documentadas inválidas."), 400
+    metadata = {"course": request.form.get("course", "")[:200], "project": request.form.get("project", "")[:200],
+                "hours": hours, "hoursBasis": request.form.get("hours_basis", "não indicado")[:200],
+                "sha256": sha256(target), "bytes": target.stat().st_size, "file": str(target), "source": "pc"}
+    for existing in STORE.list("certificate", limit=500):
+        if existing["metadata"].get("sha256") == metadata["sha256"]:
+            target.unlink(missing_ok=True)
+            return jsonify(ok=True, certificate=existing, duplicate=True)
+    record = STORE.add("certificate", original, "Documento fornecido pelo operador; dados aguardam conferência humana.", metadata)
+    return jsonify(ok=True, certificate=record), 201
 
 
 @app.post("/api/files/import")

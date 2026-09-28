@@ -3,14 +3,15 @@ android {
     namespace 'one.aurion.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'one.aurion.mobile.superstudio'
+        applicationId 'one.aurion.poco.v6'
         minSdk 26
         targetSdk 35
-        versionCode 50
-        versionName '5.0.0'
-        manifestPlaceholders = [appLabel: 'AURION SUPER STUDIO']
+        versionCode 65
+        versionName '6.5.0'
+        manifestPlaceholders = [appLabel: 'AURION ONE · POCO']
     }
 }
 dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation 'androidx.core:core:1.13.1'
 }
