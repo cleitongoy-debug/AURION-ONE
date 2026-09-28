@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import secrets
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 
 from . import __version__
 from .creative3d import BLENDER_EXE, C4D_EXE, blender_status, c4d_status, ensure_3d_workspace, launch, open_path, start_blender_render
@@ -187,7 +189,77 @@ def t8i_develop():
     except RuntimeError as exc:
         return jsonify(ok=False, error=str(exc), imported=str(source)), 424
     STORE.add("evidence", f"CR3 revelado: {source.name}", json.dumps(result, ensure_ascii=False), {})
-    return jsonify(ok=True, result=result, original=str(source))
+    return jsonify(ok=True, result=result, original=str(source), download_name=output.name)
+
+
+def _t8i_dependency_state() -> dict:
+    modules = ("rawpy", "numpy", "imageio", "tifffile")
+    return {name: bool(importlib.util.find_spec(name)) for name in modules}
+
+
+@app.get("/api/mobile/t8i/status")
+def t8i_status_mobile():
+    state = _t8i_dependency_state()
+    python_exe = MODULE_ROOT / ".venv" / "Scripts" / "python.exe"
+    return jsonify(
+        ok=True,
+        ready=all(state.values()),
+        modules=state,
+        python=str(python_exe),
+        python_exists=python_exe.is_file(),
+        raw_dir=str(WORKSPACE / "RAW"),
+        export_dir=str(WORKSPACE / "EXPORTS"),
+        note="CR3 é RAW de fotografia; revelação usa rawpy/LibRaw e preserva o original.",
+    )
+
+
+@app.post("/api/mobile/t8i/deps/install")
+def t8i_install_deps_mobile():
+    body = request.get_json(silent=True) or {}
+    if body.get("confirm") != "INSTALAR_T8I":
+        return jsonify(ok=False, confirmation_required=True, error="Confirmação explícita exigida: INSTALAR_T8I"), 409
+    python_exe = MODULE_ROOT / ".venv" / "Scripts" / "python.exe"
+    requirements = MODULE_ROOT / "requirements-t8i.txt"
+    if not python_exe.is_file():
+        return jsonify(ok=False, error="Ambiente .venv do Super Studio não encontrado. Execute a instalação base primeiro."), 424
+    if not requirements.is_file():
+        return jsonify(ok=False, error="requirements-t8i.txt não encontrado."), 424
+    command = [
+        str(python_exe), "-m", "pip", "install",
+        "--disable-pip-version-check", "--no-input",
+        "-r", str(requirements),
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=900,
+            shell=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        STORE.add("evidence", "Suporte T8i · instalação falhou", str(exc), {"command": command})
+        return jsonify(ok=False, error=f"{type(exc).__name__}: {exc}"), 424
+    state = _t8i_dependency_state()
+    evidence = {
+        "returncode": result.returncode,
+        "modules": state,
+        "stdout_tail": result.stdout[-4000:],
+        "stderr_tail": result.stderr[-4000:],
+    }
+    STORE.add("evidence", "Suporte T8i · instalação", json.dumps(evidence, ensure_ascii=False), {"command": command})
+    return jsonify(ok=result.returncode == 0 and all(state.values()), ready=all(state.values()), **evidence), (200 if result.returncode == 0 else 424)
+
+
+@app.get("/api/mobile/t8i/export/<path:name>")
+def t8i_export_mobile(name: str):
+    filename = safe_name(name)
+    target = (WORKSPACE / "EXPORTS" / filename).resolve()
+    exports = (WORKSPACE / "EXPORTS").resolve()
+    if target.parent != exports or not target.is_file():
+        return jsonify(ok=False, error="Exportação T8i não encontrada."), 404
+    return send_file(target, as_attachment=True, download_name=target.name, mimetype="image/jpeg")
 
 
 @app.post("/api/media/convert")

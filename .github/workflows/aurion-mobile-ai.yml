@@ -1,5 +1,8 @@
 name: Build AURION Mobile AI APK
 on:
+  pull_request:
+    branches: [main]
+    paths: ['aurion-mobile-ai/**', 'pc-package-v3/aurion_superstudio/**', 'pc-package-v3/requirements-t8i.txt', '.github/workflows/aurion-mobile-ai.yml']
   push:
     branches: [main, 'feat/**']
     paths: ['aurion-mobile-ai/**', '.github/workflows/aurion-mobile-ai.yml']
@@ -21,17 +24,19 @@ jobs:
           "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.9' }
+      - name: Verify PC T8i bridge syntax
+        run: python -m py_compile ../pc-package-v3/aurion_superstudio/app.py ../pc-package-v3/aurion_superstudio/services.py ../pc-package-v3/aurion_superstudio/store.py
       - name: Compile
         run: gradle --no-daemon :app:assembleDebug
       - name: Verify and name
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-HUD-v2.0.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-HUD-v2.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-HUD-v3.0.0.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-HUD-v3.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-HUD-v2.0.0
+          name: AURION-ONE-HUD-v3.0.0
           path: |
-            aurion-mobile-ai/app/build/outputs/apk/debug/AURION-ONE-HUD-v2.0.0.apk
+            aurion-mobile-ai/app/build/outputs/apk/debug/AURION-ONE-HUD-v3.0.0.apk
             aurion-mobile-ai/app/build/outputs/apk/debug/SHA256SUMS.txt
           retention-days: 30
