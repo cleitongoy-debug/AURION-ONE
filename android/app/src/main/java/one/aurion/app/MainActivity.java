@@ -112,11 +112,13 @@ public class MainActivity extends Activity {
     private double pendingTrimStart = 0;
     private double pendingTrimEnd = 0;
     private AurionStore store;
+    private ProfileManager profiles;
     private BluetoothLeScanner scanner;
     private ScanCallback scanCallback;
     private final Map<String, JSONObject> scanResults = new LinkedHashMap<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Bridge bridge = new Bridge();
+    private final MemberBridge memberBridge = new MemberBridge();
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -125,6 +127,7 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(Color.rgb(4, 8, 13));
         web = new WebView(this);
         store = new AurionStore(this);
+        profiles = new ProfileManager(this);
         speech = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS && speech != null) speech.setLanguage(new Locale("pt", "BR")); });
         headsetSession = new MediaSession(this, "AURION-Capacete");
         headsetSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS);
@@ -149,7 +152,7 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.8");
-        web.addJavascriptInterface(bridge, "AurionAndroid");
+        web.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (selectedFiles != null) selectedFiles.onReceiveValue(null);
@@ -160,8 +163,12 @@ public class MainActivity extends Activity {
         });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView v, String url, Bitmap favicon) {
-                if (url != null && url.startsWith("file:///android_asset/")) v.addJavascriptInterface(bridge, "AurionAndroid");
-                else v.removeJavascriptInterface("AurionAndroid");
+                if (url != null && url.startsWith("file:///android_asset/")) {
+                    v.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
+                    if (url.startsWith("file:///android_asset/index.html") && profiles.signedIn())
+                        v.addJavascriptInterface(profiles.owner() ? bridge : memberBridge, "AurionAndroid");
+                    else v.removeJavascriptInterface("AurionAndroid");
+                } else { v.removeJavascriptInterface("AurionAndroid"); v.removeJavascriptInterface("AurionProfiles"); }
                 super.onPageStarted(v, url, favicon);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
@@ -174,12 +181,13 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        web.loadUrl("file:///android_asset/index.html");
-        scheduleHourlySync();
+        web.loadUrl("file:///android_asset/profiles.html");
+        // Existing installations may have queued this worker without a profile.
+        WorkManager.getInstance(this).cancelUniqueWork("aurion-hourly-sync");
         if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
         }
-        handler.postDelayed(this::checkForUpdate, 1800);
+        // The owner can check the update channel after unlocking the app.
     }
 
     private void toast(String text) { runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show()); }
@@ -1251,6 +1259,46 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    public final class ProfileBridge {
+        @JavascriptInterface public String status() { return profiles.status().toString(); }
+        @JavascriptInterface public String bootstrap(String id, String pin) {
+            JSONObject result = profiles.bootstrap(id, pin);
+            if (result.optBoolean("ok")) {
+                if (!"anark".equals(id)) store.claimLegacy(id);
+                store.setProfile(id);
+            }
+            return result.toString();
+        }
+        @JavascriptInterface public String login(String id, String pin) {
+            JSONObject result = profiles.login(id, pin);
+            if (result.optBoolean("ok")) store.setProfile(id);
+            return result.toString();
+        }
+        @JavascriptInterface public void enter() { if (profiles.signedIn()) runOnUiThread(() -> { if (profiles.owner()) { scheduleHourlySync(); handler.postDelayed(MainActivity.this::checkForUpdate, 1800); } web.loadUrl("file:///android_asset/index.html"); }); }
+        @JavascriptInterface public void logout() {
+            profiles.logout(); store.setProfile("anark");
+            runOnUiThread(() -> { WorkManager.getInstance(MainActivity.this).cancelUniqueWork("aurion-hourly-sync"); web.removeJavascriptInterface("AurionAndroid"); web.loadUrl("file:///android_asset/profiles.html"); });
+        }
+        @JavascriptInterface public String provision(String id, String pin, String tabs) { return profiles.provision(id, pin, tabs).toString(); }
+        @JavascriptInterface public String grant(String id, String tabs) { return profiles.grant(id, tabs).toString(); }
+    }
+
+    /** Explicit allowlist: member pages cannot invoke PC, vault, updater or owner's cloud routes. */
+    public final class MemberBridge {
+        @JavascriptInterface public long memoryAdd(String type, String title, String body, String meta) {
+            return profiles.allowed("memory") || profiles.allowed("portfolio") || profiles.allowed("project") || profiles.allowed("dedication") ? store.add(type, title, body, meta) : -1;
+        }
+        @JavascriptInterface public String memoryList(String type, String query, int limit) { return profiles.signedIn() ? store.list(type, query, limit).toString() : "[]"; }
+        @JavascriptInterface public boolean memoryDelete(long id) { return profiles.allowed("memory") && store.remove(id); }
+        @JavascriptInterface public String memoryExport() { return profiles.signedIn() ? store.exportAll().toString() : "{}"; }
+        @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
+        @JavascriptInterface public String accountStatus() { return "{}"; }
+        @JavascriptInterface public void shareProject(String title, String body) { if (profiles.allowed("portfolio") || profiles.allowed("delivery")) shareText(title, body); }
+        @JavascriptInterface public void openExternal(String raw) { if (profiles.signedIn()) bridge.openExternal(raw); }
+        @JavascriptInterface public void speakText(String text) { if (profiles.allowed("agent")) bridge.speakText(text); }
+        @JavascriptInterface public void listenVoice() { if (profiles.allowed("agent")) bridge.listenVoice(); }
+    }
+
     public final class Bridge {
         @JavascriptInterface public void runHourlySyncNow() { MainActivity.this.runHourlySyncNow(); }
         @JavascriptInterface public void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) { MainActivity.this.saveNodeSettings(panel, agent, token, comfy, ollama); }
@@ -1353,7 +1401,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.8.0\nT8i PC direto, Dedicação, Certificados, Portfólio, Cliente e cofres persistentes.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 7.0.0\nPerfis locais, dados separados e permissões do titular.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {

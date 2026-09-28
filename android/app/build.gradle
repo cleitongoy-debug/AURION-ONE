@@ -6,8 +6,8 @@ android {
         applicationId 'one.aurion.poco.v6'
         minSdk 26
         targetSdk 35
-        versionCode 69
-        versionName '6.9.0'
+        versionCode 70
+        versionName '7.0.0'
         manifestPlaceholders = [appLabel: 'AURION ONE · POCO']
     }
 }

@@ -15,7 +15,7 @@
         <package android:name="com.tailscale.ipn" />
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
-    <application android:label="${appLabel}" android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="true" android:allowBackup="true">
+    <application android:label="${appLabel}" android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="true" android:allowBackup="false">
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths" />
         </provider>
