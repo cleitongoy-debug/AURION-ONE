@@ -4,11 +4,15 @@ on:
     branches: [main, feat/dedicacao-certificados-20260928]
     paths:
       - 'android/**'
+      - 'pc-package-v3/aurion_superstudio/**'
+      - 'pc-package-v3/requirements-t8i.txt'
       - '.github/workflows/aurion-android-apk.yml'
   pull_request:
     branches: [main]
     paths:
       - 'android/**'
+      - 'pc-package-v3/aurion_superstudio/**'
+      - 'pc-package-v3/requirements-t8i.txt'
       - '.github/workflows/aurion-android-apk.yml'
   workflow_dispatch:
 permissions:
@@ -38,18 +42,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Verify T8i PC bridge syntax
+        working-directory: .
+        run: python -m py_compile pc-package-v3/aurion_superstudio/app.py pc-package-v3/aurion_superstudio/services.py pc-package-v3/aurion_superstudio/store.py
       - name: Compile Super Studio APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v6.7.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v6.7.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v6.8.0.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v6.8.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Publish installable package
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-POCO-v6.7.0
+          name: AURION-ONE-POCO-v6.8.0
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v6.7.0.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v6.8.0.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
