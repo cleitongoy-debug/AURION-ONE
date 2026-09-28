@@ -32,3 +32,12 @@ jobs:
           & $path -Mode Scan -Root $fixture -TestRootOnly
           $summary = Get-Content (Join-Path $out 'RESUMO_ATUAL.json') -Raw | ConvertFrom-Json
           if ($summary.newOrChanged -ne 0) { throw 'incremental scan duplicated files' }
+          $desktop = Join-Path $env:RUNNER_TEMP 'painelseguro#1 - Copia'
+          New-Item -ItemType Directory $desktop -Force | Out-Null
+          Copy-Item 'tools/pc-collector/AURION_COLETOR.bat' $desktop
+          Copy-Item $path $desktop
+          Set-Content (Join-Path $desktop 'referencia.txt') 'Projeto e curso com evidência.'
+          & (Join-Path $desktop 'AURION_COLETOR.bat') --selftest
+          if ($LASTEXITCODE -ne 0) { throw 'BAT failed in Desktop-style folder' }
+          $batSummary = Get-Content (Join-Path (Join-Path (Join-Path $desktop 'AURION_COLETA') $env:COMPUTERNAME) 'RESUMO_ATUAL.json') -Raw | ConvertFrom-Json
+          if ($batSummary.newOrChanged -lt 1) { throw 'BAT did not scan Desktop-style folder' }

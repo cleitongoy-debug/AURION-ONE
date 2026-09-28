@@ -2,10 +2,11 @@
 param(
     [ValidateSet('Scan','AddLink','CheckLinks','OpenConfig','OpenReport','Schedule','Unschedule')]
     [string]$Mode = 'Scan',
-    [string]$Root = $PSScriptRoot,
+    [string]$Root = '',
     [switch]$TestRootOnly
 )
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($Root)) { $Root = Split-Path -Parent $PSCommandPath }
 $Root = [System.IO.Path]::GetFullPath($Root)
 $Out = Join-Path $Root 'AURION_COLETA'
 $Machine = ($env:COMPUTERNAME -replace '[^A-Za-z0-9_-]','_')

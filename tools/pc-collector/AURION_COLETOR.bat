@@ -9,6 +9,7 @@ if not exist "%ENGINE%" (
   exit /b 2
 )
 if /i "%~1"=="--scan" goto scan
+if /i "%~1"=="--selftest" goto selftest
 :menu
 cls
 echo ================================================
@@ -34,31 +35,34 @@ if "%OP%"=="7" goto unschedule
 if "%OP%"=="0" exit /b 0
 goto menu
 :scanmenu
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Scan -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Scan
 pause
 goto menu
 :scan
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Scan -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Scan
+exit /b %errorlevel%
+:selftest
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Scan -TestRootOnly
 exit /b %errorlevel%
 :link
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode AddLink -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode AddLink
 pause
 goto menu
 :links
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode CheckLinks -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode CheckLinks
 pause
 goto menu
 :config
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode OpenConfig -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode OpenConfig
 goto menu
 :report
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode OpenReport -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode OpenReport
 goto menu
 :schedule
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Schedule -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Schedule
 pause
 goto menu
 :unschedule
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Unschedule -Root "%BASE%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ENGINE%" -Mode Unschedule
 pause
 goto menu
