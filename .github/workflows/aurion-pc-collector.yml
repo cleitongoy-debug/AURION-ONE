@@ -1,0 +1,34 @@
+name: AURION PC collector
+on:
+  push:
+    branches: [deliver/poco-v70-profiles]
+    paths:
+      - 'tools/pc-collector/**'
+      - '.github/workflows/aurion-pc-collector.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse and incremental smoke test on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $path = (Resolve-Path 'tools/pc-collector/AURION_COLETOR.ps1').Path
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | Format-List; throw 'PowerShell syntax errors' }
+          $fixture = Join-Path $env:RUNNER_TEMP 'aurion fixture'
+          New-Item -ItemType Directory $fixture -Force | Out-Null
+          Set-Content (Join-Path $fixture 'curso.txt') 'Curso de 3D 58% observado; sem horas comprovadas.'
+          Set-Content (Join-Path $fixture 'minha-secret.env') 'FAKE_TEST_KEY=do-not-copy'
+          & $path -Mode Scan -Root $fixture -TestRootOnly
+          $out = Join-Path (Join-Path $fixture 'AURION_COLETA') $env:COMPUTERNAME
+          $summary = Get-Content (Join-Path $out 'RESUMO_ATUAL.json') -Raw | ConvertFrom-Json
+          if ($summary.newOrChanged -lt 2) { throw 'scan missed fixture' }
+          $text = Get-Content (Join-Path $out 'TRECHOS_E_PISTAS.jsonl') -Raw
+          if ($text -match 'do-not-copy') { throw 'credential value copied' }
+          & $path -Mode Scan -Root $fixture -TestRootOnly
+          $summary = Get-Content (Join-Path $out 'RESUMO_ATUAL.json') -Raw | ConvertFrom-Json
+          if ($summary.newOrChanged -ne 0) { throw 'incremental scan duplicated files' }
