@@ -32,10 +32,15 @@ function profileSave(id){
  document.getElementById('profileLog').textContent=result.ok?'Permissões locais de '+id+' salvas.':'Falha: '+result.error;
  document.getElementById('profilePin_'+id).value='';
 }
+function profileInspect(id){
+ let rows=[];try{rows=JSON.parse(AurionAndroid.profileInspect(id))}catch{}
+ let box=document.getElementById('profileInspect_'+id);
+ box.textContent=rows.length?rows.map(x=>'#'+x.id+' · '+x.type+' · '+x.title+'\n'+x.body.slice(0,400)).join('\n\n'):'Nenhum registro local deste perfil neste aparelho.';
+}
 function profileOwnerSetup(){
  let root=document.getElementById('profileOwner');if(!root||AURION_ID!=='anark')return;
  let ids=['ds','davi','spectra'],labels={ds:'DS · Daiane',davi:'Davi',spectra:'SPECTRA · Brenda'};
  let all='home,project,capture,photo,colorlab,fxlab,video,timeline,motion,audio,convert,t8i,agent,memory,lab,resources,imagegen,comfy,band,portfolio,delivery,dedication,certificates'.split(',');
- root.innerHTML=ids.map(id=>{let p=AURION_PROFILE.people.find(x=>x.id===id),tabs=new Set((p?.tabs||'').split(','));return '<div class="card"><h2>'+labels[id]+'</h2><p>Abas liberadas neste aparelho</p><div id="profile_'+id+'" class="profileGrid">'+all.map(tab=>'<label><input type="checkbox" value="'+tab+'" '+(tabs.has(tab)?'checked':'')+'> '+tab+'</label>').join('')+'</div><input type="password" id="profilePin_'+id+'" placeholder="Código individual (8+ caracteres ao criar)"><button onclick="profileSave(\''+id+'\')">SALVAR '+id.toUpperCase()+'</button></div>'}).join('')+'<p id="profileLog" role="status"></p>';
+ root.innerHTML=ids.map(id=>{let p=AURION_PROFILE.people.find(x=>x.id===id),tabs=new Set((p?.tabs||'').split(','));return '<div class="card"><h2>'+labels[id]+'</h2><p>Abas liberadas neste aparelho</p><div id="profile_'+id+'" class="profileGrid">'+all.map(tab=>'<label><input type="checkbox" value="'+tab+'" '+(tabs.has(tab)?'checked':'')+'> '+tab+'</label>').join('')+'</div><input type="password" id="profilePin_'+id+'" placeholder="Código individual (8+ caracteres ao criar)"><button onclick="profileSave(\''+id+'\')">SALVAR '+id.toUpperCase()+'</button><button onclick="profileInspect(\''+id+'\')">VER REGISTROS LOCAIS</button><div id="profileInspect_'+id+'" class="log"></div></div>'}).join('')+'<p id="profileLog" role="status"></p>';
 }
 document.addEventListener('DOMContentLoaded',()=>{profileRender();profileOwnerSetup()});

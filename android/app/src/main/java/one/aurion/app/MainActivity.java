@@ -1300,6 +1300,7 @@ public class MainActivity extends Activity {
     }
 
     public final class Bridge {
+        @JavascriptInterface public String profileInspect(String id) { return profiles.owner() ? store.inspectProfile(id).toString() : "[]"; }
         @JavascriptInterface public void runHourlySyncNow() { MainActivity.this.runHourlySyncNow(); }
         @JavascriptInterface public void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) { MainActivity.this.saveNodeSettings(panel, agent, token, comfy, ollama); }
         @JavascriptInterface public void savePcStudio(String base, String token) { MainActivity.this.savePcStudio(base, token); }

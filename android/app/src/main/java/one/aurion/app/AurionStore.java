@@ -89,6 +89,13 @@ final class AurionStore extends SQLiteOpenHelper {
         return out;
     }
 
+    synchronized JSONArray inspectProfile(String id) {
+        if (!(id.equals("ds") || id.equals("davi") || id.equals("spectra"))) return new JSONArray();
+        String previous = profileId;
+        try { profileId = id; return list("all", "", 200); }
+        finally { profileId = previous; }
+    }
+
     synchronized JSONObject exportAll() {
         JSONObject out = new JSONObject();
         try { out.put("format", "aurion-memory-v4"); out.put("exportedAt", System.currentTimeMillis()); out.put("records", list("all", "", 5000)); out.put("accounts", accountStatus()); }
