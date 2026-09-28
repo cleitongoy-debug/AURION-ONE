@@ -41,3 +41,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'BAT failed in Desktop-style folder' }
           $batSummary = Get-Content (Join-Path (Join-Path (Join-Path $desktop 'AURION_COLETA') $env:COMPUTERNAME) 'RESUMO_ATUAL.json') -Raw | ConvertFrom-Json
           if ($batSummary.newOrChanged -lt 1) { throw 'BAT did not scan Desktop-style folder' }
+          Copy-Item 'tools/pc-collector/AURION_INICIAR_SEGURO.bat' $desktop
+          & (Join-Path $desktop 'AURION_INICIAR_SEGURO.bat') --selftest
+          if ($LASTEXITCODE -ne 0) { throw 'launcher BAT failed in Desktop-style folder' }
+          $launcher = Get-Content (Join-Path $desktop 'AURION_INICIAR_SEGURO.bat') -Raw
+          if ($launcher -match 'gsk_|sk-proj-|nvapi-|hf_[A-Za-z0-9]{20}') { throw 'hardcoded API credential in launcher' }
