@@ -66,6 +66,7 @@ public final class AurionLifeHub {
   private static final Handler TIMER_HANDLER=new Handler(Looper.getMainLooper());
   private static Runnable studyTicker, clientTicker;
   private static TextView studyClock, clientClock, t8iStatus;
+  private static LinearLayout studyHistoryBox, clientHistoryBox;
 
   static void addDashboardCards(MainActivity a){
     long studySec=totalSeconds(a,STUDIES,"study_finish");
@@ -156,6 +157,7 @@ public final class AurionLifeHub {
     export.setOnClickListener(v->exportJsonl(a,"studies",STUDIES,"estudos"));
     buttons.addView(start);buttons.addView(finish);buttons.addView(note);buttons.addView(export);
     a.body.addView(buttons);
+    studyHistoryBox=new LinearLayout(a);studyHistoryBox.setOrientation(LinearLayout.VERTICAL);a.body.addView(studyHistoryBox);
 
     renderStudyHistory(a);
     startStudyTicker(a);
@@ -186,6 +188,7 @@ public final class AurionLifeHub {
     Button export=a.btn("💾 EXPORTAR CLIENTES");
     export.setOnClickListener(v->exportJsonl(a,"clients",CLIENTS,"clientes"));
     a.body.addView(save);a.body.addView(start);a.body.addView(finish);a.body.addView(export);
+    clientHistoryBox=new LinearLayout(a);clientHistoryBox.setOrientation(LinearLayout.VERTICAL);a.body.addView(clientHistoryBox);
     renderClientHistory(a);
     startClientTicker(a);
   }
@@ -306,7 +309,7 @@ public final class AurionLifeHub {
         DocumentFile folder=ensureFolder(a,key);
         append(a,EVENTS,json().put("type","deposit_set").put("category",key).put("root",root.toString()).put("folder",folder==null?"":String.valueOf(folder.getUri())));
         a.toast("Depósito "+TREE_NAMES.get(key)+" configurado.");
-        showDeposits(a);
+        if(key.startsWith("t8i_"))showT8i(a);else showDeposits(a);
         return true;
       }
     }catch(Exception e){a.toast("Falha no seletor: "+e.getMessage());return true;}
@@ -372,6 +375,7 @@ public final class AurionLifeHub {
   }
 
   private static void renderStudyHistory(MainActivity a){
+    if(studyHistoryBox==null)return;studyHistoryBox.removeAllViews();
     long sec=totalSeconds(a,STUDIES,"study_finish");
     List<JSONObject> rows=read(a,STUDIES,2000);
     int finished=0,notes=0;Map<String,Long> bySubject=new LinkedHashMap<>();
@@ -383,10 +387,10 @@ public final class AurionLifeHub {
         bySubject.put(sub,bySubject.getOrDefault(sub,0L)+s);
       }else if("study_note".equals(type))notes++;
     }
-    a.body.addView(a.card("RESUMO",finished+" sessões • "+formatSeconds(sec)+" • "+notes+" registros sem cronômetro"));
+    studyHistoryBox.addView(a.card("RESUMO",finished+" sessões • "+formatSeconds(sec)+" • "+notes+" registros sem cronômetro"));
     StringBuilder totals=new StringBuilder();
     for(Map.Entry<String,Long> e:bySubject.entrySet())totals.append(e.getKey()).append(" · ").append(formatSeconds(e.getValue())).append("\n");
-    if(totals.length()>0)a.body.addView(a.card("TEMPO POR ASSUNTO",totals.toString().trim()));
+    if(totals.length()>0)studyHistoryBox.addView(a.card("TEMPO POR ASSUNTO",totals.toString().trim()));
 
     int shown=0;
     for(int i=rows.size()-1;i>=0 && shown<12;i--){
@@ -396,7 +400,7 @@ public final class AurionLifeHub {
       if(o.has("progress"))line+=" · "+o.optInt("progress")+"%";
       if(o.optBoolean("completed",false))line+=" · CONCLUÍDO";
       if(!o.optString("notes").isEmpty())line+="\n"+o.optString("notes");
-      a.body.addView(a.card("HISTÓRICO",line)); shown++;
+      studyHistoryBox.addView(a.card("HISTÓRICO",line)); shown++;
     }
   }
 
@@ -498,13 +502,14 @@ public final class AurionLifeHub {
   }
 
   private static void renderClientHistory(MainActivity a){
+    if(clientHistoryBox==null)return;clientHistoryBox.removeAllViews();
     long sec=totalSeconds(a,CLIENTS,"client_finish");List<JSONObject> rows=read(a,CLIENTS,2000);
     int records=0;Map<String,Long> byClient=new LinkedHashMap<>();
     for(JSONObject o:rows){if(o.optString("type").startsWith("client_"))records++;if("client_finish".equals(o.optString("type"))){String c=o.optString("client","Sem cliente");if(c.isEmpty())c="Sem cliente";byClient.put(c,byClient.getOrDefault(c,0L)+o.optLong("seconds"));}}
-    a.body.addView(a.card("RESUMO",records+" registros • "+formatSeconds(sec)));
+    clientHistoryBox.addView(a.card("RESUMO",records+" registros • "+formatSeconds(sec)));
     StringBuilder sb=new StringBuilder();for(Map.Entry<String,Long> e:byClient.entrySet())sb.append(e.getKey()).append(" · ").append(formatSeconds(e.getValue())).append("\n");
-    if(sb.length()>0)a.body.addView(a.card("HORAS POR CLIENTE",sb.toString().trim()));
-    int shown=0;for(int i=rows.size()-1;i>=0&&shown<12;i--){JSONObject o=rows.get(i);if(!o.optString("type").startsWith("client_"))continue;String x=o.optString("client")+" · "+o.optString("project")+"\n"+o.optString("service")+" · "+o.optString("status");if(o.has("seconds"))x+="\n"+formatSeconds(o.optLong("seconds"));if(!o.optString("notes").isEmpty())x+="\n"+o.optString("notes");a.body.addView(a.card("HISTÓRICO",x));shown++;}
+    if(sb.length()>0)clientHistoryBox.addView(a.card("HORAS POR CLIENTE",sb.toString().trim()));
+    int shown=0;for(int i=rows.size()-1;i>=0&&shown<12;i--){JSONObject o=rows.get(i);if(!o.optString("type").startsWith("client_"))continue;String x=o.optString("client")+" · "+o.optString("project")+"\n"+o.optString("service")+" · "+o.optString("status");if(o.has("seconds"))x+="\n"+formatSeconds(o.optLong("seconds"));if(!o.optString("notes").isEmpty())x+="\n"+o.optString("notes");clientHistoryBox.addView(a.card("HISTÓRICO",x));shown++;}
   }
 
   private static void startClientTicker(MainActivity a){
@@ -710,7 +715,7 @@ public final class AurionLifeHub {
   static void shutdown(){
     if(studyTicker!=null)TIMER_HANDLER.removeCallbacks(studyTicker);
     if(clientTicker!=null)TIMER_HANDLER.removeCallbacks(clientTicker);
-    studyTicker=null;clientTicker=null;studyClock=null;clientClock=null;t8iStatus=null;
+    studyTicker=null;clientTicker=null;studyClock=null;clientClock=null;t8iStatus=null;studyHistoryBox=null;clientHistoryBox=null;
   }
 
   static final class FileMeta{
