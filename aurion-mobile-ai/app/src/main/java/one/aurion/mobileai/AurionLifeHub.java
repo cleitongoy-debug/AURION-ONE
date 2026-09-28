@@ -678,7 +678,15 @@ public final class AurionLifeHub {
     long n=0;for(JSONObject o:read(a,name,10000))if(type.equals(o.optString("type")))n+=Math.max(0,o.optLong("seconds"));return n;
   }
 
-  private static JSONObject json(){return new JSONObject();}
+  private static SafeJson json(){return new SafeJson();}
+
+  static final class SafeJson extends JSONObject {
+    @Override public SafeJson put(String name,Object value){try{super.put(name,value);}catch(JSONException ignored){}return this;}
+    @Override public SafeJson put(String name,boolean value){try{super.put(name,value);}catch(JSONException ignored){}return this;}
+    @Override public SafeJson put(String name,double value){try{super.put(name,value);}catch(JSONException ignored){}return this;}
+    @Override public SafeJson put(String name,int value){try{super.put(name,value);}catch(JSONException ignored){}return this;}
+    @Override public SafeJson put(String name,long value){try{super.put(name,value);}catch(JSONException ignored){}return this;}
+  }
   private static String text(EditText e){return e.getText().toString().trim();}
   private static String fallback(String a,String b){return a==null||a.trim().isEmpty()?b:a;}
   private static int boundedInt(String s,int min,int max,int def){try{return Math.max(min,Math.min(max,Integer.parseInt(s.trim())));}catch(Exception e){return def;}}
