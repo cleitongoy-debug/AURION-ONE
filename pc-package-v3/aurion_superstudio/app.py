@@ -130,6 +130,47 @@ def records():
     return jsonify(ok=True, record=row), 201
 
 
+def _bounded_manifest(root: Path, limit: int = 240) -> list[dict]:
+    rows = []
+    allowed_hash = {".py", ".js", ".html", ".css", ".md", ".json", ".txt", ".cmd", ".bat", ".ps1", ".yml", ".yaml"}
+    blocked_parts = {".git", ".venv", "node_modules", "__pycache__", "secrets", "credentials"}
+    try:
+        candidates = [p for p in root.rglob("*") if p.is_file()]
+        candidates.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+        for path in candidates:
+            if len(rows) >= limit:
+                break
+            try:
+                if any(part.lower() in blocked_parts for part in path.parts):
+                    continue
+                st = path.stat()
+                rel = str(path.relative_to(root))
+                row = {"path": rel, "bytes": st.st_size, "mtime": st.st_mtime}
+                if path.suffix.lower() in allowed_hash and st.st_size <= 2 * 1024 * 1024:
+                    row["sha256"] = sha256(path)
+                rows.append(row)
+            except (OSError, ValueError):
+                continue
+    except OSError:
+        pass
+    return rows
+
+
+@app.get("/api/mobile/snapshot")
+def mobile_snapshot():
+    services = service_status(load_config())
+    return jsonify(
+        ok=True,
+        time=datetime.now(timezone.utc).isoformat(),
+        version=__version__,
+        computer=os.environ.get("COMPUTERNAME", "PC AURION"),
+        services={"panel": services.get("panel"), "ollama": services.get("ollama"), "comfy": services.get("comfy")},
+        workspace=_bounded_manifest(WORKSPACE, 240),
+        code_manifest=_bounded_manifest(BASE_ROOT, 180),
+        records=len(STORE.list("", limit=500)),
+    )
+
+
 @app.route("/api/mobile/dedication", methods=["GET", "POST"])
 def dedication():
     if request.method == "POST":
