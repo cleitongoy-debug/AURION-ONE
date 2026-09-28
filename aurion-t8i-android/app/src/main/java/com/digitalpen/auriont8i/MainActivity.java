@@ -27,7 +27,7 @@ public class MainActivity extends Activity{
  else if(n.equals("DETALHE")){slider("Nitidez","sharp");}
  else if(n.equals("EFEITOS")){slider("Vinheta","vignette");slider("Grão","grain");}
  else if(n.equals("ANTES/DEPOIS")){Button a=b("SEGURE PARA VER O ANTES");a.setOnTouchListener((v,e)->{if(source==null)return true;if(e.getAction()==MotionEvent.ACTION_DOWN){preview.clearColorFilter();preview.setImageBitmap(source);status.setText("ANTES · original");}else if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){render();status.setText("DEPOIS · edição atual");}return true;});tools.addView(a);}
- else if(n.equals("HISTÓRICO")){historyPanel();}
+
  else if(n.equals("AUTO")){Button x=b("ANALISAR E APLICAR AUTO");x.setOnClickListener(v->auto());tools.addView(x);}
  else if(n.equals("CONVERSOR")){Button j=b("CONVERTER → JPEG");j.setOnClickListener(v->save(0));tools.addView(j);Button p=b("CONVERTER → PNG");p.setOnClickListener(v->save(1));tools.addView(p);Button w=b("CONVERTER → WEBP");w.setOnClickListener(v->save(2));tools.addView(w);}
  else if(n.equals("ENTREGA")){Button x=b("EXPORTAR MASTER");x.setOnClickListener(v->chooseMaster());tools.addView(x);}
