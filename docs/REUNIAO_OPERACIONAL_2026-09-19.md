@@ -100,3 +100,30 @@ Regra de comunicação: um comando CMD por turno quando necessário; separar com
 4. Teste físico no POCO: atualização por cima, abertura, workspace, importação CR3, cópia RAW, nota, preset, backup e preservação dos dados de Dedicação/Certificados.
 
 **Estado ao registrar esta seção:** código-fonte preparado para CI; publicação assinada v6.6 e teste físico ainda pendentes e não devem ser declarados concluídos antecipadamente.
+
+
+---
+
+## PARTE 4 — POCO v6.7 · Portfólio, Secretário e Auto Sync horário (28/09/2026)
+
+Pedido do operador: manter o PC ligado com Tailscale, usar o POCO na rua, cruzar estudo/projetos/clientes/provas, criar área dedicada ao cliente/portfólio e detectar mudanças de Git/Drive/Hugging Face/PC com aviso de atualização.
+
+### Implementado no código-fonte
+- Android: **versionCode 67 / versionName 6.7.0**, mesmo pacote `one.aurion.poco.v6`.
+- Nova aba **Portfólio** com contatos/redes, atalhos clicáveis, cases com prova, autorização explícita de exibição, cruzamento com dedicação/certificados e Secretário AURION para briefing.
+- Pistas vindas do acervo permanecem marcadas como **validar antes de publicar**. `@studio.digitalpen` e o GitHub AURION são referências detectadas; energia solar/GS, clipes e clientes nacionais/internacionais entram como slots pendentes de prova.
+- **WorkManager** agenda um ciclo aproximado de uma hora quando houver rede. O Android pode deslocar o horário exato.
+- O ciclo verifica manifesto de APK, Git, Drive (quando o token responde), Hugging Face (quando o token responde) e snapshot autenticado do Super Studio PC.
+- Mudanças viram `sync_event`; APK com versionCode maior gera notificação pendente. A instalação continua dependendo da confirmação do Android.
+- URLs do painel/Home Node/ComfyUI/Ollama e do Super Studio PC passam a alimentar o serviço horário.
+- Super Studio PC ganhou `GET /api/mobile/snapshot` autenticado com estado de serviços e manifestos limitados de arquivos/metadados. Não sobrescreve arquivos nem lê pastas de segredo.
+- Painel PC ganhou aba **PORTFÓLIO**.
+
+### Limites mantidos
+- Tailscale ligado não revela automaticamente o IP ao APK; ele reutiliza o endereço privado/Tailscale configurado.
+- Drive/Hugging Face dependem de credenciais válidas e podem expirar.
+- O auto buscador detecta mudança; não publica case nem cliente automaticamente.
+- O canal público de atualização deve continuar na versão assinada anterior até existir APK 6.7 assinado com o mesmo certificado instalado e SHA-256 conferido.
+
+### Gate
+CI -> assinatura com o mesmo certificado -> SHA-256 -> atualizar `android/updates/latest.json` -> instalar por cima -> testar POCO↔PC/Tailscale.
