@@ -4,7 +4,92 @@
 <main>
 <section id="home" class="page active"><div class="hero"><div class="core"><div class="ring"></div><strong>A</strong></div><h1>AURION ONE</h1><p>Criação, operação e memória conectadas — com estado real.</p></div><div class="grid4" id="metrics"></div><div class="grid2"><article><h2>SAÚDE DO SISTEMA</h2><div id="healthCards"></div></article><article><h2>BASE PROTEGIDA</h2><div id="baseFiles" class="log">Verificando…</div></article></div></section>
 <section id="project" class="page"><article><h1>Projetos & Cliente</h1><div class="grid2"><label>Projeto<input id="projectName"></label><label>Cliente<input id="clientName"></label></div><label>Briefing<textarea id="projectBrief"></textarea></label><div class="grid2"><label>Prazo<input id="projectDeadline" type="date"></label><label>Formato de entrega<input id="projectDelivery" placeholder="Fotos, vídeo, campanha…"></label></div><button class="primary" onclick="saveProject()">SALVAR PROJETO</button><div id="projectLog" class="log"></div></article></section>
-<section id="t8i" class="page"><article><h1>Canon T8i · CR3</h1><p>O original é copiado para RAW; nunca movido nem sobrescrito.</p><label>Arquivo CR3<input id="cr3File" type="file" accept=".cr3"></label><div class="grid3"><label>Exposição<input id="cr3Bright" type="range" min=".3" max="3" step=".05" value="1"></label><label>Qualidade<input id="cr3Quality" type="range" min="60" max="100" value="95"></label><label>Perfil<select><option>Camera WB</option><option>Neutro para edição</option><option>Retrato</option><option>Produto</option></select></label></div><button class="primary" onclick="developCr3()">IMPORTAR E REVELAR</button><div id="t8iLog" class="log">Dependência opcional: rawpy/LibRaw.</div></article></section>
+<section id="t8i" class="page">
+<article>
+  <h1>Canon T8i · CR3 · Cofre de Trabalho</h1>
+  <p class="note">CR3 é RAW fotográfico; não é C-Log de vídeo. O original é sempre copiado para o depósito RAW e nunca é movido nem sobrescrito.</p>
+  <div class="grid4">
+    <button onclick="loadT8iState()">VERIFICAR T8i</button>
+    <button class="primary" onclick="installT8iDeps()">INSTALAR DEPENDÊNCIAS</button>
+    <button onclick="saveT8iFolders()">SALVAR DEPÓSITOS</button>
+    <button onclick="snapshotT8i()">SNAPSHOT · NÃO PERDER</button>
+  </div>
+  <pre id="t8iDeps" class="log">Verificando dependências e depósitos…</pre>
+</article>
+
+<article>
+  <h2>Depósitos escolhidos por você</h2>
+  <div class="grid2">
+    <label>Originais CR3<input id="t8iRawDir"></label>
+    <div><button onclick="chooseT8iFolder('raw_dir')">ESCOLHER</button><button onclick="openT8iFolder('raw_dir')">ABRIR</button></div>
+
+    <label>Revelados / exportações<input id="t8iExportDir"></label>
+    <div><button onclick="chooseT8iFolder('export_dir')">ESCOLHER</button><button onclick="openT8iFolder('export_dir')">ABRIR</button></div>
+
+    <label>Conversas / notas<input id="t8iConversationDir"></label>
+    <div><button onclick="chooseT8iFolder('conversation_dir')">ESCOLHER</button><button onclick="openT8iFolder('conversation_dir')">ABRIR</button></div>
+
+    <label>Projetos<input id="t8iProjectDir"></label>
+    <div><button onclick="chooseT8iFolder('project_dir')">ESCOLHER</button><button onclick="openT8iFolder('project_dir')">ABRIR</button></div>
+
+    <label>Presets<input id="t8iPresetDir"></label>
+    <div><button onclick="chooseT8iFolder('preset_dir')">ESCOLHER</button><button onclick="openT8iFolder('preset_dir')">ABRIR</button></div>
+
+    <label>Logs<input id="t8iLogDir"></label>
+    <div><button onclick="chooseT8iFolder('log_dir')">ESCOLHER</button><button onclick="openT8iFolder('log_dir')">ABRIR</button></div>
+
+    <label>Manifestos<input id="t8iManifestDir"></label>
+    <div><button onclick="chooseT8iFolder('manifest_dir')">ESCOLHER</button><button onclick="openT8iFolder('manifest_dir')">ABRIR</button></div>
+
+    <label>Backups / snapshots<input id="t8iBackupDir"></label>
+    <div><button onclick="chooseT8iFolder('backup_dir')">ESCOLHER</button><button onclick="openT8iFolder('backup_dir')">ABRIR</button></div>
+  </div>
+  <div class="grid3">
+    <label>Criar subpasta em<select id="t8iCreateKey">
+      <option value="raw_dir">Originais CR3</option>
+      <option value="export_dir">Revelados</option>
+      <option value="conversation_dir">Conversas</option>
+      <option value="project_dir">Projetos</option>
+      <option value="preset_dir">Presets</option>
+      <option value="log_dir">Logs</option>
+      <option value="manifest_dir">Manifestos</option>
+      <option value="backup_dir">Backups</option>
+    </select></label>
+    <label>Nome da subpasta<input id="t8iCreateName" placeholder="Ex.: Ensaio_2026-09-28"></label>
+    <button onclick="createT8iFolder()">CRIAR PASTA 🗂️</button>
+  </div>
+  <pre id="t8iFolderLog" class="log"></pre>
+</article>
+
+<article>
+  <h2>Revelar CR3</h2>
+  <label>Arquivo CR3<input id="cr3File" type="file" accept=".cr3"></label>
+  <div class="grid4">
+    <label>Exposição<input id="cr3Bright" type="range" min=".3" max="3" step=".05" value="1"></label>
+    <label>Qualidade JPEG<input id="cr3Quality" type="range" min="60" max="100" value="95"></label>
+    <label>Balanço de branco<select id="cr3Profile"><option value="camera">Camera WB</option><option value="auto">Auto WB</option></select></label>
+    <label>Saída<select id="cr3Format"><option value="JPEG">JPEG 8-bit</option><option value="TIFF">TIFF 16-bit</option></select></label>
+  </div>
+  <label><input id="cr3NoAutoBright" type="checkbox"> Desativar brilho automático do RAW</label>
+  <button class="primary" onclick="developCr3()">IMPORTAR · PRESERVAR · REVELAR</button>
+  <pre id="t8iLog" class="log">Aguardando CR3.</pre>
+</article>
+
+<article>
+  <h2>Conversas, decisões e notas da sessão</h2>
+  <p class="note">As respostas do agente são salvas automaticamente no SQLite e também em Markdown + JSONL no depósito de conversas.</p>
+  <div class="grid2"><label>Título<input id="t8iNoteTitle" value="Sessão T8i"></label><label>Contexto<input value="Fotografia / T8i / CR3" disabled></label></div>
+  <label>Nota / decisão / ajuste<textarea id="t8iNoteBody" placeholder="O que foi feito, o que funcionou, preset usado, cliente, observações…"></textarea></label>
+  <div class="grid3"><button class="primary" onclick="saveT8iNote()">SALVAR AGORA</button><button onclick="openT8iFolder('conversation_dir')">ABRIR CONVERSAS</button><button onclick="loadT8iState()">ATUALIZAR LISTA</button></div>
+  <pre id="t8iNoteLog" class="log"></pre>
+</article>
+
+<article>
+  <h2>Inventário da aba T8i</h2>
+  <div class="grid2"><div><h3>Originais</h3><pre id="t8iRawList" class="log">—</pre></div><div><h3>Revelados</h3><pre id="t8iExportList" class="log">—</pre></div><div><h3>Conversas</h3><pre id="t8iConversationList" class="log">—</pre></div><div><h3>Manifestos</h3><pre id="t8iManifestList" class="log">—</pre></div></div>
+  <p class="note">O snapshot documental salva memória, configurações, conversas, presets, logs e manifestos. Ele não duplica automaticamente CR3, TIFF ou outros arquivos grandes.</p>
+</article>
+</section>
 <section id="photo" class="page"><article><h1>Foto · Revelação e Tratamento</h1><div class="editor"><div><label>Imagem<input id="imageFile" type="file" accept="image/*" onchange="previewImage()"></label><img id="imagePreview" alt="Prévia"></div><div class="controls"><label>Brilho<input id="imgBrightness" type="range" min=".2" max="2" step=".05" value="1"></label><label>Contraste<input id="imgContrast" type="range" min=".2" max="2" step=".05" value="1"></label><label>Saturação<input id="imgSaturation" type="range" min="0" max="2.5" step=".05" value="1"></label><label>Nitidez<input id="imgSharp" type="range" min="0" max="3" step=".1" value="1"></label><label>Efeito<select id="imgEffect"><option value="none">Neutro</option><option value="warm">Quente</option><option value="cool">Frio</option><option value="noir">Noir</option><option value="soft">Soft</option></select></label><label>Qualidade<input id="imgQuality" type="range" min="40" max="100" value="95"></label><button class="primary" onclick="processImage()">EXPORTAR JPG REAL</button></div></div><div id="photoLog" class="log"></div></article></section>
 <section id="color" class="page"><article><h1>Color Science</h1><div class="scopes"><canvas id="hist" width="500" height="220"></canvas><canvas id="wave" width="500" height="220"></canvas><canvas id="vector" width="500" height="220"></canvas></div><div class="grid4"><button onclick="look('cinema')">CINEMA</button><button onclick="look('portrait')">RETRATO</button><button onclick="look('product')">PRODUTO</button><button onclick="look('neutral')">NEUTRO</button></div><p class="note">Scopes são calculados da prévia aberta. LUT criativa não é conversão técnica.</p></article></section>
 <section id="fx" class="page"><article><h1>FX · Rack Inteligente</h1><div class="grid4" id="fxButtons"></div><h3>CADEIA ATIVA</h3><div id="fxRack" class="rack"></div><button onclick="saveFx()">SALVAR PRESET</button><p class="note">Efeitos desta aba são presets/desenho de cadeia. A foto exportável usa os efeitos disponíveis no módulo Foto.</p></article></section>
