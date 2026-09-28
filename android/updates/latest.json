@@ -2,6 +2,6 @@
   "versionCode": 63,
   "versionName": "6.3.0",
   "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/AURION-ONE-POCO-v6.3.0.apk",
-  "sha256": "PENDING_RELEASE",
-  "notes": "Atualizador, laboratório automático, voz e geração de imagem por API."
+  "sha256": "ba2278ec8855226f8deb6c20d435e412c8caae63508b887cece97a74a62af4d5",
+  "notes": "Atualizador, laboratório automático, voz com atalhos, troca de rota e geração de imagem por API."
 }
