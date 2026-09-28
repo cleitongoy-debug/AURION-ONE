@@ -57,9 +57,9 @@ function offlineAnswer(question){
  const score=k=>k.terms.reduce((n,t)=>n+(q.includes(t.normalize('NFD').replace(/[\u0300-\u036f]/g,''))?2:0),0);
  const hit=AURION_KNOWLEDGE.map(k=>({k,n:score(k)})).sort((a,b)=>b.n-a.n)[0];
  let matches=[];try{const tokens=q.split(/\W+/).filter(x=>x.length>3).slice(0,4);for(const token of tokens)matches.push(...getMemories('factory',token,2));}catch{}
- const unique=[...new Map(matches.map(m=>[m.title,m])).values()].slice(0,2);
- if(hit?.n){let answer=hit.k.answer;if(unique.length)answer+='\n\nNa memória de fábrica: '+unique.map(m=>m.title+' — '+m.body).join(' | ').slice(0,900);return answer+'\n\nPara executar uma ação, abra a aba indicada e confira o resultado nela.'}
- return 'Não tenho uma resposta verificada para essa pergunta no contexto offline. Posso ajudar com T8i/CR3, imagens, vídeo, memória, PC, ComfyUI, Band, fone e configuração. Para análise livre, configure uma API em Contas ou o nó PC; não vou inventar uma resposta.';
+ const unique=[...new Map(matches.map(m=>[m.title,m])).values()].slice(0,2);let references=[];try{for(const token of q.split(/\W+/).filter(x=>x.length>4).slice(0,2))references.push(...getMemories('reference',token,2))}catch{}references=[...new Map(references.map(m=>[m.title,m])).values()].slice(0,1);const excerpt=references.map(m=>{let lower=m.body.toLocaleLowerCase('pt-BR'),i=Math.max(0,lower.indexOf(q.split(/\W+/).find(x=>x.length>4)||''));return m.title+': '+m.body.slice(Math.max(0,i-100),i+350)}).join(' | ');
+ if(hit?.n){let answer=hit.k.answer;if(unique.length)answer+='\n\nNa memória de fábrica: '+unique.map(m=>m.title+' — '+m.body).join(' | ').slice(0,900);return answer+(excerpt?'\n\nReferência sincronizada: '+excerpt:'')+'\n\nPara executar uma ação, abra a aba indicada e confira o resultado nela.'}
+ if(excerpt)return 'Achei esta referência no contexto importado: '+excerpt+'\n\nÉ uma fonte para consulta, não uma ação executada.';return 'Não tenho uma resposta verificada para essa pergunta no contexto offline. Posso ajudar com T8i/CR3, imagens, vídeo, memória, PC, ComfyUI, Band, fone e configuração. Para análise livre, configure uma API em Contas ou o nó PC; não vou inventar uma resposta.';
 }
 const guideAskOriginal=askGuide;
 function askGuide(){let q=$('guideQuestion').value.trim();if(!q)return;let answer=offlineAnswer(q);$('guideReply').textContent=answer;$('guideQuestion').value='';native('memoryAdd','conversation','Orientador local · pergunta',q,'{}');native('memoryAdd','conversation','Orientador local · resposta',answer,'{}')}
