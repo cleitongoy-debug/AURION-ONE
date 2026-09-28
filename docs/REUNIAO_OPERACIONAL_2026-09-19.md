@@ -65,3 +65,65 @@ Regra de comunicação: um comando CMD por turno quando necessário; separar com
 **Pendências remanescentes:** (1) comparação SHA-256 DS20 × valor local já coletado e, se necessário, Drive; (2) identificar no PC o comando efetivamente utilizado, sem presumir que a referência contratual `FUNCIONANDO.py` é o inicializador real — candidatos citados pelo Expert: `lumen_visual.py` e `INICIAR_AURION_2027.bat`, ambos ainda sem confirmação operacional nesta reunião; (3) teste controlado com evidência; (4) HUD reversível após aceite. A leitura integral do módulo é **declarada concluída pelo Expert**, mas a auditoria independente de seu conteúdo permanece pendente para o ChatGPT.
 
 **Próxima ação sem retrabalho:** ChatGPT mantém este protocolo; AURION#ONE investiga o ponto de entrada real e cruza a implementação sem tocar na base protegida. Registrar somente nova evidência, com fonte, resultado e bloqueio. Nenhum teste de painel, alteração de código ou HUD foi comprovado por esta atualização.
+
+
+---
+
+## PARTE 3 — POCO v6.6 · RAW Vault T8i e continuidade do trabalho (28/09/2026)
+
+**Motivo:** o operador retomou a programação após interrupção do outro agente e pediu que a evolução fosse registrada antes da próxima atualização do APK.
+
+### Evidência reutilizada e validada
+- Branch de trabalho preservada: `feat/dedicacao-certificados-20260928`.
+- O GitHub Actions **run 36441567663** foi consultado novamente: job `build-superstudio-apk` concluído com **success** e etapas de compilação/publicação aprovadas para a v6.5.0.
+- O canal já registra a v6.5.0 assinada e o documento de dedicação registra que ela usa o mesmo certificado da v6.4. **Não substituir o canal público por uma v6.6 antes da nova assinatura ser conferida.**
+- Dedicação/Certificados existentes foram preservados; nenhum dado de usuário foi removido.
+
+### Alteração programada neste lote
+- Versão-fonte Android elevada para **6.6.0 / versionCode 66**, mantendo o mesmo `applicationId one.aurion.poco.v6`.
+- Aba **Canon T8i · RAW Vault** ampliada para:
+  - escolha explícita de pasta raiz pelo Storage Access Framework;
+  - criação de `AURION_T8I/{RAW,PREVIEWS,EXPORTS,PRESETS,CONVERSAS,REFERENCIAS,LUTS,LOGS,BACKUPS}`;
+  - importação de CR3/fotos/vídeos/LUTs com URI persistente e registro SQLite;
+  - cópia explícita dos originais para `RAW` sem sobrescrever arquivo de mesmo nome;
+  - presets/receitas, conversas, notas, erros e referências persistentes;
+  - backup dedicado JSON no workspace;
+  - plano visível de dependências Termux e ligação ao nó T8i do PC.
+- Correção conceitual fixada na própria interface: **CR3 é foto RAW; C-Log é fluxo de vídeo**. O APK não transforma LUT de vídeo em “revelação CR3”.
+- A instalação de pacotes Termux continua exigindo confirmação visível do operador; o APK não executa comandos silenciosamente em outro aplicativo.
+- Revelação RAW completa permanece dependente de motor compatível no PC (ex.: suporte T8i/LibRaw ou Canon DPP autorizado). A aba móvel organiza, registra e preserva; não declara processamento que não ocorreu.
+
+### Gates antes de instalar por cima da v6.5
+1. GitHub Actions precisa compilar a v6.6 sem erro.
+2. O APK final precisa ser assinado com **a mesma chave/certificado da v6.5**; um debug APK de runner não deve substituir a instalação atual.
+3. Conferir SHA-256 do APK assinado e somente então atualizar `android/updates/latest.json`.
+4. Teste físico no POCO: atualização por cima, abertura, workspace, importação CR3, cópia RAW, nota, preset, backup e preservação dos dados de Dedicação/Certificados.
+
+**Estado ao registrar esta seção:** código-fonte preparado para CI; publicação assinada v6.6 e teste físico ainda pendentes e não devem ser declarados concluídos antecipadamente.
+
+
+---
+
+## PARTE 4 — POCO v6.7 · Portfólio, Secretário e Auto Sync horário (28/09/2026)
+
+Pedido do operador: manter o PC ligado com Tailscale, usar o POCO na rua, cruzar estudo/projetos/clientes/provas, criar área dedicada ao cliente/portfólio e detectar mudanças de Git/Drive/Hugging Face/PC com aviso de atualização.
+
+### Implementado no código-fonte
+- Android: **versionCode 67 / versionName 6.7.0**, mesmo pacote `one.aurion.poco.v6`.
+- Nova aba **Portfólio** com contatos/redes, atalhos clicáveis, cases com prova, autorização explícita de exibição, cruzamento com dedicação/certificados e Secretário AURION para briefing.
+- Pistas vindas do acervo permanecem marcadas como **validar antes de publicar**. `@studio.digitalpen` e o GitHub AURION são referências detectadas; energia solar/GS, clipes e clientes nacionais/internacionais entram como slots pendentes de prova.
+- **WorkManager** agenda um ciclo aproximado de uma hora quando houver rede. O Android pode deslocar o horário exato.
+- O ciclo verifica manifesto de APK, Git, Drive (quando o token responde), Hugging Face (quando o token responde) e snapshot autenticado do Super Studio PC.
+- Mudanças viram `sync_event`; APK com versionCode maior gera notificação pendente. A instalação continua dependendo da confirmação do Android.
+- URLs do painel/Home Node/ComfyUI/Ollama e do Super Studio PC passam a alimentar o serviço horário.
+- Super Studio PC ganhou `GET /api/mobile/snapshot` autenticado com estado de serviços e manifestos limitados de arquivos/metadados. Não sobrescreve arquivos nem lê pastas de segredo.
+- Painel PC ganhou aba **PORTFÓLIO**.
+
+### Limites mantidos
+- Tailscale ligado não revela automaticamente o IP ao APK; ele reutiliza o endereço privado/Tailscale configurado.
+- Drive/Hugging Face dependem de credenciais válidas e podem expirar.
+- O auto buscador detecta mudança; não publica case nem cliente automaticamente.
+- O canal público de atualização deve continuar na versão assinada anterior até existir APK 6.7 assinado com o mesmo certificado instalado e SHA-256 conferido.
+
+### Gate
+CI -> assinatura com o mesmo certificado -> SHA-256 -> atualizar `android/updates/latest.json` -> instalar por cima -> testar POCO↔PC/Tailscale.
