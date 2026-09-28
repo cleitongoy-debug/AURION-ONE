@@ -16,7 +16,7 @@ public class MainActivity extends Activity{
  public void build(){
   root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(12),dp(8),dp(12),dp(8));setContentView(root);
   LinearLayout head=new LinearLayout(this);head.setGravity(Gravity.CENTER_VERTICAL);TextView brand=txt("AURION T8i",20,Color.WHITE);brand.setTypeface(null,1);head.addView(brand,new LinearLayout.LayoutParams(0,dp(48),1));
-  TextView ha=txt("⌕   ◌   ⚙",18,Color.WHITE);head.addView(ha,new LinearLayout.LayoutParams(-2,dp(48)));root.addView(head);
+  TextView ha=txt("SEARCH   SYNC   SET",10,MUTED);head.addView(ha,new LinearLayout.LayoutParams(-2,dp(48)));root.addView(head);
   View q=new View(this);q.setBackground(quantum());root.addView(q,new LinearLayout.LayoutParams(-1,dp(3)));
   LinearLayout quick=new LinearLayout(this);quick.setGravity(Gravity.CENTER_VERTICAL);title=txt("EDIÇÃO",12,MUTED);quick.addView(title,new LinearLayout.LayoutParams(0,dp(46),1));
   Button u=button("↶");u.setOnClickListener(x->undo());quick.addView(u,new LinearLayout.LayoutParams(dp(56),dp(38)));
@@ -28,13 +28,13 @@ public class MainActivity extends Activity{
   stage.addView(photo,new LinearLayout.LayoutParams(-1,0,1));
   LinearLayout info=new LinearLayout(this);info.setGravity(Gravity.CENTER_VERTICAL);meta=txt("TOQUE NA ÁREA DA FOTO PARA IMPORTAR",10,MUTED);info.addView(meta,new LinearLayout.LayoutParams(0,dp(34),1));TextView before=txt("SEGURE · ANTES",9,MUTED);info.addView(before);stage.addView(info);
   hist=txt("RGB  HISTOGRAMA",10,Color.WHITE);hist.setBackgroundColor(Color.rgb(8,8,13));stage.addView(hist,new LinearLayout.LayoutParams(-1,dp(54)));
-  root.addView(stage,new LinearLayout.LayoutParams(-1,0,1));
+  root.addView(stage,new LinearLayout.LayoutParams(-1,0,0.58f));
   HorizontalScrollView rail=new HorizontalScrollView(this);rail.setHorizontalScrollBarEnabled(false);tools=new LinearLayout(this);tools.setPadding(0,dp(7),0,dp(7));
   String[] names={"☼\nLuz","◉\nCor","HSL\nMix","⌁\nCurvas","◒\nRoda","◌\nMáscara","△\nDetalhe","✦\nEfeitos","⌗\nCrop","▦\nPresets","A\nAuto","⇧\nExportar"};
   for(String n:names){Button b=button(n);b.setGravity(Gravity.CENTER);b.setOnClickListener(x->open(((Button)x).getText().toString()));tools.addView(b,new LinearLayout.LayoutParams(dp(78),dp(58)));}
   rail.addView(tools);root.addView(rail,new LinearLayout.LayoutParams(-1,dp(72)));
-  panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(SURF);root.addView(panel,new LinearLayout.LayoutParams(-1,dp(170)));open("Luz");
-  LinearLayout bottom=new LinearLayout(this);String[] bn={"▣\nBiblioteca","◆\nEditar","⇄\nConverter","▤\nProjetos","•••\nMais"};for(String n:bn){Button b=button(n);if(n.contains("Editar"))b.setBackground(quantum());if(n.contains("Biblioteca"))b.setOnClickListener(x->pick());bottom.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));}root.addView(bottom);
+  panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setBackgroundColor(SURF);root.addView(panel,new LinearLayout.LayoutParams(-1,0,0.42f));open("Luz");
+  LinearLayout bottom=new LinearLayout(this);String[] bn={"▣\nBiblioteca","◆\nEditar","⇄\nConverter","▤\nProjetos","•••\nMais"};for(String n:bn){Button b=button(n);if(n.contains("Editar"))b.setBackground(quantum());if(n.contains("Biblioteca"))b.setOnClickListener(x->pick());if(n.contains("LAB"))b.setOnClickListener(x->qa());bottom.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));}root.addView(bottom);
  }
  void open(String raw){active=raw.replace("\n"," ").toUpperCase();panel.removeAllViews();TextView h=txt(active,13,Color.WHITE);h.setTypeface(null,1);panel.addView(h,new LinearLayout.LayoutParams(-1,dp(34)));
   if(active.contains("LUZ")){slider("Exposição","exposure",-100,100);slider("Contraste","contrast",-100,100);slider("Realces","highlights",-100,100);slider("Sombras","shadows",-100,100);}
@@ -64,5 +64,6 @@ public class MainActivity extends Activity{
  void redo(){if(hp+1<history.size()){hp++;v.clear();v.putAll(history.get(hp));render();open(active);}}
  void auto(){v.put("exposure",8);v.put("contrast",10);v.put("sat",5);snap();render();open("LUZ");}
  void exportPanel(){Button b=button("EXPORTAR JPG");b.setBackground(quantum());b.setOnClickListener(x->save());panel.addView(b,new LinearLayout.LayoutParams(-1,dp(54)));}
+ void qa(){panel.removeAllViews();TextView h=txt("AURION LAB · TESTE / QA",14,Color.WHITE);h.setTypeface(null,1);panel.addView(h,new LinearLayout.LayoutParams(-1,dp(38)));StringBuilder r=new StringBuilder();r.append(test("VIEWPORT",root.getWidth()>0&&root.getHeight()>0));r.append(test("PREVIEW",photo!=null));r.append(test("HISTÓRICO",history!=null));r.append(test("UNDO/REDO",hp>=-1));r.append(test("ENGINE LUZ",v.containsKey("exposure")&&v.containsKey("contrast")));r.append(test("ENGINE COR",v.containsKey("temp")&&v.containsKey("sat")));r.append(test("IMPORTAÇÃO",source!=null));r.append(test("RENDER",source==null||current!=null));r.append("BLOQUEADO  HSL 8×H/S/L completo\\nBLOQUEADO  Curvas multiponto RGB\\nBLOQUEADO  Máscara local\\nBLOQUEADO  RAW/CR3\\n");TextView out=txt(r.toString(),10,Color.LTGRAY);out.setGravity(Gravity.TOP);out.setPadding(dp(14),dp(10),dp(14),dp(10));panel.addView(out,new LinearLayout.LayoutParams(-1,0,1));Button run=button("EXECUTAR TESTE COMPLETO");run.setBackground(quantum());run.setOnClickListener(x->qa());panel.addView(run,new LinearLayout.LayoutParams(-1,dp(48)));} String test(String n,boolean ok){return (ok?"PASSOU     ":"FALHOU     ")+n+"\\n";}
  void save(){if(current==null){meta.setText("Importe uma foto primeiro.");return;}try{String name="AURION_"+System.currentTimeMillis()+".jpg";android.content.ContentValues cv=new android.content.ContentValues();cv.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME,name);cv.put(android.provider.MediaStore.Images.Media.MIME_TYPE,"image/jpeg");Uri u=getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,cv);OutputStream o=getContentResolver().openOutputStream(u);current.compress(Bitmap.CompressFormat.JPEG,95,o);o.close();meta.setText("EXPORTADO · "+name);}catch(Exception e){meta.setText("Falha ao exportar.");}}
 }
