@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-28",
+  "title": "Dossiê AURION — Matriz de Capacidades e Portfólio",
+  "source_note": "Transcrição estruturada do dossiê formal. Não converter percentuais de curso em horas; não somar blocos de horas de naturezas diferentes.",
+  "profile": {
+    "name": "Cleiton Luiz Epifanio",
+    "alias": "ANARK",
+    "entity": "ONG DigitalPen",
+    "base": "Leme, São Paulo, Brasil",
+    "roles": [
+      "Diretor de Arte",
+      "Designer 3D",
+      "Artista de Efeitos Visuais (VFX)",
+      "Desenvolvedor de Sistemas de Inteligência Artificial",
+      "Fundador e Gestor Técnico da ONG DigitalPen"
+    ]
+  },
+  "audit_metrics": {
+    "system_hours_window": "206,25h–217,5h",
+    "operator_active_hours": 315.7,
+    "operational_cycles": 6882,
+    "q_level": 188.45,
+    "training_investment_brl_declared": 40000,
+    "rule": "Blocos de sistema, operador e investimento financeiro são independentes e não devem ser somados."
+  },
+  "courses": [
+    {
+      "name": "3D Start",
+      "progress_percent": 58,
+      "total_hours": null,
+      "status": "PROGRESSO VERIFICADO · HORAS TOTAIS PENDENTES"
+    },
+    {
+      "name": "Compositor HighEnd",
+      "progress_percent": 50,
+      "total_hours": null,
+      "status": "PROGRESSO VERIFICADO · HORAS TOTAIS PENDENTES"
+    },
+    {
+      "name": "Combo Dose Diária",
+      "progress_percent": 52,
+      "total_hours": null,
+      "status": "PROGRESSO VERIFICADO · HORAS TOTAIS PENDENTES"
+    }
+  ],
+  "capabilities": [
+    {
+      "name": "Conversão de Identidade 2D para 3D",
+      "description": "Transformação de logotipos e manuais visuais bidimensionais em modelos tridimensionais, com materiais, iluminação controlada e preparação para vídeo ou peças impressas."
+    },
+    {
+      "name": "Videoclipes Animados e Infantis",
+      "description": "Direção e animação de narrativas completas para música infantil ou comercial, com personagens estilizados, cenários dinâmicos e cronogramas de produção."
+    },
+    {
+      "name": "Personagens e Mascotes 3D",
+      "description": "Criação conceitual, modelagem, retopologia, rigging e preparação de arquivos para animação, jogos e publicidade."
+    },
+    {
+      "name": "Motion Design e Composição",
+      "description": "Animações gráficas institucionais, vinhetas, tipografia cinética e composição de múltiplos passes no After Effects."
+    },
+    {
+      "name": "VFX com Unreal Engine",
+      "description": "Ambientação em larga escala, Niagara FX, integração de elementos virtuais e iluminação dinâmica em tempo real."
+    },
+    {
+      "name": "Workflows de IA em ComfyUI",
+      "description": "Construção e automação de workflows generativos, geração sequencial, consistência visual e padronização de produtos."
+    },
+    {
+      "name": "Renderização e Lookdev de Produto",
+      "description": "Iluminação e render de embalagens, veículos, maquinários e produtos com Octane Render para e-commerce, impressos e lançamentos."
+    },
+    {
+      "name": "Materiais Promocionais e Sociais",
+      "description": "Flyers, posts institucionais, carrosséis educativos e peças de venda orientadas por marketing visual e legibilidade."
+    },
+    {
+      "name": "Montagem e Finalização de Vídeo",
+      "description": "Edição audiovisual, sincronia com trilha, conformação e correção de cor primária e secundária."
+    },
+    {
+      "name": "Automação de Pipelines",
+      "description": "Rotinas em Python, integração de modelos locais via Ollama e painéis customizados para acelerar fluxos criativos."
+    }
+  ],
+  "projects": [
+    {
+      "name": "Frutinhas Coloridas",
+      "status": "80%–90% concluído",
+      "evidence_summary": "Videoclipe infantil 3D; 8 personagens-fruta + personagem chibi; storyboard com mais de 20 enquadramentos."
+    },
+    {
+      "name": "FAIXA-2 — Personagens Animais",
+      "status": "Entregue",
+      "evidence_summary": "5 mascotes 3D com variações regionais brasileiras; arquivos-base consolidados."
+    },
+    {
+      "name": "ANIMFRUTS",
+      "status": "Concluído e renderizado",
+      "evidence_summary": "7 sequências Full HD (1920×1080), com saídas MP4 e sequências PNG."
+    },
+    {
+      "name": "Esmalteria Nails Drawn",
+      "status": "Concluído e entregue",
+      "evidence_summary": "Identidade visual, cartão de visitas e cartões fidelidade."
+    },
+    {
+      "name": "Ativos Visuais Banda LEO & Som de Praia",
+      "status": "Concluído / implantação logística",
+      "evidence_summary": "Acervo com mais de 588 variações de poses, personagens 3D e workflows para apresentações."
+    },
+    {
+      "name": "LMAO ACE",
+      "status": "Concluído dentro dos ciclos contratuais",
+      "evidence_summary": "Videoclipes conceituais, Dodge Challenger 3D, personagem MC 2Q, visualizers e renders promocionais."
+    },
+    {
+      "name": "AURION LAB",
+      "status": "Em finalização",
+      "evidence_summary": "Matriz educacional de 10 módulos e aproximadamente 50 videoaulas."
+    },
+    {
+      "name": "ONG DigitalPen",
+      "status": "Operação ativa · Lote #6",
+      "evidence_summary": "Programa de inclusão produtiva digital e capacitação prática em 10 módulos."
+    }
+  ],
+  "pending_proofs": [
+    "Capturas oficiais ou certificados com carga horária total dos cursos 3D Start, Compositor HighEnd e Combo Dose Diária.",
+    "Confirmação pública/documental de Anderson Silva, VFX Universe, Rerick, Pedro Risse, Daniel Cardoso e Infocell JK.",
+    "Upload dos certificados proprietários com preservação do original e SHA-256."
+  ],
+  "proof_policy": [
+    "Toda competência deve apontar para evidência quando disponível.",
+    "Percentual de curso não vira horas por estimativa.",
+    "Horas do sistema e horas humanas não são somadas.",
+    "Conclusão de curso só é marcada por informação do operador ou documento verificável.",
+    "Certificados devem preservar o original e receber SHA-256."
+  ]
+}
