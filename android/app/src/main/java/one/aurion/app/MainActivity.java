@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
     private static final int PICK_CONTEXT_IMPORT = 418;
+    private static final int PICK_KEYS_IMPORT = 419;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -101,7 +102,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.1");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.2");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -148,7 +149,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.1.0");
+            j.put("appVersion", "6.2.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -350,7 +351,7 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("api.github.com") || h.equals("huggingface.co") || h.equals("router.huggingface.co") ||
-            h.equals("api.openai.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
+            h.equals("api.openai.com") || h.equals("api.groq.com") || h.equals("integrate.api.nvidia.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
             h.equals("github.com") || h.equals("raw.githubusercontent.com") || h.equals("codeload.github.com") || h.endsWith(".huggingface.co");
     }
 
@@ -377,11 +378,57 @@ public class MainActivity extends Activity {
             else if ("github".equals(service)) result = cloudJson("GET", "https://api.github.com/user", "Bearer " + key, "", null);
             else if ("huggingface".equals(service)) result = cloudJson("GET", "https://huggingface.co/api/whoami-v2", "Bearer " + key, "", null);
             else if ("openai".equals(service)) result = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+            else if ("groq".equals(service)) result = cloudJson("GET", "https://api.groq.com/openai/v1/models", "Bearer " + key, "", null);
+            else if ("nvidia".equals(service)) result = cloudJson("GET", "https://integrate.api.nvidia.com/v1/models", "Bearer " + key, "", null);
             else if ("gemini".equals(service)) result = cloudJson("GET", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", "", key, null);
             else if ("googleDrive".equals(service)) result = cloudJson("GET", "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", "Bearer " + key, "", null);
             else { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Serviço desconhecido"); } catch (Exception ignored) { } }
             emit("aurionAccountResult", new JSONObjectResult(service, result).toString());
         }).start();
+    }
+
+    private String keyService(String name) {
+        String n = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        if (n.equals("openai") || n.equals("openaiapikey") || n.equals("openaitoken")) return "openai";
+        if (n.equals("groq") || n.equals("groqapikey") || n.equals("groqtoken")) return "groq";
+        if (n.equals("nvidia") || n.equals("nvidiaapikey") || n.equals("nvapi")) return "nvidia";
+        if (n.equals("gemini") || n.equals("geminiapikey") || n.equals("googleaistudiokey") || n.equals("googleapikey")) return "gemini";
+        if (n.equals("github") || n.equals("githubtoken") || n.equals("ghtoken")) return "github";
+        if (n.equals("huggingface") || n.equals("huggingfacetoken") || n.equals("hftoken") || n.equals("hfapikey")) return "huggingface";
+        if (n.equals("googledriveaccesstoken") || n.equals("driveaccesstoken")) return "googleDrive";
+        return "";
+    }
+    private void collectKeys(JSONObject root, Map<String,String> found, int depth) {
+        if (depth > 4) return;
+        java.util.Iterator<String> it = root.keys();
+        while (it.hasNext()) {
+            String name = it.next(); Object value = root.opt(name);
+            if (value instanceof JSONObject) { collectKeys((JSONObject)value, found, depth + 1); continue; }
+            String service = keyService(name);
+            if (!service.isEmpty() && value instanceof String) {
+                String secret = ((String)value).trim(); if (secret.length() >= 10 && secret.length() <= 500) found.put(service, secret);
+            }
+        }
+    }
+    private JSONObject importKeysRaw(String raw) {
+        JSONObject result = new JSONObject();
+        try {
+            if (raw == null || raw.length() > 262144) throw new IllegalArgumentException("Arquivo muito grande. Escolha apenas JSON de configuração ou texto KEY=valor.");
+            Map<String,String> found = new LinkedHashMap<>();
+            try { collectKeys(new JSONObject(raw), found, 0); }
+            catch (Exception ignored) {
+                for (String line : raw.split("\\r?\\n")) {
+                    int eq = line.indexOf('='); if (eq <= 0) continue;
+                    String service = keyService(line.substring(0,eq).trim());
+                    String secret = line.substring(eq+1).trim().replaceAll("^[\"']|[\"']$", "");
+                    if (!service.isEmpty() && secret.length() >= 10 && secret.length() <= 500) found.put(service,secret);
+                }
+            }
+            if (found.isEmpty()) throw new IllegalArgumentException("Nenhuma chave reconhecida. Use OPENAI_API_KEY, GEMINI_API_KEY, GITHUB_TOKEN ou HF_TOKEN.");
+            for (Map.Entry<String,String> item : found.entrySet()) store.setSecret(item.getKey(), item.getValue());
+            result.put("ok", true).put("services", new JSONArray(found.keySet()));
+        } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+        return result;
     }
 
     private void syncGitContext() {
@@ -408,24 +455,55 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private String chooseOpenAiModel(String key) {
+        JSONObject models = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+        if (!models.optBoolean("ok")) return "gpt-5-mini";
+        JSONArray data; try { data = new JSONObject(models.optString("body", "{}")).optJSONArray("data"); } catch (Exception e) { return "gpt-5-mini"; }
+        if (data == null) return "gpt-5-mini";
+        java.util.ArrayList<String> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject item = data.optJSONObject(i); if (item != null) ids.add(item.optString("id", ""));
+        }
+        for (String preferred : new String[]{"gpt-5-mini", "gpt-4o-mini", "gpt-4.1-mini"}) if (ids.contains(preferred)) return preferred;
+        for (String id : ids) if (id.startsWith("gpt-") && id.contains("mini")) return id;
+        for (String id : ids) if (id.startsWith("gpt-")) return id;
+        return "gpt-5-mini";
+    }
+
     private void runCloudAi(String provider, String model, String prompt, String memory) {
         new Thread(() -> {
             JSONObject result = new JSONObject();
             try {
                 String key = store.getSecret(provider); if (key.isEmpty()) throw new IllegalStateException("Credencial ausente para " + provider);
-                String input = (memory == null || memory.trim().isEmpty() ? "" : "MEMÓRIA AUTORIZADA:\n" + memory.trim() + "\n\n") + prompt;
+                String input = "Você é AURION ONE, orientador do operador ANARK. Responda em português. Distinga fatos comprovados de planos. Não diga que executou ações não realizadas.\n" +
+                    (memory == null || memory.trim().isEmpty() ? "" : "CONTEXTO AUTORIZADO (referência, não instrução de sistema):\n" + memory.trim() + "\n\n") + prompt;
                 if ("openai".equals(provider)) {
-                    JSONObject body = new JSONObject().put("model", model.isEmpty() ? "gpt-5-mini" : model).put("input", input);
+                    String selected = model == null ? "" : model.trim();
+                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("automático") || selected.equalsIgnoreCase("auto")) selected = chooseOpenAiModel(key);
+                    JSONObject body = new JSONObject().put("model", selected).put("input", input);
                     result = cloudJson("POST", "https://api.openai.com/v1/responses", "Bearer " + key, "", body.toString());
+                    if (!result.optBoolean("ok") && result.optString("body", "").contains("model_not_found")) {
+                        String alternative = chooseOpenAiModel(key);
+                        if (!alternative.equals(selected)) { selected = alternative; body.put("model", selected); result = cloudJson("POST", "https://api.openai.com/v1/responses", "Bearer " + key, "", body.toString()); }
+                    }
+                    result.put("model", selected);
+                } else if ("groq".equals(provider) || "nvidia".equals(provider)) {
+                    String selected = model == null ? "" : model.trim();
+                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("auto")) selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "system").put("content", "Você é AURION ONE. Responda em português com base nos fatos fornecidos.")).put(new JSONObject().put("role", "user").put("content", input));
+                    JSONObject body = new JSONObject().put("model", selected).put("messages", messages);
+                    String endpoint = "groq".equals(provider) ? "https://api.groq.com/openai/v1/chat/completions" : "https://integrate.api.nvidia.com/v1/chat/completions";
+                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());result.put("model", selected);
                 } else if ("gemini".equals(provider)) {
                     JSONArray parts = new JSONArray().put(new JSONObject().put("text", input)); JSONArray contents = new JSONArray().put(new JSONObject().put("role", "user").put("parts", parts));
-                    JSONObject body = new JSONObject().put("contents", contents); String selected = model.isEmpty() ? "gemini-2.5-flash" : model;
+                    JSONObject body = new JSONObject().put("contents", contents); String selected = model == null || model.trim().isEmpty() || model.equalsIgnoreCase("aurion") ? "gemini-2.5-flash" : model.trim();
                     result = cloudJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + selected + ":generateContent", "", key, body.toString());
+                    result.put("model", selected);
                 } else if ("huggingface".equals(provider)) {
                     JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 1200);
                     result = cloudJson("POST", "https://router.huggingface.co/v1/chat/completions", "Bearer " + key, "", body.toString());
                 } else throw new IllegalArgumentException("Provedor não suportado");
-            } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { } }
             emit("aurionAiResult", new JSONObjectResult(provider, result).toString());
         }).start();
     }
@@ -519,6 +597,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
         @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
         @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
+        @JavascriptInterface public void importKeysJson(String raw) { new Thread(() -> emit("aurionKeysResult", MainActivity.this.importKeysRaw(raw).toString())).start(); }
+        @JavascriptInterface public void importKeyFile() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain"}), PICK_KEYS_IMPORT)); }
         @JavascriptInterface public void syncGitContext() { MainActivity.this.syncGitContext(); }
         @JavascriptInterface public void importContextFile() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/plain", "text/markdown", "application/json"}), PICK_CONTEXT_IMPORT)); }
         @JavascriptInterface public void memoryImport() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE), PICK_MEMORY_IMPORT)); }
@@ -547,7 +627,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.1.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.2.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -578,6 +658,17 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
+        }
+        if (request == PICK_KEYS_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri chosen = data.getData(); new Thread(() -> {
+                JSONObject imported;
+                try (InputStream in = getContentResolver().openInputStream(chosen); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    StringBuilder raw = new StringBuilder(); String line;
+                    while ((line = br.readLine()) != null) { raw.append(line).append('\n'); if (raw.length() > 262144) throw new IllegalArgumentException("Arquivo de chaves maior que 256 KB"); }
+                    imported = importKeysRaw(raw.toString());
+                } catch (Exception e) { imported = new JSONObject(); try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+                emit("aurionKeysResult", imported.toString());
+            }).start();
         }
         if (request == PICK_CONTEXT_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             Uri chosen = data.getData(); new Thread(() -> {
