@@ -1153,7 +1153,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void runCloudAi(String provider, String model, String prompt, String memory) { MainActivity.this.runCloudAi(provider, model, prompt, memory); }
         @JavascriptInterface public void downloadResource(String url, String filename, String sha256) { runOnUiThread(() -> MainActivity.this.downloadResource(url, filename, sha256)); }
         @JavascriptInterface public void shareProject(String title, String text) { shareText(title, text); }
-        @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
+        @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s) || "mailto".equals(s) || "tel".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
         @JavascriptInterface public void scanBand() { runOnUiThread(MainActivity.this::requestBluetoothOrScan); }
         @JavascriptInterface public void notifyBand() { runOnUiThread(() -> BandNotificationTest.requestOrSend(MainActivity.this)); }
         @JavascriptInterface public void openMiFitness() { openPackage("com.xiaomi.wearable", "https://play.google.com/store/apps/details?id=com.xiaomi.wearable"); }
