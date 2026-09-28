@@ -49,3 +49,35 @@ window.aurionVaultResult=raw=>{aurionOldVault(raw);renderSetup()};
 const aurionOldAccount=window.aurionAccountResult;
 window.aurionAccountResult=raw=>{aurionOldAccount(raw);try{let x=JSON.parse(raw),w=workState();w.accounts=w.accounts||{};if(x.result?.ok)w.accounts[x.label]=Date.now();else delete w.accounts[x.label];localStorage.setItem(WORK_KEY,JSON.stringify(w))}catch{}renderSetup()};
 seedFactoryContext();renderHistory();renderSetup();setInterval(()=>{renderWork();if(document.getElementById('history').classList.contains('active'))renderHistory()},1000);
+
+// The full agent chat works without a remote model. Retrieval reports only curated facts.
+function offlineAnswer(question){
+ const q=question.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ if(/^(oi|ola|bom dia|boa noite|boa tarde|e ai|salve)[!. ]*$/.test(q))return 'Salve, ANARK. Estou funcionando neste POCO sem PC. Posso consultar nosso contexto sobre T8i, painel, agentes, edição, Band, fone e conexões. O que você quer resolver primeiro?';
+ const score=k=>k.terms.reduce((n,t)=>n+(q.includes(t.normalize('NFD').replace(/[\u0300-\u036f]/g,''))?2:0),0);
+ const hit=AURION_KNOWLEDGE.map(k=>({k,n:score(k)})).sort((a,b)=>b.n-a.n)[0];
+ let matches=[];try{const tokens=q.split(/\W+/).filter(x=>x.length>3).slice(0,4);for(const token of tokens)matches.push(...getMemories('factory',token,2));}catch{}
+ const unique=[...new Map(matches.map(m=>[m.title,m])).values()].slice(0,2);
+ if(hit?.n){let answer=hit.k.answer;if(unique.length)answer+='\n\nNa memória de fábrica: '+unique.map(m=>m.title+' — '+m.body).join(' | ').slice(0,900);return answer+'\n\nPara executar uma ação, abra a aba indicada e confira o resultado nela.'}
+ return 'Não tenho uma resposta verificada para essa pergunta no contexto offline. Posso ajudar com T8i/CR3, imagens, vídeo, memória, PC, ComfyUI, Band, fone e configuração. Para análise livre, configure uma API em Contas ou o nó PC; não vou inventar uma resposta.';
+}
+const guideAskOriginal=askGuide;
+function askGuide(){let q=$('guideQuestion').value.trim();if(!q)return;let answer=offlineAnswer(q);$('guideReply').textContent=answer;$('guideQuestion').value='';native('memoryAdd','conversation','Orientador local · pergunta',q,'{}');native('memoryAdd','conversation','Orientador local · resposta',answer,'{}')}
+function autoScan(manual=false){
+ let lines=[],diag={};try{diag=JSON.parse(native('getDiagnostics')||'{}');lines.push('POCO: '+(diag.model||'Android')+' · '+(diag.network||'sem rede')+' · '+(diag.storageFreeGb??'?')+' GB livres');lines.push('Bluetooth: '+(diag.bluetoothEnabled?'ligado':'desligado')+' · Mi Fitness: '+(diag.miFitness?'instalado':'não detectado'));}catch(e){lines.push('Diagnóstico Android indisponível: '+e.message)}
+ let old=getMemories('factory','',100);if(!old.length){localStorage.removeItem('aurion6Seeded');seedFactoryContext();lines.push('Contexto local recuperado.')}else lines.push('Contexto local: '+old.length+' registros.');
+ let d=data();if(!d.settings||typeof d.settings!=='object')lines.push('Nó PC não configurado; modo offline ativo.');
+ let configured={};try{configured=JSON.parse(native('accountStatus')||'{}')}catch{}
+ if(diag.network!=='offline'){
+  for(const [provider,present] of Object.entries(configured))if(present)native('testAccount',provider);
+  if(d.settings?.agent)native('testService','Home Node',d.settings.agent+'/health');
+  if(d.settings?.comfy)native('testService','ComfyUI',d.settings.comfy+'/system_stats');
+  if(d.settings?.ollama)native('testService','Ollama',d.settings.ollama+'/api/tags');
+  if(manual||Date.now()-Number(localStorage.getItem('aurion6GitSyncAt')||0)>86400000)native('syncGitContext');
+  lines.push('Testes de ligações configuradas iniciados; verde só após resposta recente.');
+ }else lines.push('Sem rede: scan local concluído; sincronização pendente.');
+ $('autoScanLog').textContent=lines.join('\n');renderSetup();renderAll();
+}
+window.aurionSyncResult=raw=>{try{let x=JSON.parse(raw);if(x.ok)localStorage.setItem('aurion6GitSyncAt',Date.now());$('autoScanLog').textContent+='\nGit: '+(x.ok?'contexto atualizado ('+x.updated+' arquivo(s))':'não sincronizado: '+(x.error||'offline'));renderAll()}catch{}};
+window.aurionContextImportResult=raw=>{try{let x=JSON.parse(raw);$('autoScanLog').textContent+='\nDrive/arquivo: '+(x.ok?'contexto importado: '+x.title:'falha: '+x.error);renderAll()}catch{}};
+setTimeout(()=>autoScan(false),400);
