@@ -19,7 +19,9 @@ public class MainActivity extends Activity{
  void open(String n){active=n;tools.removeAllViews();status.setText(n+" · funcional");
  if(n.equals("BIBLIOTECA")){Button x=b("IMPORTAR ARQUIVO");x.setOnClickListener(v->pick());tools.addView(x);}
  else if(n.equals("REVELAÇÃO")||n.equals("LUZ")){slider("Exposição","exposure");slider("Brilho","bright");slider("Contraste","contrast");Button r=b("RESET");r.setOnClickListener(v->reset());tools.addView(r);}
- else if(n.equals("COR")){slider("Temperatura","temp");slider("Matiz","tint");slider("Saturação","sat");slider("Desvanecer","fade");}\n else if(n.equals("MIX RGB")){slider("Vermelho","red");slider("Verde","green");slider("Azul","blue");}\n else if(n.equals("DETALHE")){slider("Nitidez","sharp");}
+ else if(n.equals("COR")){slider("Temperatura","temp");slider("Matiz","tint");slider("Saturação","sat");slider("Desvanecer","fade");}
+ else if(n.equals("MIX RGB")){slider("Vermelho","red");slider("Verde","green");slider("Azul","blue");}
+ else if(n.equals("DETALHE")){slider("Nitidez","sharp");}
  else if(n.equals("AUTO")){Button x=b("ANALISAR E APLICAR AUTO");x.setOnClickListener(v->auto());tools.addView(x);}
  else if(n.equals("CONVERSOR")){Button j=b("CONVERTER → JPEG");j.setOnClickListener(v->save(0));tools.addView(j);Button p=b("CONVERTER → PNG");p.setOnClickListener(v->save(1));tools.addView(p);Button w=b("CONVERTER → WEBP");w.setOnClickListener(v->save(2));tools.addView(w);}
  else if(n.equals("ENTREGA")){Button x=b("EXPORTAR MASTER");x.setOnClickListener(v->chooseMaster());tools.addView(x);}
