@@ -1140,6 +1140,10 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdate() {
+        if (getPackageName().endsWith(".preview")) {
+            updateEvent("current", "Prévia separada: atualizações da instalação principal não se aplicam aqui.", "7.0.0-preview");
+            return;
+        }
         new Thread(() -> {
             try {
                 JSONObject response = cloudJson("GET", UPDATE_MANIFEST, "", "", null);

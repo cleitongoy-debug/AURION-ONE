@@ -10,6 +10,13 @@ android {
         versionName '7.0.0'
         manifestPlaceholders = [appLabel: 'AURION ONE · POCO']
     }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.preview'
+            versionNameSuffix '-preview'
+            manifestPlaceholders = [appLabel: 'AURION ONE · PRÉVIA']
+        }
+    }
 }
 dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'

@@ -18,7 +18,7 @@ O banco SQLite v1 recebe a coluna `profile_id` na migração v2, sem recriar tab
 - A política de abas é local em cada aparelho. A autorização no painel PC, nas APIs, no Drive e no Git ainda exige identidade e ACL no respectivo servidor. Esconder uma aba não concede nem revoga acesso externo.
 - O cliente/agente conectado ao PC não foi liberado aos outros perfis. O chat offline usa somente a memória do perfil. Recursos que exigem ponte Android ou GPU podem ficar indisponíveis para eles até que o servidor aceite identidade própria.
 - Migração de preferências do aparelho DS atribui os dados locais desse aparelho à DS após escolha explícita; conteúdo de fábrica do ANARK é omitido. Revise o backup antes de vincular um aparelho com dados misturados.
-- O artefato do GitHub Actions é assinado pela chave **debug** do runner e serve para revisão. Não atualiza a v6.5 instalada. O binário instalável por cima exige a chave privada correspondente ao certificado SHA-256 `51dd52d9f49e39e2c045f81fb3b70f2a1dd59807d40edba71cd2ae7ea25c9d43`. Não publique `latest.json` até conferir pacote, versão, hash e certificado do APK final.
+- O artefato do GitHub Actions usa pacote separado `one.aurion.poco.v6.preview` e chave **debug** do runner. Pode ser instalado ao lado da versão atual para revisar a interface, mas não lê nem migra o banco/cofre do aplicativo principal. O binário instalável por cima exige a chave privada correspondente ao certificado SHA-256 `51dd52d9f49e39e2c045f81fb3b70f2a1dd59807d40edba71cd2ae7ea25c9d43`. Não publique `latest.json` até conferir pacote, versão, hash e certificado do APK final.
 - Testes físicos POCO, segundo aparelho DS, PC e Tailscale continuam necessários. Não marque verde sem resultado real.
 
 ## Cenários de verificação
@@ -28,5 +28,3 @@ O banco SQLite v1 recebe a coluna `profile_id` na migração v2, sem recriar tab
 3. Retirar uma aba da DS e verificar navegação e ponte Android; sair e reentrar.
 4. Repetir com DS como titular dos registros legados em **outro aparelho** e verificar ausência dos registros de fábrica do ANARK.
 5. Verificar que falhas de código bloqueiam novas tentativas temporariamente, e que o PC rejeita tokens de perfis sem autorização própria.
-
-Estado da entrega: código em revisão no PR #33; artefato debug não é o canal de atualização.
