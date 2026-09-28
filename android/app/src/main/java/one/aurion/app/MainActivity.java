@@ -64,12 +64,14 @@ import org.json.JSONObject;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.security.MessageDigest;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -78,7 +80,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity {
-    private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/latest.json";
+    private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/latest.json";
     private JSONObject availableUpdate;
     private static final int PICK_FILE = 410;
     private static final int CREATE_BACKUP = 411;
@@ -146,7 +148,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.7");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.8");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -202,7 +204,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.7.0");
+            j.put("appVersion", "6.8.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -889,6 +891,178 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+
+    private String t8iPcBase() {
+        return getSharedPreferences("aurion_nodes", MODE_PRIVATE).getString("pcStudio", "").replaceAll("/+$", "");
+    }
+
+    private String t8iPcToken() {
+        return store.getSecret("dedicationPc");
+    }
+
+    private JSONObject t8iPcJson(String method, String path, String body, int readTimeoutMs) {
+        JSONObject result = new JSONObject(); HttpURLConnection connection = null;
+        try {
+            String root = t8iPcBase(), key = t8iPcToken();
+            if (root.isEmpty()) throw new IllegalStateException("Configure a URL privada do Super Studio na aba T8i.");
+            if (key.isEmpty()) throw new IllegalStateException("Configure o token local do Super Studio na aba T8i.");
+            URL base = new URL(root);
+            if (!isAllowedPanelHost(base.getHost())) throw new IllegalArgumentException("Use IP privado, .local ou Tailscale.");
+            URL url = new URL(base.getProtocol() + "://" + base.getAuthority() + path);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(method); connection.setConnectTimeout(8000); connection.setReadTimeout(readTimeoutMs);
+            connection.setUseCaches(false); connection.setRequestProperty("X-Aurion-Token", key);
+            connection.setRequestProperty("Accept", "application/json");
+            if (body != null) {
+                connection.setDoOutput(true); connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                try (OutputStream out = connection.getOutputStream()) { out.write(body.getBytes(StandardCharsets.UTF_8)); }
+            }
+            int code = connection.getResponseCode();
+            InputStream input = code < 400 ? connection.getInputStream() : connection.getErrorStream();
+            StringBuilder content = new StringBuilder();
+            if (input != null) try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
+                String line; while ((line = reader.readLine()) != null && content.length() < 1000000) content.append(line);
+            }
+            result.put("ok", code >= 200 && code < 300).put("http", code).put("body", content.toString());
+            if (!content.toString().trim().isEmpty()) {
+                try { result.put("data", new JSONObject(content.toString())); } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            try { result.put("ok", false).put("error", e.getClass().getSimpleName() + ": " + e.getMessage()); } catch (Exception ignored) {}
+        } finally { if (connection != null) connection.disconnect(); }
+        return result;
+    }
+
+    private void t8iPcStatus() {
+        new Thread(() -> emit("aurionT8iPcResult", t8iPcJson("GET", "/api/mobile/t8i/status", null, 30000).toString())).start();
+    }
+
+    private void t8iPcInstall() {
+        new Thread(() -> {
+            JSONObject payload = new JSONObject();
+            try { payload.put("confirm", "INSTALAR_T8I"); } catch (Exception ignored) {}
+            JSONObject result = t8iPcJson("POST", "/api/mobile/t8i/deps/install", payload.toString(), 900000);
+            try { store.add("t8i_evidence", "Dependências T8i no PC", result.toString(), new JSONObject().put("at", System.currentTimeMillis()).toString()); } catch (Exception ignored) {}
+            emit("aurionT8iPcResult", result.toString());
+        }).start();
+    }
+
+    private JSONObject latestT8iCr3() throws Exception {
+        JSONArray files = store.list("t8i_file", "", 500);
+        for (int i = 0; i < files.length(); i++) {
+            JSONObject row = files.getJSONObject(i);
+            if (row.optString("title", "").toLowerCase(Locale.ROOT).endsWith(".cr3")) return row;
+        }
+        throw new IllegalStateException("Nenhum CR3 registrado no cofre T8i.");
+    }
+
+    private DocumentFile createUniqueDocument(DocumentFile parent, String mime, String requested) {
+        String clean = requested == null || requested.trim().isEmpty() ? "AURION_T8I_" + System.currentTimeMillis() + ".jpg" : requested.replaceAll("[\\\\/:*?\"<>|]", "_");
+        if (parent.findFile(clean) != null) {
+            int dot = clean.lastIndexOf('.');
+            String stem = dot > 0 ? clean.substring(0, dot) : clean;
+            String ext = dot > 0 ? clean.substring(dot) : "";
+            clean = stem + "_" + System.currentTimeMillis() + ext;
+        }
+        return parent.createFile(mime, clean);
+    }
+
+    private void t8iPcDevelop(double brightness, int quality) {
+        final double safeBrightness = Math.max(0.10, Math.min(8.0, brightness));
+        final int safeQuality = Math.max(40, Math.min(100, quality));
+        new Thread(() -> {
+            JSONObject finalResult = new JSONObject(); HttpURLConnection connection = null;
+            try {
+                JSONObject row = latestT8iCr3();
+                JSONObject meta = new JSONObject(row.optString("meta", "{}"));
+                Uri uri = Uri.parse(meta.optString("uri", ""));
+                if (!"content".equals(uri.getScheme())) throw new IllegalStateException("URI do CR3 não está mais disponível.");
+                String fileName = row.optString("title", "arquivo.cr3");
+
+                String root = t8iPcBase(), key = t8iPcToken();
+                if (root.isEmpty() || key.isEmpty()) throw new IllegalStateException("Configure URL e token do Super Studio.");
+                URL base = new URL(root);
+                if (!isAllowedPanelHost(base.getHost())) throw new IllegalArgumentException("Use IP privado, .local ou Tailscale.");
+                URL endpoint = new URL(base.getProtocol() + "://" + base.getAuthority() + "/api/t8i/develop");
+
+                String boundary = "----AurionT8i" + System.currentTimeMillis();
+                connection = (HttpURLConnection) endpoint.openConnection();
+                connection.setRequestMethod("POST"); connection.setDoOutput(true);
+                connection.setConnectTimeout(10000); connection.setReadTimeout(240000);
+                connection.setRequestProperty("X-Aurion-Token", key);
+                connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+                try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
+                    JSONObject params = new JSONObject().put("brightness", safeBrightness).put("quality", safeQuality);
+                    out.writeBytes("--" + boundary + "\r\n");
+                    out.writeBytes("Content-Disposition: form-data; name=\"params\"\r\n\r\n");
+                    out.write(params.toString().getBytes(StandardCharsets.UTF_8)); out.writeBytes("\r\n");
+                    out.writeBytes("--" + boundary + "\r\n");
+                    out.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName.replace("\"", "_") + "\"\r\n");
+                    out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
+                    try (InputStream in = getContentResolver().openInputStream(uri)) {
+                        if (in == null) throw new IllegalStateException("Não foi possível ler o CR3.");
+                        byte[] buffer = new byte[262144]; int n; long total = 0;
+                        while ((n = in.read(buffer)) != -1) {
+                            total += n; if (total > 2L * 1024 * 1024 * 1024) throw new IllegalStateException("CR3 excede limite de 2 GB.");
+                            out.write(buffer, 0, n);
+                        }
+                    }
+                    out.writeBytes("\r\n--" + boundary + "--\r\n"); out.flush();
+                }
+
+                int code = connection.getResponseCode();
+                InputStream responseStream = code < 400 ? connection.getInputStream() : connection.getErrorStream();
+                StringBuilder responseText = new StringBuilder();
+                if (responseStream != null) try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, StandardCharsets.UTF_8))) {
+                    String line; while ((line = br.readLine()) != null && responseText.length() < 1000000) responseText.append(line);
+                }
+                if (code < 200 || code >= 300) throw new IllegalStateException("Revelação HTTP " + code + ": " + responseText);
+                JSONObject response = new JSONObject(responseText.toString());
+                String downloadName = response.optString("download_name", "");
+                if (downloadName.isEmpty() && response.optJSONObject("result") != null) {
+                    String p = response.getJSONObject("result").optString("path", "");
+                    if (!p.isEmpty()) downloadName = new File(p).getName();
+                }
+                if (downloadName.isEmpty()) throw new IllegalStateException("PC concluiu sem nome de exportação.");
+
+                String encoded = URLEncoder.encode(downloadName, "UTF-8").replace("+", "%20");
+                HttpURLConnection dl = (HttpURLConnection)new URL(base.getProtocol() + "://" + base.getAuthority() + "/api/mobile/t8i/export/" + encoded).openConnection();
+                dl.setConnectTimeout(8000); dl.setReadTimeout(120000); dl.setRequestProperty("X-Aurion-Token", key);
+                int dcode = dl.getResponseCode();
+                if (dcode < 200 || dcode >= 300) {
+                    String err = "";
+                    InputStream ein = dl.getErrorStream();
+                    if (ein != null) try (BufferedReader br = new BufferedReader(new InputStreamReader(ein, StandardCharsets.UTF_8))) { err = br.readLine(); }
+                    dl.disconnect();
+                    throw new IllegalStateException("Download do JPEG HTTP " + dcode + (err == null ? "" : ": " + err));
+                }
+
+                DocumentFile exports = ensureChildDirectory(t8iWorkspaceRoot(), "EXPORTS");
+                DocumentFile target = createUniqueDocument(exports, "image/jpeg", downloadName);
+                if (target == null) { dl.disconnect(); throw new IllegalStateException("Não foi possível criar o JPEG em EXPORTS."); }
+                long bytes = 0;
+                try (InputStream in = dl.getInputStream(); OutputStream out = getContentResolver().openOutputStream(target.getUri())) {
+                    if (out == null) throw new IllegalStateException("Destino EXPORTS sem escrita.");
+                    byte[] buffer = new byte[65536]; int n;
+                    while ((n = in.read(buffer)) != -1) { bytes += n; out.write(buffer, 0, n); }
+                } finally { dl.disconnect(); }
+                if (bytes <= 0) throw new IllegalStateException("JPEG retornou vazio.");
+
+                JSONObject evidence = new JSONObject().put("source", fileName).put("output", target.getUri().toString())
+                    .put("bytes", bytes).put("brightness", safeBrightness).put("quality", safeQuality)
+                    .put("pc", base.getAuthority()).put("at", System.currentTimeMillis());
+                store.add("t8i_evidence", "CR3 revelado no PC · " + fileName, response.toString(), evidence.toString());
+                finalResult.put("ok", true).put("source", fileName).put("outputName", target.getName()).put("bytes", bytes)
+                    .put("outputUri", target.getUri().toString()).put("pcResponse", response);
+            } catch (Exception e) {
+                try { finalResult.put("ok", false).put("error", e.getClass().getSimpleName() + ": " + e.getMessage()); } catch (Exception ignored) {}
+                try { store.add("t8i_error", "Falha revelação T8i PC", finalResult.toString(), new JSONObject().put("at", System.currentTimeMillis()).toString()); } catch (Exception ignored) {}
+            } finally { if (connection != null) connection.disconnect(); }
+            emit("aurionT8iPcResult", finalResult.toString());
+        }).start();
+    }
+
     private void shareText(String title, String text) {
         runOnUiThread(() -> {
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
@@ -966,8 +1140,12 @@ public class MainActivity extends Activity {
                 int current = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
                 int next = m.getInt("versionCode");
                 String url = m.getString("apkUrl"), hash = m.getString("sha256");
-                if (next <= current) { updateEvent("current", "Versão atual. Nenhuma instalação necessária.", "6.3.0"); return; }
-                if (!url.startsWith("https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/")
+                if (next <= current) {
+                    String currentName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                    updateEvent("current", "Versão atual. Nenhuma instalação necessária.", currentName == null ? String.valueOf(current) : currentName);
+                    return;
+                }
+                if (!url.startsWith("https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/")
                     || !url.endsWith(".apk") || !hash.matches("[a-fA-F0-9]{64}"))
                     throw new IllegalArgumentException("Publicação sem URL ou checksum válido");
                 availableUpdate = m;
@@ -1128,6 +1306,9 @@ public class MainActivity extends Activity {
             catch (Exception e) { emit("aurionComfyResult", "{\"ok\":false,\"error\":\"Workflow JSON inválido\"}"); }
         }).start(); }
         @JavascriptInterface public void chooseT8iFiles() { runOnUiThread(MainActivity.this::chooseT8iFiles); }
+        @JavascriptInterface public void t8iPcStatus() { MainActivity.this.t8iPcStatus(); }
+        @JavascriptInterface public void t8iPcInstall() { MainActivity.this.t8iPcInstall(); }
+        @JavascriptInterface public void t8iPcDevelop(double brightness, int quality) { MainActivity.this.t8iPcDevelop(brightness, quality); }
         @JavascriptInterface public void prepareT8iWorkspace() { MainActivity.this.prepareT8iWorkspace(); }
         @JavascriptInterface public void archiveT8iOriginals() { MainActivity.this.archiveT8iOriginals(); }
         @JavascriptInterface public void syncT8iWorkspace() { MainActivity.this.syncT8iWorkspace(); }
@@ -1172,7 +1353,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.7.0\nPortfólio, secretário, auto sync horário e T8i RAW Vault.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.8.0\nT8i PC direto, Dedicação, Certificados, Portfólio, Cliente e cofres persistentes.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
