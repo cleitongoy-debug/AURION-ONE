@@ -16,6 +16,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -32,6 +33,10 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.media.session.MediaSession;
+import android.view.KeyEvent;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -43,6 +48,7 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
+import androidx.core.content.FileProvider;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -51,6 +57,9 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.security.MessageDigest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +69,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class MainActivity extends Activity {
+    private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/latest.json";
+    private JSONObject availableUpdate;
     private static final int PICK_FILE = 410;
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
@@ -70,6 +81,9 @@ public class MainActivity extends Activity {
     private static final int PICK_MEMORY_IMPORT = 417;
     private static final int PICK_CONTEXT_IMPORT = 418;
     private static final int PICK_KEYS_IMPORT = 419;
+    private static final int VOICE_INPUT = 420;
+    private TextToSpeech speech;
+    private MediaSession headsetSession;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -93,6 +107,20 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(Color.rgb(4, 8, 13));
         web = new WebView(this);
         store = new AurionStore(this);
+        speech = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS && speech != null) speech.setLanguage(new Locale("pt", "BR")); });
+        headsetSession = new MediaSession(this, "AURION-Capacete");
+        headsetSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS);
+        headsetSession.setCallback(new MediaSession.Callback() {
+            @Override public boolean onMediaButtonEvent(Intent intent) {
+                KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&
+                    (event.getKeyCode() == KeyEvent.KEYCODE_HEADSETPHOOK || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+                    runOnUiThread(() -> { emit("aurionHeadsetButton", "recebido"); bridge.listenVoice(); });
+                    return true;
+                }
+                return super.onMediaButtonEvent(intent);
+            }
+        });
         web.setBackgroundColor(Color.rgb(4, 8, 13));
         setContentView(web);
         WebSettings s = web.getSettings();
@@ -102,7 +130,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.2");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.3");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -129,9 +157,13 @@ public class MainActivity extends Activity {
             }
         });
         web.loadUrl("file:///android_asset/index.html");
+        handler.postDelayed(this::checkForUpdate, 1800);
     }
 
     private void toast(String text) { runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show()); }
+    @Override protected void onResume() { super.onResume(); if (headsetSession != null) headsetSession.setActive(true); }
+    @Override protected void onPause() { if (headsetSession != null) headsetSession.setActive(false); super.onPause(); }
+    @Override protected void onDestroy() { if (headsetSession != null) headsetSession.release(); if (speech != null) speech.shutdown(); super.onDestroy(); }
 
     private boolean isAllowedPanelHost(String host) {
         if (host == null) return false;
@@ -149,7 +181,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.2.0");
+            j.put("appVersion", "6.3.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -489,11 +521,18 @@ public class MainActivity extends Activity {
                     result.put("model", selected);
                 } else if ("groq".equals(provider) || "nvidia".equals(provider)) {
                     String selected = model == null ? "" : model.trim();
-                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("auto")) selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
+                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("auto") ||
+                        selected.startsWith("gpt-")) selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
                     JSONArray messages = new JSONArray().put(new JSONObject().put("role", "system").put("content", "Você é AURION ONE. Responda em português com base nos fatos fornecidos.")).put(new JSONObject().put("role", "user").put("content", input));
                     JSONObject body = new JSONObject().put("model", selected).put("messages", messages);
                     String endpoint = "groq".equals(provider) ? "https://api.groq.com/openai/v1/chat/completions" : "https://integrate.api.nvidia.com/v1/chat/completions";
-                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());result.put("model", selected);
+                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
+                    if (!result.optBoolean("ok") && result.optString("body", "").contains("model_not_found")) {
+                        selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
+                        body.put("model", selected);
+                        result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
+                    }
+                    result.put("model", selected);
                 } else if ("gemini".equals(provider)) {
                     JSONArray parts = new JSONArray().put(new JSONObject().put("text", input)); JSONArray contents = new JSONArray().put(new JSONObject().put("role", "user").put("parts", parts));
                     JSONObject body = new JSONObject().put("contents", contents); String selected = model == null || model.trim().isEmpty() || model.equalsIgnoreCase("aurion") ? "gemini-2.5-flash" : model.trim();
@@ -572,7 +611,133 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void updateEvent(String state, String message, String version) {
+        try { emit("aurionUpdateStatus", new JSONObject().put("state", state).put("message", message).put("version", version).toString()); }
+        catch (Exception ignored) { }
+    }
+
+    private void checkForUpdate() {
+        new Thread(() -> {
+            try {
+                JSONObject response = cloudJson("GET", UPDATE_MANIFEST, "", "", null);
+                if (!response.optBoolean("ok")) throw new IllegalStateException("Canal indisponível");
+                JSONObject m = new JSONObject(response.getString("body"));
+                int current = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                int next = m.getInt("versionCode");
+                String url = m.getString("apkUrl"), hash = m.getString("sha256");
+                if (next <= current) { updateEvent("current", "Versão atual. Nenhuma instalação necessária.", "6.3.0"); return; }
+                if (!url.startsWith("https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/")
+                    || !url.endsWith(".apk") || !hash.matches("[a-fA-F0-9]{64}"))
+                    throw new IllegalArgumentException("Publicação sem URL ou checksum válido");
+                availableUpdate = m;
+                updateEvent("available", "Versão " + m.optString("versionName") + " disponível: " + m.optString("notes", "Correções e recursos."), m.optString("versionName"));
+            } catch (Exception e) { updateEvent("error", "Não foi possível conferir atualizações: " + e.getMessage(), ""); }
+        }).start();
+    }
+
+    private void installAvailableUpdate() {
+        JSONObject m = availableUpdate;
+        if (m == null) { checkForUpdate(); return; }
+        new Thread(() -> {
+            File temp = new File(new File(getCacheDir(), "updates"), "aurion-update.apk");
+            try {
+                temp.getParentFile().mkdirs();
+                URL url = new URL(m.getString("apkUrl"));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(15000); connection.setReadTimeout(60000);
+                connection.setInstanceFollowRedirects(false);
+                if (connection.getResponseCode() != 200) throw new IllegalStateException("Download HTTP " + connection.getResponseCode());
+                MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                long count = 0;
+                try (InputStream in = connection.getInputStream(); FileOutputStream out = new FileOutputStream(temp)) {
+                    byte[] buffer = new byte[32768]; int n;
+                    while ((n = in.read(buffer)) != -1) {
+                        count += n; if (count > 100L * 1024 * 1024) throw new IllegalStateException("APK excede 100 MB");
+                        out.write(buffer, 0, n); sha.update(buffer, 0, n);
+                    }
+                } finally { connection.disconnect(); }
+                StringBuilder digest = new StringBuilder();
+                for (byte b : sha.digest()) digest.append(String.format(Locale.ROOT, "%02x", b & 255));
+                if (!digest.toString().equalsIgnoreCase(m.getString("sha256"))) throw new SecurityException("Checksum do APK diferente da publicação");
+                PackageInfo archive = getPackageManager().getPackageArchiveInfo(temp.getAbsolutePath(), PackageManager.GET_SIGNING_CERTIFICATES);
+                PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                if (archive == null || !getPackageName().equals(archive.packageName) || archive.versionCode != m.getInt("versionCode")
+                    || archive.versionCode <= installed.versionCode || archive.signingInfo == null || installed.signingInfo == null
+                    || !MessageDigest.isEqual(archive.signingInfo.getApkContentsSigners()[0].toByteArray(),
+                                              installed.signingInfo.getApkContentsSigners()[0].toByteArray()))
+                    throw new SecurityException("Pacote, versão ou assinatura incompatível");
+                updateEvent("ready", "APK conferido. Confirme a instalação na tela do Android.", m.optString("versionName"));
+                runOnUiThread(() -> {
+                    if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                        updateEvent("permission", "Autorize atualizações deste app e toque em INSTALAR novamente.", m.optString("versionName"));
+                        startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
+                        return;
+                    }
+                    Uri content = FileProvider.getUriForFile(this, getPackageName() + ".updates", temp);
+                    Intent intent = new Intent(Intent.ACTION_VIEW).setDataAndType(content, "application/vnd.android.package-archive")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                });
+            } catch (Exception e) { updateEvent("error", "Atualização não instalada: " + e.getMessage(), ""); }
+        }).start();
+    }
+
+    private void generateImage(String prompt, String model) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            HttpURLConnection connection = null;
+            try {
+                String key = store.getSecret("huggingface");
+                if (key.isEmpty()) throw new IllegalStateException("Importe uma chave Hugging Face com permissão Inference Providers");
+                if (prompt == null || prompt.trim().isEmpty()) throw new IllegalArgumentException("Escreva um prompt");
+                String selected = model == null || model.trim().isEmpty() ? "stabilityai/stable-diffusion-3-medium-diffusers" : model.trim();
+                if (!selected.matches("[A-Za-z0-9._-]+/[A-Za-z0-9._-]+")) throw new IllegalArgumentException("Modelo deve ser autor/nome");
+                URL url = new URL("https://router.huggingface.co/hf-inference/models/" + selected);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST"); connection.setDoOutput(true);
+                connection.setConnectTimeout(15000); connection.setReadTimeout(120000);
+                connection.setRequestProperty("Authorization", "Bearer " + key);
+                connection.setRequestProperty("Content-Type", "application/json");
+                byte[] body = new JSONObject().put("inputs", prompt.trim()).toString().getBytes(StandardCharsets.UTF_8);
+                try (OutputStream out = connection.getOutputStream()) { out.write(body); }
+                int code = connection.getResponseCode();
+                if (code < 200 || code >= 300) {
+                    StringBuilder error = new StringBuilder();
+                    try (InputStream in = connection.getErrorStream()) {
+                        if (in != null) { byte[] b = new byte[2048]; int n = in.read(b); if (n > 0) error.append(new String(b, 0, n, StandardCharsets.UTF_8)); }
+                    }
+                    throw new IllegalStateException("HTTP " + code + ": " + error.toString().replaceAll("(?i)hf_[A-Za-z0-9]+", "[chave oculta]"));
+                }
+                String type = connection.getContentType();
+                if (type == null || !type.toLowerCase(Locale.ROOT).startsWith("image/")) throw new IllegalStateException("Provedor não retornou imagem");
+                String ext = type.contains("png") ? "png" : "jpg";
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, "AURION-" + System.currentTimeMillis() + "." + ext);
+                values.put(MediaStore.Images.Media.MIME_TYPE, ext.equals("png") ? "image/png" : "image/jpeg");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AURION/GERADAS");
+                Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri == null) throw new IllegalStateException("Galeria indisponível");
+                long count = 0;
+                try (InputStream in = connection.getInputStream(); OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out == null) throw new IllegalStateException("Não foi possível salvar");
+                    byte[] b = new byte[32768]; int n;
+                    while ((n = in.read(b)) != -1) { count += n; if (count > 25L * 1024 * 1024) throw new IllegalStateException("Imagem excede 25 MB"); out.write(b, 0, n); }
+                }
+                if (count < 1000) { getContentResolver().delete(uri, null, null); throw new IllegalStateException("Resposta de imagem vazia"); }
+                result.put("ok", true).put("model", selected).put("uri", uri.toString()).put("bytes", count);
+                store.add("evidence", "Imagem gerada · " + selected, prompt, new JSONObject().put("uri", uri.toString()).put("bytes", count).toString());
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { } }
+            finally { if (connection != null) connection.disconnect(); }
+            emit("aurionImageResult", result.toString());
+        }).start();
+    }
+
     public final class Bridge {
+        @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
+        @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
+        @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
+        @JavascriptInterface public void speakText(String text) { runOnUiThread(() -> { if (speech != null) speech.speak(text == null ? "" : text.substring(0, Math.min(text.length(), 3000)), TextToSpeech.QUEUE_FLUSH, null, "aurion-response"); }); }
+        @JavascriptInterface public void listenVoice() { runOnUiThread(() -> { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR"); startActivityForResult(intent, VOICE_INPUT); } catch (Exception e) { toast("Ditado não disponível neste aparelho"); } }); }
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
@@ -627,7 +792,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.2.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.3.0\nAtualização no app e laboratório automático com registro de evidências.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -638,6 +803,10 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == VOICE_INPUT && result == RESULT_OK && data != null) {
+            java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (heard != null && !heard.isEmpty()) emit("aurionVoiceResult", heard.get(0));
+        }
         if (request == PICK_FILE && selectedFiles != null) { selectedFiles.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data)); selectedFiles = null; }
         if (request == CREATE_BACKUP && result == RESULT_OK && data != null && data.getData() != null) {
             try (OutputStream out = getContentResolver().openOutputStream(data.getData())) { if (out != null) out.write(pendingBackup.getBytes(StandardCharsets.UTF_8)); toast("Backup salvo no local escolhido"); }
