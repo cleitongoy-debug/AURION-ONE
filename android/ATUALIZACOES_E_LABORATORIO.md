@@ -21,3 +21,11 @@ A publicação de código no PR rascunho não entrega automaticamente um APK ass
 ## Evidência pendente
 
 A compilação e a assinatura podem ser verificadas no artefato; instalação, atualização sobre a versão anterior, botão do capacete, cota real das APIs e geração de imagem devem ser testados no POCO. Status visual não substitui resposta real.
+
+## Publicação confirmada da v6.3
+
+- GitHub Actions run `36383209496` compilou o código no commit `5f36ad661750837f3be855a73d5d336c04d28f7a` com sucesso.
+- APK final: 2.065.958 bytes; SHA-256 `ba2278ec8855226f8deb6c20d435e412c8caae63508b887cece97a74a62af4d5`. A ferramenta Android confirmou assinatura v2 e v3 com certificado SHA-256 `51dd52d9f49e39e2c045f81fb3b70f2a1dd59807d40edba71cd2ae7ea25c9d43`.
+- Binário publicado em `android/updates/AURION-ONE-POCO-v6.3.0.apk` no Git; manifesto com o hash exato publicado em `android/updates/latest.json`. A cópia assinada também foi entregue no Drive.
+- A chave privada de assinatura está em arquivo privado no Drive do operador; seu conteúdo não está no Git. Guardá-la é necessário para futuras atualizações compatíveis.
+- A v6.2 foi assinada por chave debug distinta. Se o Android impedir instalar a v6.3 por cima, faça backup de memória, desinstale a v6.2 uma vez e instale a v6.3 assinada; a partir dela mantenha o pacote e a chave para atualizar por cima.
