@@ -1,16 +1,59 @@
-# AURION Mobile AI
+# AURION ONE HUD v3.0.0
 
-Aplicativo Android independente do painel de PC. Inclui chat por endpoint OpenAI-compatível, voz/TTS, cofre criptografado para chaves, geração por endpoints de imagem/vídeo e gerenciador de downloads HTTPS para GitHub/Hugging Face.
+APK Android independente do painel de PC, mantendo o mesmo applicationId `one.aurion.mobileai.hud` para atualização sobre o HUD v2.
 
-## Limite técnico honesto
+## Módulos no APK
 
-O POCO X7 pode executar modelos GGUF pequenos quando um runtime nativo for integrado. Qwen-Image, Wan e MiniMax de imagem/vídeo exigem GPU/VRAM de servidor e são acessados por API. A versão 1.0 gerencia downloads GGUF, mas não os executa localmente.
+- **Início**: resumo de IA, memória, estudos, clientes e T8i.
+- **Chat + Voz**: roteamento por endpoints configurados, TTS e botão de headset.
+- **Memória**: caixas locais autorizadas.
+- **Criar / Estúdio / Imagem / Converter**: funções móveis existentes preservadas.
+- **T8i**: seleção de CR3/MP4, preservação do original, depósito escolhido pelo operador, verificação/instalação opcional do suporte RAW no Super Studio do PC e revelação CR3 → JPEG quando o PC estiver conectado.
+- **Estudos**: curso, professor, assunto, tópico, progresso informado, conclusão manual, notas e cronômetro persistente.
+- **Clientes**: cliente, projeto, serviço, status, prazo, notas e cronômetro de trabalho.
+- **Depósitos**: escolha de raiz/pastas pelo seletor oficial do Android, exportação de conversas, estudos, clientes e backup ZIP.
+- **Conexões / PC / Bíblia / Contas**: preservados.
 
-## Primeiro uso
+## Persistência
 
-1. Abra **Contas** e informe uma chave Hugging Face ou outro endpoint compatível.
-2. Informe endpoint e modelo.
-3. Use **Chat**, **Criar** e **Modelos**.
-4. Pareie o fone/capacete no Android antes de tocar em **Voz**.
+Os registros críticos são gravados primeiro no armazenamento interno do app em JSONL:
 
-Mi Band 9 Pro recebe notificações espelhadas pelo Mi Fitness; ela não expõe um microfone genérico para aplicativos Android.
+- `conversations.jsonl`
+- `study_sessions.jsonl`
+- `clients.jsonl`
+- `t8i_assets.jsonl`
+- `events.jsonl`
+
+Os depósitos externos são opcionais e escolhidos pelo operador via Storage Access Framework. O backup não exporta chaves de API.
+
+## Canon T8i
+
+Um arquivo **CR3 é RAW fotográfico**, não C-Log. A revelação RAW do PC usa o módulo `pc-package-v3` e as dependências fixadas em `requirements-t8i.txt` (rawpy/LibRaw, NumPy, imageio e tifffile). O original nunca é sobrescrito.
+
+Fluxo previsto:
+
+1. selecionar CR3 no APK;
+2. copiar o original para o depósito escolhido;
+3. conectar ao Super Studio do PC;
+4. verificar dependências;
+5. instalar suporte T8i somente com confirmação explícita;
+6. revelar no PC;
+7. trazer o JPEG para o depósito T8i EXPORTS no Android.
+
+Se o PC estiver offline, o arquivo e o registro local permanecem preservados.
+
+## Build
+
+O workflow `.github/workflows/aurion-mobile-ai.yml` compila o APK e publica o artefato:
+
+`AURION-ONE-HUD-v3.0.0.apk`
+
+Também executa `py_compile` no bridge T8i do Super Studio antes do build Android.
+
+## Limites técnicos
+
+- O APK não afirma conclusão de curso automaticamente; progresso/conclusão são dados informados pelo operador.
+- O APK não varre pastas que não foram escolhidas pelo operador.
+- A integração T8i com o PC exige Super Studio online, URL/token local e ambiente Python isolado preparado.
+- Qwen-Image, Wan e outros modelos pesados continuam dependentes do PC/GPU ou de endpoints externos adequados.
+- Mi Band 9 Pro depende das capacidades expostas pelo Android/Mi Fitness; não é tratada como microfone genérico.
