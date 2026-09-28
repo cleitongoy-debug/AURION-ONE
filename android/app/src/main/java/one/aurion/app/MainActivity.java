@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
+    private static final int PICK_T8I_FILES = 490;
     private static final int PICK_CONTEXT_IMPORT = 418;
     private static final int PICK_KEYS_IMPORT = 419;
     private static final int VOICE_INPUT = 420;
@@ -189,7 +190,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.5.0");
+            j.put("appVersion", "6.6.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -750,6 +751,132 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+
+    private DocumentFile ensureChildDirectory(DocumentFile parent, String name) throws Exception {
+        DocumentFile found = parent.findFile(name);
+        if (found != null && found.isDirectory()) return found;
+        DocumentFile created = parent.createDirectory(name);
+        if (created == null) throw new IllegalStateException("Não foi possível criar " + name);
+        return created;
+    }
+
+    private DocumentFile t8iWorkspaceRoot() throws Exception {
+        String raw = getSharedPreferences("aurion_workspace", MODE_PRIVATE).getString("tree", "");
+        if (raw.isEmpty()) throw new IllegalStateException("Escolha uma pasta raiz primeiro");
+        DocumentFile root = DocumentFile.fromTreeUri(this, Uri.parse(raw));
+        if (root == null || !root.canWrite()) throw new IllegalStateException("Workspace sem permissão de escrita");
+        return ensureChildDirectory(root, "AURION_T8I");
+    }
+
+    private void chooseT8iFiles() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
+        i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*","video/*","image/x-canon-cr3","application/octet-stream","application/json","text/plain"});
+        startActivityForResult(i, PICK_T8I_FILES);
+    }
+
+    private void importT8iFiles(Intent data) {
+        new Thread(() -> {
+            JSONObject response = new JSONObject(); JSONArray entries = new JSONArray();
+            try {
+                java.util.ArrayList<Uri> selected = new java.util.ArrayList<>();
+                if (data.getClipData() != null) for (int i = 0; i < data.getClipData().getItemCount(); i++) selected.add(data.getClipData().getItemAt(i).getUri());
+                else if (data.getData() != null) selected.add(data.getData());
+                int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                for (Uri uri : selected) {
+                    if (!"content".equals(uri.getScheme())) continue;
+                    try { getContentResolver().takePersistableUriPermission(uri, flags); } catch (Exception ignored) {}
+                    String name = "arquivo", mime = getContentResolver().getType(uri); long size = -1;
+                    try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null)) {
+                        if (c != null && c.moveToFirst()) { name = c.getString(0); size = c.getLong(1); }
+                    } catch (Exception ignored) {}
+                    String lower = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
+                    if (!lower.matches(".*\\.(cr3|jpg|jpeg|png|tif|tiff|mp4|mov|cube|xmp|json)$")) continue;
+                    JSONObject meta = new JSONObject().put("uri", uri.toString()).put("bytes", size)
+                        .put("mime", mime == null ? "" : mime).put("importedAt", System.currentTimeMillis())
+                        .put("originalPreserved", true);
+                    long id = store.add("t8i_file", name, "Original/recurso T8i autorizado pelo operador", meta.toString());
+                    entries.put(new JSONObject().put("id", id).put("name", name).put("bytes", size).put("mime", mime));
+                }
+                response.put("ok", true).put("files", entries).put("count", entries.length());
+            } catch (Exception e) { try { response.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+            emit("aurionT8iFilesResult", response.toString());
+        }).start();
+    }
+
+    private void prepareT8iWorkspace() {
+        new Thread(() -> {
+            JSONObject result = new JSONObject(); JSONArray folders = new JSONArray();
+            try {
+                DocumentFile base = t8iWorkspaceRoot();
+                for (String name : new String[]{"RAW","PREVIEWS","EXPORTS","PRESETS","CONVERSAS","REFERENCIAS","LUTS","LOGS","BACKUPS"}) {
+                    ensureChildDirectory(base, name); folders.put(name);
+                }
+                JSONObject meta = new JSONObject().put("folders", folders).put("at", System.currentTimeMillis());
+                store.add("t8i_evidence", "Workspace T8i preparado", "Estrutura criada/conferida sem sobrescrever originais", meta.toString());
+                result.put("ok", true).put("root", base.getName()).put("folders", folders);
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+            emit("aurionT8iWorkspaceResult", result.toString());
+        }).start();
+    }
+
+    private void archiveT8iOriginals() {
+        new Thread(() -> {
+            JSONObject result = new JSONObject(); int copied = 0, skipped = 0, failed = 0;
+            try {
+                DocumentFile rawDir = ensureChildDirectory(t8iWorkspaceRoot(), "RAW");
+                JSONArray files = store.list("t8i_file", "", 500);
+                byte[] buffer = new byte[65536];
+                for (int i = 0; i < files.length(); i++) {
+                    try {
+                        JSONObject item = files.getJSONObject(i); JSONObject meta = new JSONObject(item.optString("meta", "{}"));
+                        Uri uri = Uri.parse(meta.optString("uri")); String name = item.optString("title", "arquivo");
+                        if (rawDir.findFile(name) != null) { skipped++; continue; }
+                        String mime = meta.optString("mime", "application/octet-stream"); if (mime.isEmpty()) mime = "application/octet-stream";
+                        DocumentFile target = rawDir.createFile(mime, name); if (target == null) throw new IllegalStateException("Destino indisponível");
+                        try (InputStream in = getContentResolver().openInputStream(uri); OutputStream out = getContentResolver().openOutputStream(target.getUri())) {
+                            if (in == null || out == null) throw new IllegalStateException("Arquivo sem acesso");
+                            int n; while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+                        }
+                        copied++;
+                    } catch (Exception one) { failed++; }
+                }
+                JSONObject meta = new JSONObject().put("copied", copied).put("skipped", skipped).put("failed", failed).put("at", System.currentTimeMillis());
+                store.add("t8i_evidence", "Arquivamento de originais T8i", "Cópia explícita para RAW; arquivos existentes não foram sobrescritos", meta.toString());
+                result.put("ok", failed == 0).put("copied", copied).put("skipped", skipped).put("failed", failed);
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+            emit("aurionT8iArchiveResult", result.toString());
+        }).start();
+    }
+
+    private void syncT8iWorkspace() {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                DocumentFile base = t8iWorkspaceRoot(); DocumentFile backups = ensureChildDirectory(base, "BACKUPS");
+                JSONObject payload = new JSONObject();
+                payload.put("format", "aurion-t8i-v1").put("exportedAt", System.currentTimeMillis())
+                    .put("files", store.list("t8i_file", "", 500))
+                    .put("presets", store.list("t8i_preset", "", 500))
+                    .put("notes", store.list("t8i_note", "", 500))
+                    .put("conversations", store.list("t8i_conversation", "", 500))
+                    .put("errors", store.list("t8i_error", "", 500))
+                    .put("references", store.list("t8i_reference", "", 500))
+                    .put("evidence", store.list("t8i_evidence", "", 500));
+                String name = "t8i_backup_" + System.currentTimeMillis() + ".json";
+                DocumentFile file = backups.createFile("application/json", name);
+                if (file == null) throw new IllegalStateException("Não foi possível criar backup");
+                try (OutputStream out = getContentResolver().openOutputStream(file.getUri())) {
+                    if (out == null) throw new IllegalStateException("Destino de backup indisponível");
+                    out.write(payload.toString(2).getBytes(StandardCharsets.UTF_8));
+                }
+                store.add("t8i_evidence", "Backup T8i", name, new JSONObject().put("uri", file.getUri().toString()).put("at", System.currentTimeMillis()).toString());
+                result.put("ok", true).put("name", name).put("uri", file.getUri().toString());
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+            emit("aurionT8iBackupResult", result.toString());
+        }).start();
+    }
+
     private void shareText(String title, String text) {
         runOnUiThread(() -> {
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
@@ -955,6 +1082,10 @@ public class MainActivity extends Activity {
             try { JSONObject parsed = new JSONObject(workflow); JSONObject body = parsed.has("prompt") ? parsed : new JSONObject().put("prompt", parsed); emit("aurionComfyResult", httpJson("POST", new URL(new URL(base), "/prompt").toString(), "", body.toString()).toString()); }
             catch (Exception e) { emit("aurionComfyResult", "{\"ok\":false,\"error\":\"Workflow JSON inválido\"}"); }
         }).start(); }
+        @JavascriptInterface public void chooseT8iFiles() { runOnUiThread(MainActivity.this::chooseT8iFiles); }
+        @JavascriptInterface public void prepareT8iWorkspace() { MainActivity.this.prepareT8iWorkspace(); }
+        @JavascriptInterface public void archiveT8iOriginals() { MainActivity.this.archiveT8iOriginals(); }
+        @JavascriptInterface public void syncT8iWorkspace() { MainActivity.this.syncT8iWorkspace(); }
         @JavascriptInterface public void chooseWorkspace() { runOnUiThread(MainActivity.this::chooseWorkspace); }
         @JavascriptInterface public void capturePhoto() { runOnUiThread(MainActivity.this::capturePhoto); }
         @JavascriptInterface public void convertImage(String format, int quality) { runOnUiThread(() -> chooseImageForConversion(format, quality)); }
@@ -996,7 +1127,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.5.0\nDedicação, cursos e certificados com provas.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.6.0\nT8i RAW Vault + dedicação, cursos e certificados.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -1059,6 +1190,9 @@ public class MainActivity extends Activity {
                 } catch (Exception e) { try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
                 emit("aurionContextImportResult", imported.toString());
             }).start();
+        }
+        if (request == PICK_T8I_FILES && result == RESULT_OK && data != null) {
+            importT8iFiles(data);
         }
         if (request == PICK_MEMORY_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             new Thread(() -> {
