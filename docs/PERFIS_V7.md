@@ -28,3 +28,5 @@ O banco SQLite v1 recebe a coluna `profile_id` na migração v2, sem recriar tab
 3. Retirar uma aba da DS e verificar navegação e ponte Android; sair e reentrar.
 4. Repetir com DS como titular dos registros legados em **outro aparelho** e verificar ausência dos registros de fábrica do ANARK.
 5. Verificar que falhas de código bloqueiam novas tentativas temporariamente, e que o PC rejeita tokens de perfis sem autorização própria.
+
+Estado da entrega: código em revisão no PR #33; artefato debug não é o canal de atualização.
