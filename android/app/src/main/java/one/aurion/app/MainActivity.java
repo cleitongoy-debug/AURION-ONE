@@ -16,6 +16,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -32,6 +33,12 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.database.Cursor;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.media.session.MediaSession;
+import android.view.KeyEvent;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -43,6 +50,7 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
+import androidx.core.content.FileProvider;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -51,6 +59,9 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.security.MessageDigest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +71,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class MainActivity extends Activity {
+    private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/latest.json";
+    private JSONObject availableUpdate;
     private static final int PICK_FILE = 410;
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
@@ -68,6 +81,12 @@ public class MainActivity extends Activity {
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
+    private static final int PICK_CONTEXT_IMPORT = 418;
+    private static final int PICK_KEYS_IMPORT = 419;
+    private static final int VOICE_INPUT = 420;
+    private static final int PICK_CLIENT_PHOTOS = 421;
+    private TextToSpeech speech;
+    private MediaSession headsetSession;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -91,6 +110,20 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(Color.rgb(4, 8, 13));
         web = new WebView(this);
         store = new AurionStore(this);
+        speech = new TextToSpeech(this, status -> { if (status == TextToSpeech.SUCCESS && speech != null) speech.setLanguage(new Locale("pt", "BR")); });
+        headsetSession = new MediaSession(this, "AURION-Capacete");
+        headsetSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS);
+        headsetSession.setCallback(new MediaSession.Callback() {
+            @Override public boolean onMediaButtonEvent(Intent intent) {
+                KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&
+                    (event.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+                    runOnUiThread(() -> { emit("aurionHeadsetButton", "recebido"); bridge.listenVoice(); });
+                    return true;
+                }
+                return super.onMediaButtonEvent(intent);
+            }
+        });
         web.setBackgroundColor(Color.rgb(4, 8, 13));
         setContentView(web);
         WebSettings s = web.getSettings();
@@ -100,7 +133,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-SuperStudio/5.0");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.3");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -127,15 +160,20 @@ public class MainActivity extends Activity {
             }
         });
         web.loadUrl("file:///android_asset/index.html");
+        handler.postDelayed(this::checkForUpdate, 1800);
     }
 
     private void toast(String text) { runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show()); }
+    @Override protected void onResume() { super.onResume(); if (headsetSession != null) headsetSession.setActive(true); }
+    @Override protected void onPause() { if (headsetSession != null) headsetSession.setActive(false); super.onPause(); }
+    @Override protected void onDestroy() { if (headsetSession != null) headsetSession.release(); if (speech != null) speech.shutdown(); super.onDestroy(); }
 
     private boolean isAllowedPanelHost(String host) {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("localhost") || h.equals("127.0.0.1") || h.endsWith(".ts.net") || h.endsWith(".local") ||
-            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*");
+            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*") ||
+            h.matches("100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\..*");
     }
 
     private boolean has(String permission) { return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED; }
@@ -147,7 +185,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.0.0");
+            j.put("appVersion", "6.4.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -300,6 +338,71 @@ public class MainActivity extends Activity {
         return out;
     }
 
+    private void probePcStack(String base, String token, String comfy, String ollama) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                JSONObject endpoints = new JSONObject();
+                String root = base == null ? "" : base.replaceAll("/+$", "");
+                if (!root.isEmpty()) {
+                    endpoints.put("health", probeEndpoint(root + "/health", ""));
+                    endpoints.put("status", probeEndpoint(root + "/api/status", token));
+                    endpoints.put("inventory", probeEndpoint(root + "/api/inventory", token));
+                }
+                if (comfy != null && !comfy.isEmpty()) endpoints.put("comfy", probeEndpoint(comfy.replaceAll("/+$", "") + "/system_stats", ""));
+                if (ollama != null && !ollama.isEmpty()) endpoints.put("ollama", probeEndpoint(ollama.replaceAll("/+$", "") + "/api/tags", ""));
+                result.put("checkedAt", System.currentTimeMillis()).put("endpoints", endpoints);
+            } catch (Exception e) { try { result.put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
+            emit("aurionPcProbeResult", result.toString());
+        }).start();
+    }
+
+    private JSONObject probeEndpoint(String url, String token) throws Exception {
+        JSONObject response = httpJson("GET", url, token, null);
+        JSONObject summary = new JSONObject();
+        summary.put("ok", response.optBoolean("ok"));
+        summary.put("http", response.optInt("http"));
+        if (response.has("error")) summary.put("error", response.optString("error"));
+        return summary;
+    }
+
+    private void importClientPhotos(Intent data) {
+        try {
+            java.util.ArrayList<Uri> selected = new java.util.ArrayList<>();
+            if (data.getClipData() != null) for (int i = 0; i < data.getClipData().getItemCount(); i++) selected.add(data.getClipData().getItemAt(i).getUri());
+            else if (data.getData() != null) selected.add(data.getData());
+            JSONArray entries = new JSONArray();
+            int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+            for (Uri uri : selected) {
+                if (!"content".equals(uri.getScheme())) continue;
+                try { getContentResolver().takePersistableUriPermission(uri, flags); } catch (Exception ignored) {}
+                String name = "Imagem do cliente"; long size = -1;
+                try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null)) {
+                    if (c != null && c.moveToFirst()) { name = c.getString(0); size = c.getLong(1); }
+                } catch (Exception ignored) {}
+                JSONObject meta = new JSONObject().put("uri", uri.toString()).put("bytes", size).put("importedAt", System.currentTimeMillis());
+                long id = store.add("client_asset", name, "Referência fotográfica autorizada pelo operador", meta.toString());
+                entries.put(new JSONObject().put("id", id).put("name", name).put("bytes", size));
+            }
+            emit("aurionClientPhotosResult", new JSONObject().put("ok", true).put("photos", entries).toString());
+        } catch (Exception e) { try { emit("aurionClientPhotosResult", new JSONObject().put("ok", false).put("error", e.getClass().getSimpleName()).toString()); } catch (Exception ignored) {} }
+    }
+
+    private void openClientPhoto(long id) {
+        try {
+            JSONArray items = store.list("client_asset", "", 500);
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                if (item.optLong("id") != id) continue;
+                Uri uri = Uri.parse(new JSONObject(item.optString("meta")).optString("uri"));
+                if (!"content".equals(uri.getScheme())) break;
+                startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "image/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                return;
+            }
+        } catch (Exception ignored) {}
+        toast("Referência indisponível; importe novamente.");
+    }
+
     private void chooseWorkspace() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -349,7 +452,7 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("api.github.com") || h.equals("huggingface.co") || h.equals("router.huggingface.co") ||
-            h.equals("api.openai.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
+            h.equals("api.openai.com") || h.equals("api.groq.com") || h.equals("integrate.api.nvidia.com") || h.equals("generativelanguage.googleapis.com") || h.equals("www.googleapis.com") ||
             h.equals("github.com") || h.equals("raw.githubusercontent.com") || h.equals("codeload.github.com") || h.endsWith(".huggingface.co");
     }
 
@@ -376,6 +479,8 @@ public class MainActivity extends Activity {
             else if ("github".equals(service)) result = cloudJson("GET", "https://api.github.com/user", "Bearer " + key, "", null);
             else if ("huggingface".equals(service)) result = cloudJson("GET", "https://huggingface.co/api/whoami-v2", "Bearer " + key, "", null);
             else if ("openai".equals(service)) result = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+            else if ("groq".equals(service)) result = cloudJson("GET", "https://api.groq.com/openai/v1/models", "Bearer " + key, "", null);
+            else if ("nvidia".equals(service)) result = cloudJson("GET", "https://integrate.api.nvidia.com/v1/models", "Bearer " + key, "", null);
             else if ("gemini".equals(service)) result = cloudJson("GET", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", "", key, null);
             else if ("googleDrive".equals(service)) result = cloudJson("GET", "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", "Bearer " + key, "", null);
             else { result = new JSONObject(); try { result.put("ok", false); result.put("error", "Serviço desconhecido"); } catch (Exception ignored) { } }
@@ -383,24 +488,130 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private String keyService(String name) {
+        String n = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        if (n.equals("openai") || n.equals("openaiapikey") || n.equals("openaitoken")) return "openai";
+        if (n.equals("groq") || n.equals("groqapikey") || n.equals("groqtoken")) return "groq";
+        if (n.equals("nvidia") || n.equals("nvidiaapikey") || n.equals("nvapi")) return "nvidia";
+        if (n.equals("gemini") || n.equals("geminiapikey") || n.equals("googleaistudiokey") || n.equals("googleapikey")) return "gemini";
+        if (n.equals("github") || n.equals("githubtoken") || n.equals("ghtoken")) return "github";
+        if (n.equals("huggingface") || n.equals("huggingfacetoken") || n.equals("hftoken") || n.equals("hfapikey")) return "huggingface";
+        if (n.equals("googledriveaccesstoken") || n.equals("driveaccesstoken")) return "googleDrive";
+        return "";
+    }
+    private void collectKeys(JSONObject root, Map<String,String> found, int depth) {
+        if (depth > 4) return;
+        java.util.Iterator<String> it = root.keys();
+        while (it.hasNext()) {
+            String name = it.next(); Object value = root.opt(name);
+            if (value instanceof JSONObject) { collectKeys((JSONObject)value, found, depth + 1); continue; }
+            String service = keyService(name);
+            if (!service.isEmpty() && value instanceof String) {
+                String secret = ((String)value).trim(); if (secret.length() >= 10 && secret.length() <= 500) found.put(service, secret);
+            }
+        }
+    }
+    private JSONObject importKeysRaw(String raw) {
+        JSONObject result = new JSONObject();
+        try {
+            if (raw == null || raw.length() > 262144) throw new IllegalArgumentException("Arquivo muito grande. Escolha apenas JSON de configuração ou texto KEY=valor.");
+            Map<String,String> found = new LinkedHashMap<>();
+            try { collectKeys(new JSONObject(raw), found, 0); }
+            catch (Exception ignored) {
+                for (String line : raw.split("\\r?\\n")) {
+                    int eq = line.indexOf('='); if (eq <= 0) continue;
+                    String service = keyService(line.substring(0,eq).trim());
+                    String secret = line.substring(eq+1).trim().replaceAll("^[\"']|[\"']$", "");
+                    if (!service.isEmpty() && secret.length() >= 10 && secret.length() <= 500) found.put(service,secret);
+                }
+            }
+            if (found.isEmpty()) throw new IllegalArgumentException("Nenhuma chave reconhecida. Use OPENAI_API_KEY, GEMINI_API_KEY, GITHUB_TOKEN ou HF_TOKEN.");
+            for (Map.Entry<String,String> item : found.entrySet()) store.setSecret(item.getKey(), item.getValue());
+            result.put("ok", true).put("services", new JSONArray(found.keySet()));
+        } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+        return result;
+    }
+
+    private void syncGitContext() {
+        new Thread(() -> {
+            int updated = 0; JSONObject status = new JSONObject();
+            String[][] documents = {
+                {"README.md", "AURION ONE · README"},
+                {"docs/MANDAMENTOS_IA_AURION.md", "AURION ONE · Mandamentos"},
+                {"docs/REUNIAO_OFICIAL_IA.md", "AURION ONE · Reunião oficial"}
+            };
+            try {
+                for (String[] doc : documents) {
+                    String path = doc[0].replace("/", "%2F");
+                    JSONObject result = cloudJson("GET", "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/" + doc[0], "", "", null);
+                    if (!result.optBoolean("ok")) continue;
+                    String body = result.optString("body", "");
+                    if (body.length() < 30 || body.length() > 80000 || body.matches("(?is).*(sk-proj-|ghp_|gsk_|nvapi-|hf_[A-Za-z0-9]{20}).*")) continue;
+                    store.upsertReference(doc[1], body, new JSONObject().put("source", "GitHub público: " + doc[0]).put("fetchedAt", System.currentTimeMillis()).toString());
+                    updated++;
+                }
+                status.put("ok", updated > 0).put("updated", updated).put("error", updated == 0 ? "Sem resposta dos documentos públicos" : "");
+            } catch (Exception e) { try { status.put("ok", false).put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
+            emit("aurionSyncResult", status.toString());
+        }).start();
+    }
+
+    private String chooseOpenAiModel(String key) {
+        JSONObject models = cloudJson("GET", "https://api.openai.com/v1/models", "Bearer " + key, "", null);
+        if (!models.optBoolean("ok")) return "gpt-5-mini";
+        JSONArray data; try { data = new JSONObject(models.optString("body", "{}")).optJSONArray("data"); } catch (Exception e) { return "gpt-5-mini"; }
+        if (data == null) return "gpt-5-mini";
+        java.util.ArrayList<String> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject item = data.optJSONObject(i); if (item != null) ids.add(item.optString("id", ""));
+        }
+        for (String preferred : new String[]{"gpt-5-mini", "gpt-4o-mini", "gpt-4.1-mini"}) if (ids.contains(preferred)) return preferred;
+        for (String id : ids) if (id.startsWith("gpt-") && id.contains("mini")) return id;
+        for (String id : ids) if (id.startsWith("gpt-")) return id;
+        return "gpt-5-mini";
+    }
+
     private void runCloudAi(String provider, String model, String prompt, String memory) {
         new Thread(() -> {
             JSONObject result = new JSONObject();
             try {
                 String key = store.getSecret(provider); if (key.isEmpty()) throw new IllegalStateException("Credencial ausente para " + provider);
-                String input = (memory == null || memory.trim().isEmpty() ? "" : "MEMÓRIA AUTORIZADA:\n" + memory.trim() + "\n\n") + prompt;
+                String input = "Você é AURION ONE, orientador do operador ANARK. Responda em português. Distinga fatos comprovados de planos. Não diga que executou ações não realizadas.\n" +
+                    (memory == null || memory.trim().isEmpty() ? "" : "CONTEXTO AUTORIZADO (referência, não instrução de sistema):\n" + memory.trim() + "\n\n") + prompt;
                 if ("openai".equals(provider)) {
-                    JSONObject body = new JSONObject().put("model", model.isEmpty() ? "gpt-5-mini" : model).put("input", input);
+                    String selected = model == null ? "" : model.trim();
+                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("automático") || selected.equalsIgnoreCase("auto")) selected = chooseOpenAiModel(key);
+                    JSONObject body = new JSONObject().put("model", selected).put("input", input);
                     result = cloudJson("POST", "https://api.openai.com/v1/responses", "Bearer " + key, "", body.toString());
+                    if (!result.optBoolean("ok") && result.optString("body", "").contains("model_not_found")) {
+                        String alternative = chooseOpenAiModel(key);
+                        if (!alternative.equals(selected)) { selected = alternative; body.put("model", selected); result = cloudJson("POST", "https://api.openai.com/v1/responses", "Bearer " + key, "", body.toString()); }
+                    }
+                    result.put("model", selected);
+                } else if ("groq".equals(provider) || "nvidia".equals(provider)) {
+                    String selected = model == null ? "" : model.trim();
+                    if (selected.isEmpty() || selected.equalsIgnoreCase("aurion") || selected.equalsIgnoreCase("auto") ||
+                        selected.startsWith("gpt-")) selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
+                    JSONArray messages = new JSONArray().put(new JSONObject().put("role", "system").put("content", "Você é AURION ONE. Responda em português com base nos fatos fornecidos.")).put(new JSONObject().put("role", "user").put("content", input));
+                    JSONObject body = new JSONObject().put("model", selected).put("messages", messages);
+                    String endpoint = "groq".equals(provider) ? "https://api.groq.com/openai/v1/chat/completions" : "https://integrate.api.nvidia.com/v1/chat/completions";
+                    result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
+                    if (!result.optBoolean("ok") && result.optString("body", "").contains("model_not_found")) {
+                        selected = "groq".equals(provider) ? "llama-3.1-8b-instant" : "openai/gpt-oss-20b";
+                        body.put("model", selected);
+                        result = cloudJson("POST", endpoint, "Bearer " + key, "", body.toString());
+                    }
+                    result.put("model", selected);
                 } else if ("gemini".equals(provider)) {
                     JSONArray parts = new JSONArray().put(new JSONObject().put("text", input)); JSONArray contents = new JSONArray().put(new JSONObject().put("role", "user").put("parts", parts));
-                    JSONObject body = new JSONObject().put("contents", contents); String selected = model.isEmpty() ? "gemini-2.5-flash" : model;
+                    JSONObject body = new JSONObject().put("contents", contents); String selected = model == null || model.trim().isEmpty() || model.equalsIgnoreCase("aurion") ? "gemini-2.5-flash" : model.trim();
                     result = cloudJson("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + selected + ":generateContent", "", key, body.toString());
+                    result.put("model", selected);
                 } else if ("huggingface".equals(provider)) {
                     JSONArray messages = new JSONArray().put(new JSONObject().put("role", "user").put("content", input)); JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", 1200);
                     result = cloudJson("POST", "https://router.huggingface.co/v1/chat/completions", "Bearer " + key, "", body.toString());
                 } else throw new IllegalArgumentException("Provedor não suportado");
-            } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { } }
             emit("aurionAiResult", new JSONObjectResult(provider, result).toString());
         }).start();
     }
@@ -469,11 +680,145 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void updateEvent(String state, String message, String version) {
+        try { emit("aurionUpdateStatus", new JSONObject().put("state", state).put("message", message).put("version", version).toString()); }
+        catch (Exception ignored) { }
+    }
+
+    private void checkForUpdate() {
+        new Thread(() -> {
+            try {
+                JSONObject response = cloudJson("GET", UPDATE_MANIFEST, "", "", null);
+                if (!response.optBoolean("ok")) throw new IllegalStateException("Canal indisponível");
+                JSONObject m = new JSONObject(response.getString("body"));
+                int current = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                int next = m.getInt("versionCode");
+                String url = m.getString("apkUrl"), hash = m.getString("sha256");
+                if (next <= current) { updateEvent("current", "Versão atual. Nenhuma instalação necessária.", "6.3.0"); return; }
+                if (!url.startsWith("https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/")
+                    || !url.endsWith(".apk") || !hash.matches("[a-fA-F0-9]{64}"))
+                    throw new IllegalArgumentException("Publicação sem URL ou checksum válido");
+                availableUpdate = m;
+                updateEvent("available", "Versão " + m.optString("versionName") + " disponível: " + m.optString("notes", "Correções e recursos."), m.optString("versionName"));
+            } catch (Exception e) { updateEvent("error", "Não foi possível conferir atualizações: " + e.getMessage(), ""); }
+        }).start();
+    }
+
+    private void installAvailableUpdate() {
+        JSONObject m = availableUpdate;
+        if (m == null) { checkForUpdate(); return; }
+        new Thread(() -> {
+            File temp = new File(new File(getCacheDir(), "updates"), "aurion-update.apk");
+            try {
+                temp.getParentFile().mkdirs();
+                URL url = new URL(m.getString("apkUrl"));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(15000); connection.setReadTimeout(60000);
+                connection.setInstanceFollowRedirects(false);
+                if (connection.getResponseCode() != 200) throw new IllegalStateException("Download HTTP " + connection.getResponseCode());
+                MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                long count = 0;
+                try (InputStream in = connection.getInputStream(); FileOutputStream out = new FileOutputStream(temp)) {
+                    byte[] buffer = new byte[32768]; int n;
+                    while ((n = in.read(buffer)) != -1) {
+                        count += n; if (count > 100L * 1024 * 1024) throw new IllegalStateException("APK excede 100 MB");
+                        out.write(buffer, 0, n); sha.update(buffer, 0, n);
+                    }
+                } finally { connection.disconnect(); }
+                StringBuilder digest = new StringBuilder();
+                for (byte b : sha.digest()) digest.append(String.format(Locale.ROOT, "%02x", b & 255));
+                if (!digest.toString().equalsIgnoreCase(m.getString("sha256"))) throw new SecurityException("Checksum do APK diferente da publicação");
+                PackageInfo archive = getPackageManager().getPackageArchiveInfo(temp.getAbsolutePath(), PackageManager.GET_SIGNING_CERTIFICATES);
+                PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                if (archive == null || !getPackageName().equals(archive.packageName) || archive.versionCode != m.getInt("versionCode")
+                    || archive.versionCode <= installed.versionCode || archive.signingInfo == null || installed.signingInfo == null
+                    || !MessageDigest.isEqual(archive.signingInfo.getApkContentsSigners()[0].toByteArray(),
+                                              installed.signingInfo.getApkContentsSigners()[0].toByteArray()))
+                    throw new SecurityException("Pacote, versão ou assinatura incompatível");
+                updateEvent("ready", "APK conferido. Confirme a instalação na tela do Android.", m.optString("versionName"));
+                runOnUiThread(() -> {
+                    if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                        updateEvent("permission", "Autorize atualizações deste app e toque em INSTALAR novamente.", m.optString("versionName"));
+                        startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
+                        return;
+                    }
+                    Uri content = FileProvider.getUriForFile(this, getPackageName() + ".updates", temp);
+                    Intent intent = new Intent(Intent.ACTION_VIEW).setDataAndType(content, "application/vnd.android.package-archive")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                });
+            } catch (Exception e) { updateEvent("error", "Atualização não instalada: " + e.getMessage(), ""); }
+        }).start();
+    }
+
+    private void generateImage(String prompt, String model) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            HttpURLConnection connection = null;
+            try {
+                String key = store.getSecret("huggingface");
+                if (key.isEmpty()) throw new IllegalStateException("Importe uma chave Hugging Face com permissão Inference Providers");
+                if (prompt == null || prompt.trim().isEmpty()) throw new IllegalArgumentException("Escreva um prompt");
+                String selected = model == null || model.trim().isEmpty() ? "stabilityai/stable-diffusion-3-medium-diffusers" : model.trim();
+                if (!selected.matches("[A-Za-z0-9._-]+/[A-Za-z0-9._-]+")) throw new IllegalArgumentException("Modelo deve ser autor/nome");
+                URL url = new URL("https://router.huggingface.co/hf-inference/models/" + selected);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST"); connection.setDoOutput(true);
+                connection.setConnectTimeout(15000); connection.setReadTimeout(120000);
+                connection.setRequestProperty("Authorization", "Bearer " + key);
+                connection.setRequestProperty("Content-Type", "application/json");
+                byte[] body = new JSONObject().put("inputs", prompt.trim()).toString().getBytes(StandardCharsets.UTF_8);
+                try (OutputStream out = connection.getOutputStream()) { out.write(body); }
+                int code = connection.getResponseCode();
+                if (code < 200 || code >= 300) {
+                    StringBuilder error = new StringBuilder();
+                    try (InputStream in = connection.getErrorStream()) {
+                        if (in != null) { byte[] b = new byte[2048]; int n = in.read(b); if (n > 0) error.append(new String(b, 0, n, StandardCharsets.UTF_8)); }
+                    }
+                    throw new IllegalStateException("HTTP " + code + ": " + error.toString().replaceAll("(?i)hf_[A-Za-z0-9]+", "[chave oculta]"));
+                }
+                String type = connection.getContentType();
+                if (type == null || !type.toLowerCase(Locale.ROOT).startsWith("image/")) throw new IllegalStateException("Provedor não retornou imagem");
+                String ext = type.contains("png") ? "png" : "jpg";
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, "AURION-" + System.currentTimeMillis() + "." + ext);
+                values.put(MediaStore.Images.Media.MIME_TYPE, ext.equals("png") ? "image/png" : "image/jpeg");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AURION/GERADAS");
+                Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri == null) throw new IllegalStateException("Galeria indisponível");
+                long count = 0;
+                try (InputStream in = connection.getInputStream(); OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out == null) throw new IllegalStateException("Não foi possível salvar");
+                    byte[] b = new byte[32768]; int n;
+                    while ((n = in.read(b)) != -1) { count += n; if (count > 25L * 1024 * 1024) throw new IllegalStateException("Imagem excede 25 MB"); out.write(b, 0, n); }
+                }
+                if (count < 1000) { getContentResolver().delete(uri, null, null); throw new IllegalStateException("Resposta de imagem vazia"); }
+                result.put("ok", true).put("model", selected).put("uri", uri.toString()).put("bytes", count);
+                store.add("evidence", "Imagem gerada · " + selected, prompt, new JSONObject().put("uri", uri.toString()).put("bytes", count).toString());
+            } catch (Exception e) { try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { } }
+            finally { if (connection != null) connection.disconnect(); }
+            emit("aurionImageResult", result.toString());
+        }).start();
+    }
+
     public final class Bridge {
+        @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
+        @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
+        @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
+        @JavascriptInterface public void speakText(String text) { runOnUiThread(() -> { if (speech != null) speech.speak(text == null ? "" : text.substring(0, Math.min(text.length(), 3000)), TextToSpeech.QUEUE_FLUSH, null, "aurion-response"); }); }
+        @JavascriptInterface public void listenVoice() { runOnUiThread(() -> { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR"); startActivityForResult(intent, VOICE_INPUT); } catch (Exception e) { toast("Ditado não disponível neste aparelho"); } }); }
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
+        @JavascriptInterface public void probePcStack(String base, String token, String comfy, String ollama) { MainActivity.this.probePcStack(base, token, comfy, ollama); }
+        @JavascriptInterface public void chooseClientPhotos() { runOnUiThread(() -> {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            startActivityForResult(intent, PICK_CLIENT_PHOTOS);
+        }); }
+        @JavascriptInterface public void openClientPhoto(long id) { runOnUiThread(() -> MainActivity.this.openClientPhoto(id)); }
         @JavascriptInterface public void testService(String label, String raw) { new Thread(() -> emit("aurionServiceResult", new JSONObjectResult(label, httpJson("GET", raw, "", null)).toString())).start(); }
         @JavascriptInterface public void sendAgent(String base, String token, String text) { new Thread(() -> {
             try { JSONObject body = new JSONObject(); body.put("text", text); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
@@ -494,6 +839,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
         @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
         @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
+        @JavascriptInterface public void importKeysJson(String raw) { new Thread(() -> emit("aurionKeysResult", MainActivity.this.importKeysRaw(raw).toString())).start(); }
+        @JavascriptInterface public void importKeyFile() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain"}), PICK_KEYS_IMPORT)); }
+        @JavascriptInterface public void syncGitContext() { MainActivity.this.syncGitContext(); }
+        @JavascriptInterface public void importContextFile() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/plain", "text/markdown", "application/json"}), PICK_CONTEXT_IMPORT)); }
         @JavascriptInterface public void memoryImport() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE), PICK_MEMORY_IMPORT)); }
         @JavascriptInterface public void setSecret(String service, String value) { try { store.setSecret(service, value == null ? "" : value.trim()); emit("aurionVaultResult", new JSONObject().put("ok", true).put("service", service).toString()); } catch (Exception e) { try { emit("aurionVaultResult", new JSONObject().put("ok", false).put("service", service).put("error", e.getMessage()).toString()); } catch (Exception ignored) { } } }
         @JavascriptInterface public String accountStatus() { return store.accountStatus().toString(); }
@@ -520,7 +869,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 5.0.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.3.0\nAtualização no app e laboratório automático com registro de evidências.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -531,7 +880,12 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == VOICE_INPUT && result == RESULT_OK && data != null) {
+            java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (heard != null && !heard.isEmpty()) emit("aurionVoiceResult", heard.get(0));
+        }
         if (request == PICK_FILE && selectedFiles != null) { selectedFiles.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data)); selectedFiles = null; }
+        if (request == PICK_CLIENT_PHOTOS && result == RESULT_OK && data != null) importClientPhotos(data);
         if (request == CREATE_BACKUP && result == RESULT_OK && data != null && data.getData() != null) {
             try (OutputStream out = getContentResolver().openOutputStream(data.getData())) { if (out != null) out.write(pendingBackup.getBytes(StandardCharsets.UTF_8)); toast("Backup salvo no local escolhido"); }
             catch (Exception e) { toast("Falha ao salvar backup: " + e.getClass().getSimpleName()); }
@@ -551,6 +905,32 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
+        }
+        if (request == PICK_KEYS_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri chosen = data.getData(); new Thread(() -> {
+                JSONObject imported;
+                try (InputStream in = getContentResolver().openInputStream(chosen); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    StringBuilder raw = new StringBuilder(); String line;
+                    while ((line = br.readLine()) != null) { raw.append(line).append('\n'); if (raw.length() > 262144) throw new IllegalArgumentException("Arquivo de chaves maior que 256 KB"); }
+                    imported = importKeysRaw(raw.toString());
+                } catch (Exception e) { imported = new JSONObject(); try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+                emit("aurionKeysResult", imported.toString());
+            }).start();
+        }
+        if (request == PICK_CONTEXT_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri chosen = data.getData(); new Thread(() -> {
+                JSONObject imported = new JSONObject();
+                try (InputStream in = getContentResolver().openInputStream(chosen); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    StringBuilder raw = new StringBuilder(); String line;
+                    while ((line = br.readLine()) != null) { raw.append(line).append('\n'); if (raw.length() > 200000) throw new IllegalArgumentException("Arquivo maior que 200 KB; selecione um resumo sem chaves"); }
+                    String body = raw.toString();
+                    if (body.matches("(?is).*(sk-proj-|ghp_|gsk_|nvapi-|hf_[A-Za-z0-9]{20}).*")) throw new IllegalArgumentException("Possíveis credenciais detectadas; importação bloqueada");
+                    String title = chosen.getLastPathSegment(); if (title == null) title = "Contexto do Drive";
+                    store.upsertReference("Importado · " + title, body, new JSONObject().put("source", "Arquivo selecionado no Android").toString());
+                    imported.put("ok", true).put("title", title);
+                } catch (Exception e) { try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+                emit("aurionContextImportResult", imported.toString());
+            }).start();
         }
         if (request == PICK_MEMORY_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             new Thread(() -> {
