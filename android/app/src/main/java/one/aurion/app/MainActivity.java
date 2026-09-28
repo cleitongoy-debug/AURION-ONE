@@ -114,7 +114,7 @@ public class MainActivity extends Activity {
             @Override public boolean onMediaButtonEvent(Intent intent) {
                 KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
                 if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&
-                    (event.getKeyCode() == KeyEvent.KEYCODE_HEADSETPHOOK || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+                    (event.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
                     runOnUiThread(() -> { emit("aurionHeadsetButton", "recebido"); bridge.listenVoice(); });
                     return true;
                 }
