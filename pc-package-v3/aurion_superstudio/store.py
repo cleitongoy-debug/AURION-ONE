@@ -45,6 +45,12 @@ class Store:
             row_id = cur.lastrowid
         return self.get(row_id)
 
+    def backup_to(self, target: Path) -> Path:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with self.lock, self.connect() as source, sqlite3.connect(target) as destination:
+            source.backup(destination)
+        return target
+
     def get(self, row_id: int) -> dict:
         with self.connect() as db:
             row = db.execute("SELECT * FROM records WHERE id=?", (row_id,)).fetchone()
