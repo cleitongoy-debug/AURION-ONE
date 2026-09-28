@@ -1,7 +1,7 @@
 name: AURION ONE Super Studio APK
 on:
   push:
-    branches: [main, feat/dedicacao-certificados-20260928]
+    branches: [main, feat/dedicacao-certificados-20260928, deliver/poco-v69]
     paths:
       - 'android/**'
       - 'pc-package-v3/aurion_superstudio/**'
