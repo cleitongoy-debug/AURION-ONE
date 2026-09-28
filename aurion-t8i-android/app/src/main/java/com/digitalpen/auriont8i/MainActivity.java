@@ -16,21 +16,7 @@ public class MainActivity extends Activity{
  preview=new ImageView(this);preview.setBackgroundColor(Color.BLACK);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);preview.setOnTouchListener((v,e)->previewTouch(e));content.addView(preview,new LinearLayout.LayoutParams(-1,0,1));
  info=t("Importe JPG, PNG ou WebP para editar.",11);content.addView(info);hist=t("RGB  HISTOGRAMA",10);hist.setTextColor(Color.WHITE);hist.setBackgroundColor(Color.rgb(5,5,5));content.addView(hist); film=new LinearLayout(this);film.setOrientation(LinearLayout.HORIZONTAL);film.setBackgroundColor(Color.rgb(8,8,8));HorizontalScrollView fs=new HorizontalScrollView(this);fs.setHorizontalScrollBarEnabled(false);fs.addView(film);content.addView(fs,new LinearLayout.LayoutParams(-1,92));
  tools=new LinearLayout(this);tools.setOrientation(LinearLayout.VERTICAL);tools.setBackgroundColor(Color.rgb(9,9,14));content.addView(tools);
- HorizontalScrollView hs=new HorizontalScrollView(this);hs.setHorizontalScrollBarEnabled(false);LinearLayout nav=new LinearLayout(this);nav.setPadding(6,5,6,5);String[] ns={"▣
-Fotos","☼
-Luz","◉
-Cor","HSL
-Mix","◒
-Roda","⌁
-Curvas","◌
-Máscara","△
-Detalhe","✦
-Efeitos","A
-Auto","⇄
-Converter","⇧
-Exportar","⋯
-Lab"};
- for(String n:ns){Button x=b(n);x.setTextSize(10);x.setMinWidth(105);x.setOnClickListener(v->{String z=((Button)v).getText().toString();if(z.contains("Fotos"))z="BIBLIOTECA";else if(z.contains("Luz"))z="LUZ";else if(z.contains("Cor"))z="COR";else if(z.contains("Mix"))z="HSL";else if(z.contains("Roda"))z="RODA";else if(z.contains("Curvas"))z="CURVAS";else if(z.contains("Máscara"))z="MÁSCARA";else if(z.contains("Detalhe"))z="DETALHE";else if(z.contains("Efeitos"))z="EFEITOS";else if(z.contains("Auto"))z="AUTO";else if(z.contains("Converter"))z="CONVERSOR";else if(z.contains("Exportar"))z="ENTREGA";else z="LAB";open(z);});nav.addView(x,new LinearLayout.LayoutParams(112,86));}hs.addView(nav);root.addView(hs,new LinearLayout.LayoutParams(-1,96));open("REVELAÇÃO");}
+ HorizontalScrollView hs=new HorizontalScrollView(this);hs.setHorizontalScrollBarEnabled(false);LinearLayout nav=new LinearLayout(this);nav.setPadding(6,5,6,5);String[] ns={"▣ FOTOS","☼ LUZ","◉ COR","HSL MIX","◒ RODA","⌁ CURVAS","◌ MÁSCARA","△ DETALHE","✦ EFEITOS","A AUTO","⇄ CONVERTER","⇧ EXPORTAR","⋯ LAB"}; for(String n:ns){Button x=b(n);x.setTextSize(10);x.setMinWidth(105);x.setOnClickListener(v->{String z=((Button)v).getText().toString();if(z.contains("Fotos"))z="BIBLIOTECA";else if(z.contains("Luz"))z="LUZ";else if(z.contains("Cor"))z="COR";else if(z.contains("Mix"))z="HSL";else if(z.contains("Roda"))z="RODA";else if(z.contains("Curvas"))z="CURVAS";else if(z.contains("Máscara"))z="MÁSCARA";else if(z.contains("Detalhe"))z="DETALHE";else if(z.contains("Efeitos"))z="EFEITOS";else if(z.contains("Auto"))z="AUTO";else if(z.contains("Converter"))z="CONVERSOR";else if(z.contains("Exportar"))z="ENTREGA";else z="LAB";open(z);});nav.addView(x,new LinearLayout.LayoutParams(112,86));}hs.addView(nav);root.addView(hs,new LinearLayout.LayoutParams(-1,96));open("REVELAÇÃO");}
  void open(String n){active=n;tools.removeAllViews();status.setText("AURION · "+n+" · edição local");
  if(n.equals("BIBLIOTECA")){Button x=b("IMPORTAR ARQUIVO");x.setOnClickListener(v->pick());tools.addView(x);}
  else if(n.equals("REVELAÇÃO")||n.equals("LUZ")){slider("Exposição","exposure");slider("Brilho","bright");slider("Contraste","contrast");Button r=b("RESET");r.setOnClickListener(v->reset());tools.addView(r);}
