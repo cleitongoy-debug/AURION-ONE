@@ -33,6 +33,8 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.database.Cursor;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.media.session.MediaSession;
@@ -82,6 +84,7 @@ public class MainActivity extends Activity {
     private static final int PICK_CONTEXT_IMPORT = 418;
     private static final int PICK_KEYS_IMPORT = 419;
     private static final int VOICE_INPUT = 420;
+    private static final int PICK_CLIENT_PHOTOS = 421;
     private TextToSpeech speech;
     private MediaSession headsetSession;
     private WebView web;
@@ -169,7 +172,8 @@ public class MainActivity extends Activity {
         if (host == null) return false;
         String h = host.toLowerCase(Locale.ROOT);
         return h.equals("localhost") || h.equals("127.0.0.1") || h.endsWith(".ts.net") || h.endsWith(".local") ||
-            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*");
+            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*") ||
+            h.matches("100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\..*");
     }
 
     private boolean has(String permission) { return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED; }
@@ -181,7 +185,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.3.0");
+            j.put("appVersion", "6.4.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -332,6 +336,71 @@ public class MainActivity extends Activity {
         } catch (Exception e) { try { out.put("ok", false); out.put("error", e.getClass().getSimpleName() + ": " + e.getMessage()); } catch (Exception ignored) {} }
         finally { if (c != null) c.disconnect(); }
         return out;
+    }
+
+    private void probePcStack(String base, String token, String comfy, String ollama) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                JSONObject endpoints = new JSONObject();
+                String root = base == null ? "" : base.replaceAll("/+$", "");
+                if (!root.isEmpty()) {
+                    endpoints.put("health", probeEndpoint(root + "/health", ""));
+                    endpoints.put("status", probeEndpoint(root + "/api/status", token));
+                    endpoints.put("inventory", probeEndpoint(root + "/api/inventory", token));
+                }
+                if (comfy != null && !comfy.isEmpty()) endpoints.put("comfy", probeEndpoint(comfy.replaceAll("/+$", "") + "/system_stats", ""));
+                if (ollama != null && !ollama.isEmpty()) endpoints.put("ollama", probeEndpoint(ollama.replaceAll("/+$", "") + "/api/tags", ""));
+                result.put("checkedAt", System.currentTimeMillis()).put("endpoints", endpoints);
+            } catch (Exception e) { try { result.put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
+            emit("aurionPcProbeResult", result.toString());
+        }).start();
+    }
+
+    private JSONObject probeEndpoint(String url, String token) throws Exception {
+        JSONObject response = httpJson("GET", url, token, null);
+        JSONObject summary = new JSONObject();
+        summary.put("ok", response.optBoolean("ok"));
+        summary.put("http", response.optInt("http"));
+        if (response.has("error")) summary.put("error", response.optString("error"));
+        return summary;
+    }
+
+    private void importClientPhotos(Intent data) {
+        try {
+            java.util.ArrayList<Uri> selected = new java.util.ArrayList<>();
+            if (data.getClipData() != null) for (int i = 0; i < data.getClipData().getItemCount(); i++) selected.add(data.getClipData().getItemAt(i).getUri());
+            else if (data.getData() != null) selected.add(data.getData());
+            JSONArray entries = new JSONArray();
+            int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+            for (Uri uri : selected) {
+                if (!"content".equals(uri.getScheme())) continue;
+                try { getContentResolver().takePersistableUriPermission(uri, flags); } catch (Exception ignored) {}
+                String name = "Imagem do cliente"; long size = -1;
+                try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null)) {
+                    if (c != null && c.moveToFirst()) { name = c.getString(0); size = c.getLong(1); }
+                } catch (Exception ignored) {}
+                JSONObject meta = new JSONObject().put("uri", uri.toString()).put("bytes", size).put("importedAt", System.currentTimeMillis());
+                long id = store.add("client_asset", name, "Referência fotográfica autorizada pelo operador", meta.toString());
+                entries.put(new JSONObject().put("id", id).put("name", name).put("bytes", size));
+            }
+            emit("aurionClientPhotosResult", new JSONObject().put("ok", true).put("photos", entries).toString());
+        } catch (Exception e) { try { emit("aurionClientPhotosResult", new JSONObject().put("ok", false).put("error", e.getClass().getSimpleName()).toString()); } catch (Exception ignored) {} }
+    }
+
+    private void openClientPhoto(long id) {
+        try {
+            JSONArray items = store.list("client_asset", "", 500);
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                if (item.optLong("id") != id) continue;
+                Uri uri = Uri.parse(new JSONObject(item.optString("meta")).optString("uri"));
+                if (!"content".equals(uri.getScheme())) break;
+                startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "image/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                return;
+            }
+        } catch (Exception ignored) {}
+        toast("Referência indisponível; importe novamente.");
     }
 
     private void chooseWorkspace() {
@@ -742,6 +811,14 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
         @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
+        @JavascriptInterface public void probePcStack(String base, String token, String comfy, String ollama) { MainActivity.this.probePcStack(base, token, comfy, ollama); }
+        @JavascriptInterface public void chooseClientPhotos() { runOnUiThread(() -> {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            startActivityForResult(intent, PICK_CLIENT_PHOTOS);
+        }); }
+        @JavascriptInterface public void openClientPhoto(long id) { runOnUiThread(() -> MainActivity.this.openClientPhoto(id)); }
         @JavascriptInterface public void testService(String label, String raw) { new Thread(() -> emit("aurionServiceResult", new JSONObjectResult(label, httpJson("GET", raw, "", null)).toString())).start(); }
         @JavascriptInterface public void sendAgent(String base, String token, String text) { new Thread(() -> {
             try { JSONObject body = new JSONObject(); body.put("text", text); body.put("device_id", "poco-aurion-final"); body.put("moving", false); emit("aurionAgentResult", httpJson("POST", new URL(new URL(base), "/api/prompt").toString(), token, body.toString()).toString()); }
@@ -808,6 +885,7 @@ public class MainActivity extends Activity {
             if (heard != null && !heard.isEmpty()) emit("aurionVoiceResult", heard.get(0));
         }
         if (request == PICK_FILE && selectedFiles != null) { selectedFiles.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data)); selectedFiles = null; }
+        if (request == PICK_CLIENT_PHOTOS && result == RESULT_OK && data != null) importClientPhotos(data);
         if (request == CREATE_BACKUP && result == RESULT_OK && data != null && data.getData() != null) {
             try (OutputStream out = getContentResolver().openOutputStream(data.getData())) { if (out != null) out.write(pendingBackup.getBytes(StandardCharsets.UTF_8)); toast("Backup salvo no local escolhido"); }
             catch (Exception e) { toast("Falha ao salvar backup: " + e.getClass().getSimpleName()); }
