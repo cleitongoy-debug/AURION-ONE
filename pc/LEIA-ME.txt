@@ -1,0 +1,10 @@
+AURION ONE PC + POCO
+====================
+1. Deixe o POCO conectado por USB e ative Depuracao USB.
+2. Execute AURION_ONE_AUTO.cmd como Administrador.
+3. Autorize a chave RSA no POCO quando o Android perguntar.
+4. O instalador detecta/baixa ADB oficial se necessario, inventaria Ollama, testa AURION/Comfy/OpenWebUI, liga o gateway 5060 e instala o APK que estiver nesta pasta.
+5. Gateway: http://IP-DO-PC:5060 e, com Tailscale, http://IP-TAILSCALE:5060.
+6. AUTO usa qwen3.5:4b por padrao. Modelos encontrados ficam em logs\MODELOS_OLLAMA.txt.
+7. MANUAL: edite aurion.env ou a aba Conexoes no APK.
+Seguranca: o gateway nao copia chaves de API do Android e nao abre portas no roteador. Acesso de rua deve passar pelo Tailscale.

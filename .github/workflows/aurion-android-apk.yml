@@ -1,7 +1,7 @@
 name: AURION ONE Super Studio APK
 on:
   push:
-    branches: [main]
+    branches: [main, feat/mobile-superstudio-v5]
     paths:
       - 'android/**'
       - '.github/workflows/aurion-android-apk.yml'
@@ -42,14 +42,14 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.0.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.8.0-CHAT-VOICE.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.8.0-CHAT-VOICE.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Publish installable package
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-SUPER-STUDIO-v5.0.0
+          name: AURION-ONE-SUPER-STUDIO-v5.8.0-CHAT-VOICE
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.0.0.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-SUPER-STUDIO-v5.8.0-CHAT-VOICE.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
