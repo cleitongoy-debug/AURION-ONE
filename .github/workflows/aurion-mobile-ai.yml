@@ -21,6 +21,8 @@ jobs:
           "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.9' }
+      - name: Verify PC T8i bridge syntax
+        run: python -m py_compile ../pc-package-v3/aurion_superstudio/app.py ../pc-package-v3/aurion_superstudio/services.py ../pc-package-v3/aurion_superstudio/store.py
       - name: Compile
         run: gradle --no-daemon :app:assembleDebug
       - name: Verify and name
