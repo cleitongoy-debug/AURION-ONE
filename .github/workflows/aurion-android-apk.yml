@@ -45,6 +45,8 @@ jobs:
       - name: Verify T8i PC bridge syntax
         working-directory: .
         run: python -m py_compile pc-package-v3/aurion_superstudio/app.py pc-package-v3/aurion_superstudio/services.py pc-package-v3/aurion_superstudio/store.py
+      - name: Verify WebView scripts
+        run: for file in app/src/main/assets/*.js; do node --check "$file"; done
       - name: Compile Super Studio APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
