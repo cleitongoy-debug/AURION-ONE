@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
     private static final int PICK_MEMORY_IMPORT = 417;
+    private static final int PICK_CONTEXT_IMPORT = 418;
     private WebView web;
     private ValueCallback<Uri[]> selectedFiles;
     private String pendingBackup = "";
@@ -100,7 +101,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.0");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.1");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -147,7 +148,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "5.0.0");
+            j.put("appVersion", "6.1.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -383,6 +384,30 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private void syncGitContext() {
+        new Thread(() -> {
+            int updated = 0; JSONObject status = new JSONObject();
+            String[][] documents = {
+                {"README.md", "AURION ONE · README"},
+                {"docs/MANDAMENTOS_IA_AURION.md", "AURION ONE · Mandamentos"},
+                {"docs/REUNIAO_OFICIAL_IA.md", "AURION ONE · Reunião oficial"}
+            };
+            try {
+                for (String[] doc : documents) {
+                    String path = doc[0].replace("/", "%2F");
+                    JSONObject result = cloudJson("GET", "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/" + doc[0], "", "", null);
+                    if (!result.optBoolean("ok")) continue;
+                    String body = result.optString("body", "");
+                    if (body.length() < 30 || body.length() > 80000 || body.matches("(?is).*(sk-proj-|ghp_|gsk_|nvapi-|hf_[A-Za-z0-9]{20}).*")) continue;
+                    store.upsertReference(doc[1], body, new JSONObject().put("source", "GitHub público: " + doc[0]).put("fetchedAt", System.currentTimeMillis()).toString());
+                    updated++;
+                }
+                status.put("ok", updated > 0).put("updated", updated).put("error", updated == 0 ? "Sem resposta dos documentos públicos" : "");
+            } catch (Exception e) { try { status.put("ok", false).put("error", e.getClass().getSimpleName()); } catch (Exception ignored) {} }
+            emit("aurionSyncResult", status.toString());
+        }).start();
+    }
+
     private void runCloudAi(String provider, String model, String prompt, String memory) {
         new Thread(() -> {
             JSONObject result = new JSONObject();
@@ -494,6 +519,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean memoryDelete(long id) { return store.remove(id); }
         @JavascriptInterface public String memoryExport() { return store.exportAll().toString(); }
         @JavascriptInterface public void memorySync() { syncMemoryToWorkspace(); }
+        @JavascriptInterface public void syncGitContext() { MainActivity.this.syncGitContext(); }
+        @JavascriptInterface public void importContextFile() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/plain", "text/markdown", "application/json"}), PICK_CONTEXT_IMPORT)); }
         @JavascriptInterface public void memoryImport() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE), PICK_MEMORY_IMPORT)); }
         @JavascriptInterface public void setSecret(String service, String value) { try { store.setSecret(service, value == null ? "" : value.trim()); emit("aurionVaultResult", new JSONObject().put("ok", true).put("service", service).toString()); } catch (Exception e) { try { emit("aurionVaultResult", new JSONObject().put("ok", false).put("service", service).put("error", e.getMessage()).toString()); } catch (Exception ignored) { } } }
         @JavascriptInterface public String accountStatus() { return store.accountStatus().toString(); }
@@ -520,7 +547,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.0.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.1.0\nLaboratórios de foto, vídeo, áudio, cor, efeitos, motion, IA e memória permanente.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
@@ -551,6 +578,21 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
+        }
+        if (request == PICK_CONTEXT_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri chosen = data.getData(); new Thread(() -> {
+                JSONObject imported = new JSONObject();
+                try (InputStream in = getContentResolver().openInputStream(chosen); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    StringBuilder raw = new StringBuilder(); String line;
+                    while ((line = br.readLine()) != null) { raw.append(line).append('\n'); if (raw.length() > 200000) throw new IllegalArgumentException("Arquivo maior que 200 KB; selecione um resumo sem chaves"); }
+                    String body = raw.toString();
+                    if (body.matches("(?is).*(sk-proj-|ghp_|gsk_|nvapi-|hf_[A-Za-z0-9]{20}).*")) throw new IllegalArgumentException("Possíveis credenciais detectadas; importação bloqueada");
+                    String title = chosen.getLastPathSegment(); if (title == null) title = "Contexto do Drive";
+                    store.upsertReference("Importado · " + title, body, new JSONObject().put("source", "Arquivo selecionado no Android").toString());
+                    imported.put("ok", true).put("title", title);
+                } catch (Exception e) { try { imported.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) {} }
+                emit("aurionContextImportResult", imported.toString());
+            }).start();
         }
         if (request == PICK_MEMORY_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             new Thread(() -> {
