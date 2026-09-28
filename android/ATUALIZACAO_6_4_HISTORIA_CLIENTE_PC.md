@@ -22,3 +22,7 @@ Mesmo `applicationId` (`one.aurion.poco.v6`), `versionCode` 64 e mesma chave pri
 ## Próxima verificação no aparelho
 
 Abrir Configuração → Nós, informar URL privada e token do Home Node, salvar e tocar “SONDA PC · LEITURA”. Um 401 indica autenticação ausente; conexão recusada pode significar serviço parado ou escuta só em 127.0.0.1. Para o cliente, abrir Projeto, importar fotos recebidas e salvar briefing; gerar e verificar os arquivos 3D/cena na ferramenta apropriada antes de marcar etapas concluídas.
+
+## Publicação verificada
+
+APK v6.4.0 SHA-256: `8a23d0f291be221680f6642c779061d281bc8ce70a39369376ef8b19eb1ec5a8`. Assinatura v2/v3; certificado SHA-256 `51dd52d9f49e39e2c045f81fb3b70f2a1dd59807d40edba71cd2ae7ea25c9d43`, o mesmo da v6.3. CI: GitHub Actions run 36432744427, concluído com sucesso.
