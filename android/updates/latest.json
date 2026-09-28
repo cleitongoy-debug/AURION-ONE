@@ -1,7 +1,7 @@
 {
-  "versionCode": 64,
-  "versionName": "6.4.0",
-  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/AURION-ONE-POCO-v6.4.0.apk",
-  "sha256": "8a23d0f291be221680f6642c779061d281bc8ce70a39369376ef8b19eb1ec5a8",
-  "notes": "História com fontes e sessões medidas; cliente 3D/cena; sonda PC."
+  "versionCode": 65,
+  "versionName": "6.5.0",
+  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/AURION-ONE-POCO-v6.5.0.apk",
+  "sha256": "df5996a672eac54830831eed57590350f368597411d9e31336fd63cfe128de29",
+  "notes": "Dedicação POCO + PC; cursos, sessões, certificados e provas com fonte."
 }
