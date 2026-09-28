@@ -51,6 +51,12 @@ import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
 import androidx.core.content.FileProvider;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -69,6 +75,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity {
     private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/latest.json";
@@ -87,6 +94,7 @@ public class MainActivity extends Activity {
     private static final int VOICE_INPUT = 420;
     private static final int PICK_CLIENT_PHOTOS = 421;
     private static final int PICK_CERTIFICATE = 422;
+    private static final int REQUEST_NOTIFICATIONS = 423;
     private TextToSpeech speech;
     private MediaSession headsetSession;
     private WebView web;
@@ -138,7 +146,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.3");
+        s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.7");
         web.addJavascriptInterface(bridge, "AurionAndroid");
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -165,6 +173,10 @@ public class MainActivity extends Activity {
             }
         });
         web.loadUrl("file:///android_asset/index.html");
+        scheduleHourlySync();
+        if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
+        }
         handler.postDelayed(this::checkForUpdate, 1800);
     }
 
@@ -190,7 +202,7 @@ public class MainActivity extends Activity {
     private JSONObject diagnostics() {
         JSONObject j = new JSONObject();
         try {
-            j.put("appVersion", "6.6.0");
+            j.put("appVersion", "6.7.0");
             j.put("manufacturer", Build.MANUFACTURER);
             j.put("model", Build.MODEL);
             j.put("android", Build.VERSION.RELEASE);
@@ -910,6 +922,36 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void scheduleHourlySync() {
+        Constraints constraints = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(AurionHourlyWorker.class, 1, TimeUnit.HOURS, 15, TimeUnit.MINUTES)
+            .setConstraints(constraints).build();
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork("aurion-hourly-sync", ExistingPeriodicWorkPolicy.UPDATE, request);
+    }
+
+    private void runHourlySyncNow() {
+        Constraints constraints = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(AurionHourlyWorker.class).setConstraints(constraints).build();
+        WorkManager.getInstance(this).enqueue(request);
+        try { store.add("sync_event", "Auto busca solicitada", "Git/Drive/Hug/PC serão conferidos em segundo plano.", new JSONObject().put("at", System.currentTimeMillis()).toString()); }
+        catch (Exception ignored) {}
+        toast("Auto busca enviada. Resultado em Portfólio / Sync.");
+    }
+
+    private void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) {
+        getSharedPreferences("aurion_nodes", MODE_PRIVATE).edit()
+            .putString("panel", panel == null ? "" : panel)
+            .putString("agent", agent == null ? "" : agent)
+            .putString("comfy", comfy == null ? "" : comfy)
+            .putString("ollama", ollama == null ? "" : ollama).apply();
+        if (token != null && !token.trim().isEmpty()) try { store.setSecret("homeNode", token.trim()); } catch (Exception ignored) {}
+    }
+
+    private void savePcStudio(String base, String token) {
+        getSharedPreferences("aurion_nodes", MODE_PRIVATE).edit().putString("pcStudio", base == null ? "" : base).apply();
+        if (token != null && !token.trim().isEmpty()) try { store.setSecret("dedicationPc", token.trim()); } catch (Exception ignored) {}
+    }
+
     private void updateEvent(String state, String message, String version) {
         try { emit("aurionUpdateStatus", new JSONObject().put("state", state).put("message", message).put("version", version).toString()); }
         catch (Exception ignored) { }
@@ -1032,6 +1074,9 @@ public class MainActivity extends Activity {
     }
 
     public final class Bridge {
+        @JavascriptInterface public void runHourlySyncNow() { MainActivity.this.runHourlySyncNow(); }
+        @JavascriptInterface public void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) { MainActivity.this.saveNodeSettings(panel, agent, token, comfy, ollama); }
+        @JavascriptInterface public void savePcStudio(String base, String token) { MainActivity.this.savePcStudio(base, token); }
         @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
         @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
         @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
@@ -1127,7 +1172,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.6.0\nT8i RAW Vault + dedicação, cursos e certificados.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 6.7.0\nPortfólio, secretário, auto sync horário e T8i RAW Vault.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {
