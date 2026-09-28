@@ -1,5 +1,8 @@
 name: Build AURION Mobile AI APK
 on:
+  pull_request:
+    branches: [main]
+    paths: ['aurion-mobile-ai/**', 'pc-package-v3/aurion_superstudio/**', 'pc-package-v3/requirements-t8i.txt', '.github/workflows/aurion-mobile-ai.yml']
   push:
     branches: [main, 'feat/**']
     paths: ['aurion-mobile-ai/**', '.github/workflows/aurion-mobile-ai.yml']
