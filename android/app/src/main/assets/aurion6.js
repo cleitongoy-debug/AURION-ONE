@@ -1,0 +1,51 @@
+'use strict';
+// Curated, non-secret factory context. The original archive contains credentials and is never bundled.
+const AURION_MILESTONES=[
+  ['2025-10-16','Boot LÚMEN V4.0','Início documentado do núcleo LÚMEN e seus operadores.'],
+  ['2025-11-02','TOMIM','Projeto infantil: consistência dos personagens, estilo cartoon Kiwi 2D e imagens 752×416.'],
+  ['2026-09-18','AURION ONE no POCO','Começo da ponte móvel: painel, agente, PC opcional, Mi Band 9 Pro e fone.'],
+  ['2026-09-21','T8i e estúdio','CR3/RAW, preservação de originais, revelação, vídeo, cor e entrega viram módulos prioritários.'],
+  ['2026-09-24','Programação controlada','Preservar dados, testar funções e registrar o que foi comprovado.'],
+  ['2026-09-25','APK e scan','O Git registra versões Android e um snapshot de serviços locais; snapshot não é status atual.'],
+  ['2026-09-27','Painel e pesquisa','Operador pediu scanner de aquecimento, estudo fotográfico e independência offline.'],
+  ['2026-09-28','POCO autônomo','História selecionada embutida, cronômetro e orientador local nesta versão.']
+];
+const AURION_KNOWLEDGE=[
+  {terms:['t8i','cr3','raw','canon','lente','foto'],answer:'A T8i pede cópia do CR3 original, organização por projeto e revelação não destrutiva. Este POCO cataloga e edita imagens que o Android decodifica; CR3 completo depende de um motor RAW verificado. As abas Foto, Cor e Entrega ajudam no fluxo. Não chamo um preset salvo de revelação aplicada.'},
+  {terms:['pc','gpu','comfy','ollama','nó'],answer:'O app abre e mantém memórias sem PC. Em Configuração → Nós, informe uma URL privada do PC e teste cada endpoint. ComfyUI online em /system_stats ainda não significa geração; é preciso validar workflow, fila e saída.'},
+  {terms:['band','relógio','mi fitness','pulseira'],answer:'A Mi Band 9 Pro é tratada separadamente do fone. A aba Band busca Bluetooth e faz teste de notificação com permissões do Android. Mi Fitness instalado não prova leitura de dados nem sincronização.'},
+  {terms:['fone','capacete','bluetooth','voz'],answer:'Pareie o fone nas configurações Bluetooth do POCO. O aplicativo não assume controle de botões ou microfone sem teste no dispositivo. Use o chat e a entrada de voz quando estiver parado.'},
+  {terms:['api','conta','drive','github','chave','conexão'],answer:'Abra Configuração. Insira chaves na aba Contas, configure PC em Nós e teste. Vermelho significa pendente ou falhou; verde exige resposta recente. O Drive pode ser usado com seletor de arquivos do Android. ChatGPT Plus e Gemini app não fornecem automaticamente crédito de API.'},
+  {terms:['memória','contexto','história','dedicação','tempo'],answer:'A linha do tempo traz marcos resumidos do AURION, sem segredos. Memórias novas ficam no banco local e podem ser exportadas. O cronômetro conta sessões iniciadas neste aparelho; as 315,7 horas/6.882 ciclos são uma referência histórica arquivada.'},
+  {terms:['imagem','vídeo','editor','cor','entrega','impressão'],answer:'Foto, Cor, FX, Vídeo, Áudio, Conversor e Cliente já estão no menu. Exporte e confira arquivo, dimensão, cor e destino antes de entregar. Algumas opções são prévia ou projeto; a tela de cada módulo indica o limite.'},
+  {terms:['agente','inteligente','offline','orientador'],answer:'Eu sou o orientador local embutido: recupero regras e marcos conhecidos e guio você pelas abas sem internet. Para gerar uma resposta nova por modelo, configure uma API na aba Contas ou o Home Node em Nós e use Agente.'}
+];
+const WORK_KEY='aurion6Work';
+function workState(){try{return JSON.parse(localStorage.getItem(WORK_KEY)||'{}')}catch{return{}}}
+function saveWork(w){localStorage.setItem(WORK_KEY,JSON.stringify(w));renderWork()}
+function fmtDuration(ms){let s=Math.floor(Math.max(0,ms)/1000),h=Math.floor(s/3600);return String(h).padStart(2,'0')+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function workElapsed(w){return (w.total||0)+(w.start?Math.max(0,Date.now()-w.start):0)}
+function toggleWork(){let w=workState();if(w.start){w.total=workElapsed(w);w.start=null}else w.start=Date.now();saveWork(w)}
+function markMoment(){let title=prompt('Nome do marco desta sessão:');if(!title||!title.trim())return;let w=workState();w.marks=w.marks||[];w.marks.unshift({title:title.trim().slice(0,120),at:Date.now(),elapsed:workElapsed(w)});w.marks=w.marks.slice(0,200);saveWork(w)}
+function renderWork(){let w=workState();$('workTimer').textContent=fmtDuration(workElapsed(w));$('workToggle').textContent=w.start?'PAUSAR E SALVAR':'INICIAR CRONÔMETRO';$('workTotal').textContent='Tempo medido no POCO: '+fmtDuration(workElapsed(w));$('workMarks').innerHTML=(w.marks||[]).map(m=>`<div class="milestone"><small>${new Date(m.at).toLocaleString('pt-BR')} · ${fmtDuration(m.elapsed)}</small><b>${esc(m.title)}</b></div>`).join('')||'<p class="muted">Seus marcadores aparecerão aqui.</p>'}
+function renderHistory(){let now=Date.now();$('sinceBoot').textContent=Math.floor((now-new Date('2025-10-16T14:40:00-03:00'))/86400000)+' dias';$('sinceOne').textContent=Math.floor((now-new Date('2026-09-18T00:00:00-03:00'))/86400000)+' dias';$('historyMilestones').innerHTML=AURION_MILESTONES.map(m=>`<div class="milestone"><small>${m[0]}</small><b>${esc(m[1])}</b><span>${esc(m[2])}</span></div>`).join('');renderWork()}
+function seedFactoryContext(){if(localStorage.getItem('aurion6Seeded'))return;const facts=[
+ ['Operador e diretriz','ANARK / Cleiton Luiz Epifanio. AURION ONE é um projeto de IA local, criativa e móvel. Preservar o trabalho, conferir evidências e manter o POCO útil sem rede.'],
+ ['Arquitetura de contexto','Pai → Programa → Agente → Memória → Contexto. Distinguir declarado, implementado e testado; registrar origem, hora e resultado.'],
+ ['POCO e dispositivos','POCO X7, Mi Band 9 Pro via Mi Fitness e fone/capacete são integrações separadas. Não afirmar conexão apenas por aplicativo instalado.'],
+ ['Fotografia e T8i','CR3 original preservado; workspace de RAW, prévias, exportações, presets e logs. Profundidade de cor, lentes, perfis e acabamento para impressão/redes são objetivos de estudo.'],
+ ['Painel PC','Há versões históricas do HUD Python e Home Node. Portas locais e scans antigos são snapshots; testar serviço e autenticação antes de marcar online.'],
+ ['Identidade e projetos','Visual escuro, cinza militar e ouro. TOMIM é projeto infantil com personagens consistentes; não é operador.'],
+ ['Segredos e provedores','Chaves devem ser inseridas no próprio aparelho. Não embutir credenciais de conversas. Provedores via API oficial quando configurados.']
+];let ok=true;for(const [title,body] of facts){let id=native('memoryAdd','factory',title,body,JSON.stringify({source:'curadoria AURION v6; histórico do operador',version:6}));if(!(id>0))ok=false}if(ok)localStorage.setItem('aurion6Seeded','1')}
+function toggleGuide(){let p=$('guidePanel');p.hidden=!p.hidden;if(!p.hidden)$('guideQuestion').focus()}
+function askGuide(){let q=$('guideQuestion').value.trim();if(!q)return;let words=q.toLocaleLowerCase('pt-BR');let hits=AURION_KNOWLEDGE.map(k=>({k,score:k.terms.reduce((n,t)=>n+(words.includes(t)?1:0),0)})).sort((a,b)=>b.score-a.score);let answer=hits[0].score?hits[0].k.answer:'Posso orientar sobre T8i, edição, contexto, conexões, PC, Band e fone com o conhecimento local. Para uma análise nova, use a aba Agente após testar uma rota de IA.';$('guideReply').textContent=answer;$('guideQuestion').value='';native('memoryAdd','conversation','Orientador local · pergunta',q,'{}');native('memoryAdd','conversation','Orientador local · resposta',answer,'{}')}
+function recentOk(label){let t=data().tests?.[label];return !!(t?.ok && t.checkedAt && Date.now()-t.checkedAt<300000)}
+function renderSetup(){let d=data(),a={};try{a=JSON.parse(native('accountStatus')||'{}')}catch{};let verified=workState().accounts||{};let fresh=k=>!!(verified[k]&&Date.now()-verified[k]<300000);let status=[['GitHub API',fresh('github'),!!a.github],['Drive API',fresh('googleDrive'),!!a.googleDrive],['OpenAI API',fresh('openai'),!!a.openai],['Gemini API',fresh('gemini'),!!a.gemini],['Hugging Face',fresh('huggingface'),!!a.huggingface],['PC / Home Node',recentOk('Home Node'),!!d.settings?.agent],['ComfyUI',recentOk('ComfyUI'),!!d.settings?.comfy],['Ollama',recentOk('Ollama'),!!d.settings?.ollama]];$('setupStates').innerHTML=status.map(([name,ok,configured])=>`<div class="connectionState"><span>${esc(name)}</span><strong class="${ok?'ok':'bad'}">${ok?'VERIFICADO':'● '+(configured?'AGUARDA TESTE':'AGUARDA CONFIGURAÇÃO')}</strong></div>`).join('')}
+const aurionOldService=window.aurionServiceResult;
+window.aurionServiceResult=raw=>{let x=JSON.parse(raw);x.result.checkedAt=Date.now();aurionOldService(JSON.stringify(x));renderSetup()};
+const aurionOldVault=window.aurionVaultResult;
+window.aurionVaultResult=raw=>{aurionOldVault(raw);renderSetup()};
+const aurionOldAccount=window.aurionAccountResult;
+window.aurionAccountResult=raw=>{aurionOldAccount(raw);try{let x=JSON.parse(raw),w=workState();w.accounts=w.accounts||{};if(x.result?.ok)w.accounts[x.label]=Date.now();else delete w.accounts[x.label];localStorage.setItem(WORK_KEY,JSON.stringify(w))}catch{}renderSetup()};
+seedFactoryContext();renderHistory();renderSetup();setInterval(()=>{renderWork();if(document.getElementById('history').classList.contains('active'))renderHistory()},1000);
