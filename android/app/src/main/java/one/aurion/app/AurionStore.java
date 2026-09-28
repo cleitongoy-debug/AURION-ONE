@@ -26,15 +26,23 @@ final class AurionStore extends SQLiteOpenHelper {
     private final SharedPreferences vault;
 
     AurionStore(Context context) {
-        super(context, DB, null, 1);
+        super(context, DB, null, 2);
         vault = context.getSharedPreferences("aurion_secure_vault", Context.MODE_PRIVATE);
     }
 
     @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE records(id INTEGER PRIMARY KEY AUTOINCREMENT,type TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,meta TEXT NOT NULL DEFAULT '{}',created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE records(id INTEGER PRIMARY KEY AUTOINCREMENT,type TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,meta TEXT NOT NULL DEFAULT '{}',created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,profile_id TEXT NOT NULL DEFAULT 'anark')");
         db.execSQL("CREATE INDEX records_type_time ON records(type,updated_at DESC)");
     }
-    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
+    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 2) db.execSQL("ALTER TABLE records ADD COLUMN profile_id TEXT NOT NULL DEFAULT 'anark'");
+    }
+
+    private volatile String profileId = "anark";
+    synchronized void setProfile(String id) { profileId = id; }
+    synchronized void claimLegacy(String id) {
+        getWritableDatabase().execSQL("UPDATE records SET profile_id=? WHERE profile_id='anark' AND type NOT IN ('factory','reference','sync_event')", new Object[]{id});
+    }
 
     synchronized long add(String type, String title, String body, String meta) {
         long now = System.currentTimeMillis();
@@ -42,15 +50,16 @@ final class AurionStore extends SQLiteOpenHelper {
         v.put("type", clean(type, "memory")); v.put("title", clean(title, "Sem título"));
         v.put("body", body == null ? "" : body); v.put("meta", meta == null ? "{}" : meta);
         v.put("created_at", now); v.put("updated_at", now);
+        v.put("profile_id", profileId);
         return getWritableDatabase().insertOrThrow("records", null, v);
     }
 
-    synchronized boolean remove(long id) { return getWritableDatabase().delete("records", "id=?", new String[]{String.valueOf(id)}) > 0; }
+    synchronized boolean remove(long id) { return getWritableDatabase().delete("records", "id=? AND profile_id=?", new String[]{String.valueOf(id), profileId}) > 0; }
 
     synchronized long upsertReference(String title, String body, String meta) {
         long now = System.currentTimeMillis();
         ContentValues v = new ContentValues(); v.put("body", body); v.put("meta", meta); v.put("updated_at", now);
-        int updated = getWritableDatabase().update("records", v, "type=? AND title=?", new String[]{"reference", title});
+        int updated = getWritableDatabase().update("records", v, "profile_id=? AND type=? AND title=?", new String[]{profileId, "reference", title});
         return updated > 0 ? updated : add("reference", title, body, meta);
     }
 
@@ -58,10 +67,10 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized JSONArray list(String type, String query, int limit) {
         JSONArray out = new JSONArray();
-        String selection = null; java.util.ArrayList<String> args = new java.util.ArrayList<>();
-        if (type != null && !type.trim().isEmpty() && !"all".equals(type)) { selection = "type=?"; args.add(type.trim()); }
+        String selection = "profile_id=?"; java.util.ArrayList<String> args = new java.util.ArrayList<>(); args.add(profileId);
+        if (type != null && !type.trim().isEmpty() && !"all".equals(type)) { selection += " AND type=?"; args.add(type.trim()); }
         if (query != null && !query.trim().isEmpty()) {
-            selection = selection == null ? "(title LIKE ? OR body LIKE ?)" : selection + " AND (title LIKE ? OR body LIKE ?)";
+            selection += " AND (title LIKE ? OR body LIKE ?)";
             String q = "%" + query.trim() + "%"; args.add(q); args.add(q);
         }
         try (Cursor c = getReadableDatabase().query("records", null, selection, args.toArray(new String[0]), null, null, "updated_at DESC", String.valueOf(Math.max(1, Math.min(500, limit))))) {
@@ -103,6 +112,7 @@ final class AurionStore extends SQLiteOpenHelper {
     }
 
     synchronized void setSecret(String name, String value) throws Exception {
+        name = scopedSecret(name);
         if (value == null || value.isEmpty()) { vault.edit().remove(name).apply(); return; }
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE, key());
         byte[] encrypted = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
@@ -113,6 +123,7 @@ final class AurionStore extends SQLiteOpenHelper {
 
     synchronized String getSecret(String name) {
         try {
+            name = scopedSecret(name);
             byte[] packed = Base64.decode(vault.getString(name, ""), Base64.NO_WRAP); if (packed.length < 13) return "";
             byte[] iv = new byte[12]; byte[] encrypted = new byte[packed.length - 12];
             System.arraycopy(packed, 0, iv, 0, 12); System.arraycopy(packed, 12, encrypted, 0, encrypted.length);
@@ -120,6 +131,8 @@ final class AurionStore extends SQLiteOpenHelper {
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
         } catch (Exception e) { return ""; }
     }
+
+    private String scopedSecret(String name) { return "anark".equals(profileId) ? name : "profile_" + profileId + "_" + name; }
 
     synchronized JSONObject accountStatus() {
         JSONObject j = new JSONObject();

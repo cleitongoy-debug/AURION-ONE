@@ -29,7 +29,7 @@ function toggleWork(){let w=workState();if(w.start){w.total=workElapsed(w);w.sta
 function markMoment(){let title=prompt('Nome do marco desta sessão:');if(!title||!title.trim())return;let w=workState();w.marks=w.marks||[];w.marks.unshift({title:title.trim().slice(0,120),at:Date.now(),elapsed:workElapsed(w)});w.marks=w.marks.slice(0,200);saveWork(w)}
 function renderWork(){let w=workState();$('workTimer').textContent=fmtDuration(workElapsed(w));$('workToggle').textContent=w.start?'PAUSAR E SALVAR':'INICIAR CRONÔMETRO';$('workTotal').textContent='Tempo medido no POCO: '+fmtDuration(workElapsed(w));$('workMarks').innerHTML=(w.marks||[]).map(m=>`<div class="milestone"><small>${new Date(m.at).toLocaleString('pt-BR')} · ${fmtDuration(m.elapsed)}</small><b>${esc(m.title)}</b></div>`).join('')||'<p class="muted">Seus marcadores aparecerão aqui.</p>'}
 function renderHistory(){let now=Date.now();$('sinceBoot').textContent=Math.floor((now-new Date('2025-10-16T14:40:00-03:00'))/86400000)+' dias';$('sinceOne').textContent=Math.floor((now-new Date('2026-09-18T00:00:00-03:00'))/86400000)+' dias';$('historyMilestones').innerHTML=AURION_MILESTONES.map(m=>`<div class="milestone"><small>${m[0]}</small><b>${esc(m[1])}</b><span>${esc(m[2])}</span></div>`).join('');renderWork()}
-function seedFactoryContext(){if(localStorage.getItem('aurion6Seeded'))return;const facts=[
+function seedFactoryContext(){if(AURION_ID!=='anark'||localStorage.getItem('aurion6Seeded'))return;const facts=[
  ['Operador e diretriz','ANARK / Cleiton Luiz Epifanio. AURION ONE é um projeto de IA local, criativa e móvel. Preservar o trabalho, conferir evidências e manter o POCO útil sem rede.'],
  ['Arquitetura de contexto','Pai → Programa → Agente → Memória → Contexto. Distinguir declarado, implementado e testado; registrar origem, hora e resultado.'],
  ['POCO e dispositivos','POCO X7, Mi Band 9 Pro via Mi Fitness e fone/capacete são integrações separadas. Não afirmar conexão apenas por aplicativo instalado.'],
@@ -62,6 +62,7 @@ seedFactoryContext();renderHistory();renderSetup();setInterval(()=>{renderWork()
 
 // The full agent chat works without a remote model. Retrieval reports only curated facts.
 function offlineAnswer(question){
+ if(AURION_ID!=='anark'){let words=String(question).toLocaleLowerCase('pt-BR').split(/\W+/).filter(x=>x.length>3).slice(0,3);let hits=[];for(let word of words)hits.push(...getMemories('all',word,3));hits=[...new Map(hits.map(x=>[x.id,x])).values()].slice(0,4);return hits.length?'No seu perfil, encontrei: '+hits.map(x=>x.title+' — '+x.body.slice(0,300)).join(' | '):'Ainda não há evidência neste perfil para responder com segurança. Descreva seu projeto ou registre um trabalho e sua fonte.'}
  const q=question.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
  if(/^(oi|ola|bom dia|boa noite|boa tarde|e ai|salve)[!. ]*$/.test(q))return 'Salve, ANARK. Estou funcionando neste POCO sem PC. Posso consultar nosso contexto sobre T8i, painel, agentes, edição, Band, fone e conexões. O que você quer resolver primeiro?';
  const score=k=>k.terms.reduce((n,t)=>n+(q.includes(t.normalize('NFD').replace(/[\u0300-\u036f]/g,''))?2:0),0);

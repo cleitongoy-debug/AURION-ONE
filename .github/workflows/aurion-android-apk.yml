@@ -1,7 +1,7 @@
 name: AURION ONE Super Studio APK
 on:
   push:
-    branches: [main, feat/dedicacao-certificados-20260928, deliver/poco-v69]
+    branches: [main, feat/dedicacao-certificados-20260928, deliver/poco-v69, deliver/poco-v70-profiles]
     paths:
       - 'android/**'
       - 'pc-package-v3/aurion_superstudio/**'
@@ -49,14 +49,14 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v6.9.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v6.9.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
-      - name: Publish installable package
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+      - name: Publish debug test package (not compatible with installed release)
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-POCO-v6.9.0
+          name: AURION-ONE-POCO-v7.0.0-TESTE
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v6.9.0.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
