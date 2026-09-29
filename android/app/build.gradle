@@ -3,12 +3,12 @@ android {
     namespace 'one.aurion.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'one.aurion.morph.node'
+        applicationId 'one.aurion.scan.poco'
         minSdk 26
         targetSdk 35
-        versionCode 80
-        versionName '8.0.0'
-        manifestPlaceholders = [appLabel: 'AURION MORPH NODE']
+        versionCode 1
+        versionName '1.0.0'
+        manifestPlaceholders = [appLabel: 'AURION SCAN POCO']
     }
 }
 dependencies {
