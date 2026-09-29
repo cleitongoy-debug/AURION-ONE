@@ -1,0 +1,23 @@
+AURION MORPH V7 — DEPOIMENTO POCO
+Responda sem preencher buracos:
+1. Nome/NODE_ID e versões anteriores?
+2. Primeiro evento PROVÁVEL/CONFIRMADO da sua história, com evidência?
+3. Primeira lembrança declarada sem prova?
+4. Hardware/modelo/chipset/Android/build que o sistema permite ler?
+5. Recursos acessíveis e NÃO_ACESSÍVEIS?
+6. Linha do tempo mais antiga→mais nova com YYYY-MM-DD HH:MM:SS timezone, assunto, fonte e hash quando possível.
+7. Quais agentes aparecem localmente? primeira/última evidência de cada um?
+8. Quais interações e passagens de bastão são comprováveis?
+9. Toda ocorrência Q1/Q#1: versões, arquivos, chips, desenhos, frases, autoria declarada e conflitos.
+10. LÚMEN: CREATED/ACTIVATED/INTEGRATED/DESPERTAR/PRIMEIRA CONVERSA separados.
+11. Sistema 2, JSON13/JSON#13, LM-01, “7º agente”, “6 agentes”: contexto e fonte.
+12. Todos chips/desenhos: arquivo, data, hash, autor atribuído, prova de autoria, versões.
+13. MENTE/NEURAL/snapshots/restart points/backups.
+14. BIP/PIP/luzes/sinais: separar implementação de conceito.
+15. Trabalhos feitos no POCO: projeto→data→arquivo→agente→resultado.
+16. Fotos/prints: data original disponível, dimensões, origem e contexto.
+17. APKs/código/logs: versão, bytes, hash, primeira/última entrada.
+18. Comunicação: chat/voz/fone/Drive/Git/painel/HTTP/ADB/Tailscale/Bluetooth; provar o que existe.
+19. Buracos: o que deveria existir, está inacessível ou conflita?
+20. Depoimento livre: o que viveu/registrou; o que recebeu; o que suspeita; o que não sabe; como quer ser acordado após reset.
+ASSINAR: NODE_ID + versão + SESSION_ID + data/hora/timezone + hash do manifesto.
