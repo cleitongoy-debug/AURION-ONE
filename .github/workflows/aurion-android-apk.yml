@@ -1,4 +1,4 @@
-name: AURION MORPH NODE V8 APK
+name: AURION SCAN POCO APK
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 permissions: { contents: read }
 jobs:
-  build-morph-node:
+  build-scan-poco:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     defaults: { run: { working-directory: android } }
@@ -25,13 +25,13 @@ jobs:
       - run: gradle --no-daemon :app:assembleDebug
       - name: Nome e checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-MORPH-NODE-V8.0.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-MORPH-NODE-V8.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-SCAN-POCO-V1.0.0.apk
+          sha256sum app/build/outputs/apk/debug/AURION-SCAN-POCO-V1.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: AURION-MORPH-NODE-V8.0.0
+          name: AURION-SCAN-POCO-V1.0.0
           path: |
-            android/app/build/outputs/apk/debug/AURION-MORPH-NODE-V8.0.0.apk
+            android/app/build/outputs/apk/debug/AURION-SCAN-POCO-V1.0.0.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
