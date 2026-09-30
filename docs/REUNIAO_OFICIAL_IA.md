@@ -54,3 +54,21 @@ Continuidade:
 - Não apagar outras versões nem impor desinstalação. Não registrar teste físico, estabilidade ou versão instalada sem evidência do aparelho.
 
 Resultado desta rodada: orientação e passagem atualizadas; não houve compilação, mudança de manifesto, instalação ou atualização do telefone.
+
+
+## Correção urgente do operador — Q7 e protocolo Ônibus
+Pedido: 2026-09-30T19:54:19-03:00. Registro: Codex desta conversa.
+
+Cleiton esclareceu: Q7 é uma atualização; foi descrita por ele como versão limpa e estudada. A autenticação não foi concluída. Precisa incorporar os novos ajustes, programação e leitura de bits, letras e pontos após o protocolo Ônibus.
+
+Estado de evidência:
+- “Limpa e estudada” é declaração direta do operador, não conclusão de auditoria técnica nesta rodada.
+- Autenticação pendente não equivale a versão falsa, corrompida ou descartada. Manter Q7 como atualização candidata, preservando seus arquivos e histórico.
+- A base escolhida para continuidade permanece POCO 6.3 instável. Q7 deve ser confrontada com essa base; não presumir que “Q7” é automaticamente o mesmo artefato que “MORPH V7”.
+- Antes de integrar/publicar: identificar arquivo original e origem, tamanho, SHA-256, pacote, versionCode/versionName, certificado de assinatura e fontes/build correspondentes; separar autenticidade/origem, integridade, assinatura e funcionamento.
+- Bits, letras e pontos: comparar conteúdo e diferenças reais de código/documentos, com caminho, versão, alteração e resultado. Não declarar auditoria de todos os bits sem efetuá-la.
+- Protocolo Ônibus: manter como referência de continuidade indicada pelo operador. A localização e revisão integral da versão específica desse protocolo ainda precisam ser registradas; não inventar implementação a partir do nome.
+- Orientação urgente para todo participante: ler docs/REUNIAO_OFICIAL_IA.md, a Bíblia IA existente e o protocolo Ônibus identificado antes de alterar o projeto; registrar fonte lida, correção, resultado e lacuna na issue #2. Esta publicação comunica a orientação; não prova que todos já leram.
+- Reaproveitar os avanços existentes, preservar cofre/configurações/histórico e testar atualização sobre a 6.3.
+
+Nesta rodada os dois documentos Git e o depoimento canônico Drive foram consultados e receberam esta correção. Não houve autenticação do APK Q7, compilação ou teste físico no POCO.
