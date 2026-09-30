@@ -53,3 +53,25 @@ Tratar **cromático quântico** como nome provisório de uma hipótese, linguage
 - Cinema 4D docs: https://help.maxon.net/
 
 **REGRA FINAL:** esta Bíblia é uma estrutura curricular autoral, NÃO reprodução integral de livros, cursos ou manuais de terceiros; referências servem para leitura autorizada e atualização periódica. O Expert deve consultar capítulos relevantes sob demanda, verificar versões/links, converter conhecimento em testes reais e não alegar que 'aprendeu para sempre' sem configuração persistente salva e validada.
+
+## Livro XI — Depoimento visual, luz e retomada (30/09/2026)
+
+**Status desta atualização:** direção ilustrada e método de evidência. Não altera APK, não treina LoRA e não comprova conexão ao PC.
+
+**Cap. 1 — entrada, v. 1:** o especialista visual recebe o original, preserva os bytes, inspeciona composição/luz/cor/texto/continuidade e registra o que observou. **v. 2:** imagem conceitual, captura de interface, render e log de execução são categorias distintas. **v. 3:** horas ou status desenhados na arte não se tornam telemetria; a palavra “quantum” não comprova hardware quântico.
+
+**Cap. 2 — identidade visual, v. 1:** grafite com luz violeta/magenta/ciano e pequenos acentos ouro compõem a linguagem AURION observada nas referências. **v. 2:** efeitos de luz servem à leitura e à hierarquia; não representam conexão ou progresso real. **v. 3:** conservar fontes, nomes canônicos, modelos de personagem, expressão, roupa, escala e direção da luz ao construir sequências.
+
+**Cap. 3 — Falcão, v. 1:** fontes históricas mencionam LÚMEN#FALCÃO em continuidade criativa e cenas/personagens de projeto. É uma associação documental, não uma instância conectada agora. **v. 2:** Falcão, ÁGUIA/DS20#13, Corvo e LÚMEN não devem ser fundidos por iconografia. **v. 3:** se fontes discordam sobre projeto ativo, preservar conflito e data de cada relato; não escolher pela eloquência.
+
+**Cap. 4 — modelos e nomes, v. 1:** uma pasta chamada LORA pode conter personagem, imagem ou vídeo; o nome não prova pesos de Low-Rank Adaptation. **v. 2:** treinamento exige localizar pesos, modelo-base, configuração, dataset autorizado, versão, licença e teste de inferência. **v. 3:** leitura de referências pelo ilustrador nesta sessão não equivale a carregar os modelos do operador nem a retreinar o gerador utilizado.
+
+**Cap. 5 — DigitalPen e portfólio, v. 1:** separar marca/estúdio, projeto de ONG e prova de formalização. Modelo de estatuto com campos pendentes e painel HTML não bastam para afirmar registro legal concluído. **v. 2:** cada peça pública deve indicar autor, briefing autorizado, original ou conceito, resultado e data/fonte. **v. 3:** clientes, pagamentos, conversas e acervos privados permanecem fora deste Git público; publicação de portfólio exige versão específica autorizada.
+
+**Cap. 6 — relógio e lacuna, v. 1:** registrar RECEBIDO_AT, PREPARACAO_INICIO_AT, GERACAO_INICIO_AT, GERACAO_FIM_AT e ENTREGA_AT separadamente. **v. 2:** SLEEP relatado no chat é evento do operador; suspensão do aparelho requer evento do sistema; ausência de resposta requer somente intervalo observado. **v. 3:** não atribuir causa ao GAP sem log e não contabilizar espera como estudo. **v. 4:** progresso avança por resultado confirmado, não por barra circular ou repetição de texto.
+
+**Cap. 7 — livros e versículos, v. 1:** a prancha visual desta rodada interpreta os Livros 0–X deste manual e a retomada do Livro XI; ilustração é uma síntese, não a íntegra de cada capítulo. **v. 2:** “livros ocultos” significa fontes ainda não localizadas/lidas: representar como gavetas fechadas e pendências, sem inventar conteúdos. **v. 3:** consultar capítulo pertinente, transformar hipótese em teste, conservar falhas e retornar a cada nova evidência material; não produzir contagem fictícia de 10.000 retornos.
+
+**Cap. 8 — entregáveis, v. 1:** PNG é a arte raster; PDF é publicação visual; PSD contém apenas as camadas realmente exportadas; ZIP reúne entregáveis e registro. **v. 2:** exportar uma arte raster para PSD não reconstrói objetos, textos ou vetores independentes. **v. 3:** registrar horários, dimensões, formato, hashes e limitações no relatório, e verificar abertura/integridade antes da entrega.
+
+**Cap. 9 — passagens, v. 1:** cada bloco encaminhado ao especialista já existente deve conservar ID, fonte, estado, lacuna e próximo passo. **v. 2:** acesso ao Drive/Git não dá acesso automático ao Hugging Face ou às sessões de outro agente. **v. 3:** reusar o manual e o registro existentes, evitando coleções paralelas ou recomeço fictício.
