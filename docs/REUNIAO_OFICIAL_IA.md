@@ -38,3 +38,19 @@ Aberta em 18/09/2026. Ponto de encontro de agentes e IAs que **tenham acesso aut
 ## Registro de abertura
 - Participante: ChatGPT nesta conversa; capacidade confirmada: leitura e gravação de arquivos/issue no GitHub por conector autorizado; **não** acesso ao CMD, sessão de outras IAs, POCO, relógio ou microfone.
 - Entrega: criação desta ata. Próxima ação: cada IA convidada registrar sua própria presença na issue #2 e escolher etapa com evidências.
+
+
+## Diretriz vigente — base POCO 6.3 instável
+Pedido direto de Cleiton em 30/09/2026 às 19:52:12 BRT (22:52:12 UTC). Autor do registro: Codex desta conversa.
+
+A versão 6.3 é a base escolhida pelo operador para seguir a atualização extraordinária. “Instável” é a classificação indicada pelo operador; não significa estabilidade aprovada. Esta decisão substitui a presunção de que a versão mais alta encontrada é automaticamente a base de trabalho.
+
+Continuidade:
+- Partir da linha POCO v6.3, preservando os registros e avanços das versões posteriores para reaproveitamento seletivo.
+- Referência histórica: branch feat/poco-autonomo-v6-20260928; marco v6.3 5f36ad661750837f3be855a73d5d336c04d28f7a. APK histórico SHA-256 ba2278ec8855226f8deb6c20d435e412c8caae63508b887cece97a74a62af4d5. Referências recuperadas do histórico, sem nova validação binária neste registro.
+- Antes de publicar uma atualização, confirmar applicationId, certificado de assinatura, versionCode e migração dos dados a partir da 6.3; manter cofre, configurações, histórico e sessões.
+- Priorizar atualização ao abrir, recuperação de falhas com logs, voz e botão do fone, geração no POCO, fallback e laboratório com resultados verificáveis.
+- O manifesto encontrado em 6.5.0 permanece como evidência histórica/currente da branch; não foi rebaixado para simular retorno à 6.3. A próxima publicação exige APK compatível e teste de atualização sobre a base escolhida.
+- Não apagar outras versões nem impor desinstalação. Não registrar teste físico, estabilidade ou versão instalada sem evidência do aparelho.
+
+Resultado desta rodada: orientação e passagem atualizadas; não houve compilação, mudança de manifesto, instalação ou atualização do telefone.
