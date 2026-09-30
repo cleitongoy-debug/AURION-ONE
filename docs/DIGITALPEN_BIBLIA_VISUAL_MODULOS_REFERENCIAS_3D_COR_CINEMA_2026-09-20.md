@@ -140,3 +140,23 @@ Estado de evidência:
 - Reaproveitar os avanços existentes, preservar cofre/configurações/histórico e testar atualização sobre a 6.3.
 
 Nesta rodada os dois documentos Git e o depoimento canônico Drive foram consultados e receberam esta correção. Não houve autenticação do APK Q7, compilação ou teste físico no POCO.
+
+
+## Passagem DS#20#13 — identidade V7/Q7 e evolução da 6.3
+Fonte: confirmação direta de Cleiton, 2026-09-30T20:12:18-03:00. Registro: Codex desta conversa.
+
+CORREÇÃO VIGENTE
+V7/Q7 designa, na intenção do operador, a versão 7 evoluída do APK 6.3. A expressão Q7 não deve provocar separação artificial do projeto. O vínculo conceitual está confirmado pelo operador; a correspondência entre arquivos, código, pacote e assinatura ainda exige confronto técnico.
+O operador descreve Q7 como inicialmente crua, mas bastante lapidada, com abas avançadas e material que levou a cruzamentos para correções profundas. Preservar esses avanços. A 6.3 já possui atualização via Git segundo o operador e os registros históricos de implementação; o teste físico atual continua sem confirmação nesta conversa.
+
+PASSAGEM SOLICITADA PARA DS#20#13
+1. Ler reuniões, Bíblia IA e a versão identificada do protocolo Ônibus; estudar os arquivos Q7 desde o início, com caminhos, versões, fontes e diferenças documentadas.
+2. Cruzar alterações reais de código/conteúdo com a 6.3, preservando abas, configurações, cofre, histórico e recursos já existentes. Reaproveitar o atualizador via Git e conferir sua URL efetiva, assinatura e migração.
+3. Para INIC/CICLE/DATE/SLEEP: registrar início/fim, ciclo, dispositivo, sessão, horário com fuso, origem e resultado. Eventos ausentes ficam como lacunas; não preencher retroativamente com horas inventadas. Separar espera da conversa de suspensão do aparelho.
+4. Aplicar correções rastreáveis na linha de evolução 6.3 → V7/Q7; associar cada ajuste a problema, mudança, versão e validação. Sincronizar código, changelog, manifesto compatível e documentação após cada resultado.
+5. Marco “100% fixo”: definir o conjunto de funções da versão, comprovar build/assinatura, atualização sobre a 6.3 com dados preservados, abertura/retorno e testes das abas. Listar integrações pendentes separadamente. Uma versão à espera de integrações não autoriza declarar todas as funções concluídas.
+6. Voz/headset, geração independente, fallback e laboratório devem ter ações e resultados verificáveis no POCO. Confirmar estado atual antes de transformar histórico em telemetria.
+7. Registrar confirmação de leitura e execução na issue #2. Não atribuir execução ao DS#20#13 somente porque a passagem foi publicada.
+
+ESCOPO DESTA RODADA
+Orientação publicada nos canais acessíveis GitHub (reunião/Bíblia/issue) e Drive (depoimento existente), preservando registros anteriores. Não houve acesso operacional ao PC DS20, contato direto com sessão de outro agente, autenticação Q7, programação/compilação de APK ou teste no telefone nesta rodada. Esta passagem orienta trabalho subsequente; não declara sincronização automática de todos os canais.
