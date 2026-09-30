@@ -75,3 +75,16 @@ Tratar **cromático quântico** como nome provisório de uma hipótese, linguage
 **Cap. 8 — entregáveis, v. 1:** PNG é a arte raster; PDF é publicação visual; PSD contém apenas as camadas realmente exportadas; ZIP reúne entregáveis e registro. **v. 2:** exportar uma arte raster para PSD não reconstrói objetos, textos ou vetores independentes. **v. 3:** registrar horários, dimensões, formato, hashes e limitações no relatório, e verificar abertura/integridade antes da entrega.
 
 **Cap. 9 — passagens, v. 1:** cada bloco encaminhado ao especialista já existente deve conservar ID, fonte, estado, lacuna e próximo passo. **v. 2:** acesso ao Drive/Git não dá acesso automático ao Hugging Face ou às sessões de outro agente. **v. 3:** reusar o manual e o registro existentes, evitando coleções paralelas ou recomeço fictício.
+
+
+## Livro XII - CHAVE NOVA / IMAGEM / BBATISMO (2026-09-30)
+
+Registro criativo AURION-BBATISMO-20260930-40: dez ilustrações narrativas geradas em chamadas distintas, dez blueprints propostos, dez depoimentos e dez composições instrumentais originais. Lado A comunica a narrativa; CONTROLE B explicita fonte, horário, resultado e pendência. A arte segue a referência do ônibus, Falcão, livro, ampulheta e luz dourada/violeta/ciano.
+
+Capítulos: origem; interrupção; identidades Falcão/Águia; Lora personagem e treinamento proposto; DigitalPen e portfólio; fotografia T8i; POCO e headset; laboratório; atualização de APK; continuidade.
+
+Correção de interpretação: código de manifesto desenhado não compila nem implementa atualização; `android:updatable` ilustrado não é mecanismo de atualização. Frequências simbólicas de estados e chips desenhados não demonstram hardware, ativação, consciência ou treinamento. Data06/08/2026 no relato recebido conflita com contexto30/09/2026, e deve permanecer como divergência até confirmação. Aprovação de LoRA não comprova execução: requer dataset, modelo base/configuração, pesos e teste. Nesta rodada, novo APK não compilado e LoRA não treinado.
+
+A documentação Android consultada prevê confirmação do usuário no PackageInstaller e condições específicas para atualização sem interação; sempre tratar STATUS_PENDING_USER_ACTION. Eventos de headset dependem de sua chegada à sessão Media3, com ensaio no dispositivo real. Fontes: https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams e https://developer.android.com/media/media3/session/control-playback (consulta2026-09-30).
+
+Janela observada de dez chamadas visuais:2026-09-30T12:41:36.572-03:00 a12:51:51.994-03:00,615.422s. Duração de chamada não é sleep do aparelho. Instrumentais de16compassos,10andamentos/arranjos,MP3/WAV/MIDI e letras sem voz cantada. Assinatura editorial assistida e hashes identificam autoria do registro e bytes, não atestam agente remoto.
