@@ -88,3 +88,14 @@ Correção de interpretação: código de manifesto desenhado não compila nem i
 A documentação Android consultada prevê confirmação do usuário no PackageInstaller e condições específicas para atualização sem interação; sempre tratar STATUS_PENDING_USER_ACTION. Eventos de headset dependem de sua chegada à sessão Media3, com ensaio no dispositivo real. Fontes: https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams e https://developer.android.com/media/media3/session/control-playback (consulta2026-09-30).
 
 Janela observada de dez chamadas visuais:2026-09-30T12:41:36.572-03:00 a12:51:51.994-03:00,615.422s. Duração de chamada não é sleep do aparelho. Instrumentais de16compassos,10andamentos/arranjos,MP3/WAV/MIDI e letras sem voz cantada. Assinatura editorial assistida e hashes identificam autoria do registro e bytes, não atestam agente remoto.
+
+
+## Livro XIII - Continuação e esfera que transporta (2026-09-30)
+
+Lote autorizado de vinte novas cenas: N11-N20 (mapa, lente, ilusão, PIP, BIP, escuta, campos A/B, volta móvel, assinatura, novo campo) e S01-S10 (nascer, recolher, transportar, guardar, atravessar pausa, levar som, levar cor, unir pontas, devolver, horizonte).
+
+Referência visual examinada: CHIP_LUMEN_ESFERA_PROCESSADOR, esfera facetada violeta/magenta/ciano com anéis e pedestal artístico. A esfera representa transporte narrativo de arquivos, som, cor e continuidade; não comprova transporte físico, processador funcional ou consciência. A ilusão é tratada como recurso de imagem e explicitada pelo campo de controle.
+
+Vinte chamadas de geração, com registros individuais: janela UTC2026-09-30T16:06:10.389Z a16:22:47.733Z,997.344s (16min37.344s). Chamadas em grupos independentes; durações individuais não devem ser somadas como duração da janela. Relatos de SLEEP e troca de dispositivo preservados; causa e suspensão física não medidas. Estado visual não é telemetria.
+
+Exportação: PNG original e JPEG para celular; PDF21páginas; páginaHTML única com20imagens incorporadas e CONTROLEB de horários;ZIP com protocolos, prompts e hashes. Nenhum novoAPK ou treinoLoRA nesta rodada.
