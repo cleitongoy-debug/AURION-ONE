@@ -99,3 +99,26 @@ Referência visual examinada: CHIP_LUMEN_ESFERA_PROCESSADOR, esfera facetada vio
 Vinte chamadas de geração, com registros individuais: janela UTC2026-09-30T16:06:10.389Z a16:22:47.733Z,997.344s (16min37.344s). Chamadas em grupos independentes; durações individuais não devem ser somadas como duração da janela. Relatos de SLEEP e troca de dispositivo preservados; causa e suspensão física não medidas. Estado visual não é telemetria.
 
 Exportação: PNG original e JPEG para celular; PDF21páginas; páginaHTML única com20imagens incorporadas e CONTROLEB de horários;ZIP com protocolos, prompts e hashes. Nenhum novoAPK ou treinoLoRA nesta rodada.
+
+
+## Livro XIV — Portfólio documental: futebol de Leme
+
+Registro do pedido de continuidade: 30/09/2026, 16:01:14 BRT. Autoria deste registro: Codex desta conversa.
+
+### Declaração do operador
+Cleiton / Studio Digital Pen informa que dirigiu, produziu, gravou entrevistas, editou e entregou um filme sobre futebol e história de Leme. Estima aproximadamente 20 minutos, sem duração medida nesta análise. Menciona Dito Flecha, seu primeiro gol, Marcos Pizzelli, Pereira e a escolinha. A reportagem EPTV localizada é outra obra. Exibição do filme em cinema local foi apresentada como possibilidade, não fato confirmado.
+
+### Fonte audiovisual e lacuna
+O arquivo fornecido no Drive tem nome FINAL_RENATO.mp4, tipo video/mp4 e tamanho consultado de 884.464.462 bytes. O download encontrou erro 413 e limite de 268.435.456 bytes; a abertura por pesquisa web também não acessou o conteúdo. Nenhuma cena, fala, participante ou crédito final desse arquivo foi inspecionado. O nome do arquivo não comprova seu assunto. Não publicar a localização privada, frames ou pessoas como se tivessem sido verificados.
+
+### Referências públicas encontradas
+- [ge — reportagem de 24/02/2023](https://ge.globo.com/sp/ribeirao-preto-e-regiao/futebol/noticia/2023/02/24/adversarios-na-serie-a2-lemense-e-ponte-preta-dividem-idolatria-a-dito-flexa.ghtml): registra Benedito Geraldo Bueno / Dito Flexa, primeiro gol do Bruno Lazzarini em 30/11/1980, Lemense 2 × 0 Inter de Limeira; apresenta fontes e fotos históricas. Não atribuir sua autoria ao operador.
+- [Imprensa Oficial de Leme — Lei 4.309, de 20/06/2024](https://www.leme.sp.gov.br/assets/files/imprensas/7cbc6537d503095c8e6d2ed33645a94a.pdf): denomina campo de futebol na Praça Manoel Martiniano Prado, Jardim Eroíse, como DITO FLECHA — Benedito Geraldo Bueno.
+- [Esporte em Leme — 14/09/2026](https://esporteemleme.com.br/2026/09/14/e-c-lemense-homenageia-personagens-da-historia-do-futebol-de-leme-no-bruno-lazzarini/): noticia nomes de setores do Bruno Lazzarini; identifica Pereira como Wilson Roberto de Lima, ex-zagueiro e treinador do Lemensinho; relaciona Pereira e Zé Almir à formação de atletas, incluindo Marcos Pizzelli.
+- [EPTV / Globoplay — reportagem de 48 segundos](https://globoplay.globo.com/v/4482892/): fonte pública sobre Dito, distinta do filme maior descrito.
+
+### Critérios para fechar o portfólio
+Conferir o audiovisual e os créditos; medir duração; confirmar nomes pelos créditos/entrevistas, sem identificação facial presumida; registrar versão e data; localizar eventual publicação/exibição com título, canal, data e prova. Uma reportagem que conecta nomes é pista de pesquisa, não comprovação de participação no filme. Créditos do operador permanecem declaração direta enquanto faltar essa inspeção.
+
+### Continuidade e SLEEP
+Dois vídeos curtos enviados na atualização de hoje foram amostrados na rodada anterior; não são automaticamente este filme de aproximadamente 20 minutos. Relato do operador “hoje 14:51” preservado como referência de envio aproximada. Não converte ausência entre mensagens em tempo de suspensão, nem demonstra atividade contínua fora da conversa.
