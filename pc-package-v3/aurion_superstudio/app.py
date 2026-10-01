@@ -3,9 +3,11 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import secrets
 import shutil
 import subprocess
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,9 +23,140 @@ DEFAULT_PANEL = Path(r"C:\Users\ADM_PESS\Desktop\painelseguro#1 - Copia")
 BASE_ROOT = Path(os.environ.get("AURION_PANEL_ROOT", str(DEFAULT_PANEL if DEFAULT_PANEL.exists() else MODULE_ROOT))).resolve()
 DATA_ROOT = BASE_ROOT / "_aurion_superstudio"
 WORKSPACE = DATA_ROOT / "workspace"
-for name in ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS", "PROJETOS", "IMPORTS"):
+for name in ("RAW", "PREVIEWS", "EXPORTS", "CONVERSAS", "PRESETS", "LOGS", "PROJETOS", "IMPORTS", "MANIFESTOS", "BACKUPS"):
     (WORKSPACE / name).mkdir(parents=True, exist_ok=True)
 ensure_3d_workspace(WORKSPACE)
+
+T8I_SETTINGS_FILE = DATA_ROOT / "t8i-settings.json"
+T8I_PATH_KEYS = (
+    "raw_dir",
+    "export_dir",
+    "conversation_dir",
+    "project_dir",
+    "preset_dir",
+    "log_dir",
+    "manifest_dir",
+    "backup_dir",
+)
+
+
+def _t8i_default_settings() -> dict:
+    return {
+        "raw_dir": str(WORKSPACE / "RAW"),
+        "export_dir": str(WORKSPACE / "EXPORTS"),
+        "conversation_dir": str(WORKSPACE / "CONVERSAS"),
+        "project_dir": str(WORKSPACE / "PROJETOS"),
+        "preset_dir": str(WORKSPACE / "PRESETS"),
+        "log_dir": str(WORKSPACE / "LOGS"),
+        "manifest_dir": str(WORKSPACE / "MANIFESTOS"),
+        "backup_dir": str(WORKSPACE / "BACKUPS"),
+    }
+
+
+def load_t8i_settings() -> dict:
+    base = _t8i_default_settings()
+    try:
+        payload = json.loads(T8I_SETTINGS_FILE.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            for key in T8I_PATH_KEYS:
+                value = str(payload.get(key, "")).strip()
+                if value:
+                    base[key] = value
+    except (OSError, json.JSONDecodeError):
+        pass
+    return base
+
+
+def save_t8i_settings(incoming: dict) -> dict:
+    current = load_t8i_settings()
+    for key in T8I_PATH_KEYS:
+        if key not in incoming:
+            continue
+        raw = os.path.expandvars(str(incoming.get(key, "")).strip())
+        if not raw:
+            raise ValueError(f"Pasta vazia: {key}")
+        path = Path(raw).expanduser()
+        if not path.is_absolute():
+            raise ValueError(f"Use caminho absoluto para {key}.")
+        path.mkdir(parents=True, exist_ok=True)
+        current[key] = str(path.resolve())
+    T8I_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = T8I_SETTINGS_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(current, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(T8I_SETTINGS_FILE)
+    return current
+
+
+def t8i_path(key: str) -> Path:
+    if key not in T8I_PATH_KEYS:
+        raise KeyError(key)
+    path = Path(load_t8i_settings()[key]).expanduser()
+    path.mkdir(parents=True, exist_ok=True)
+    return path.resolve()
+
+
+def _safe_folder_name(value: str) -> str:
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", str(value or "").strip()).strip(" .")
+    if not name or name in {".", ".."}:
+        raise ValueError("Nome de pasta inválido.")
+    return name[:120]
+
+
+def _append_t8i_conversation(model: str, prompt: str, response: str) -> dict:
+    folder = t8i_path("conversation_dir")
+    now = datetime.now(timezone.utc)
+    day = now.strftime("%Y-%m-%d")
+    md = folder / f"{day}_AURION_T8I.md"
+    jsonl = folder / f"{day}_AURION_T8I.jsonl"
+    entry = {
+        "created_at": now.isoformat(),
+        "model": model,
+        "prompt": prompt,
+        "response": response,
+    }
+    with jsonl.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    with md.open("a", encoding="utf-8") as handle:
+        handle.write(
+            f"\n## {now.isoformat()} · {model}\n\n"
+            f"### Entrada\n{prompt}\n\n"
+            f"### Resposta\n{response}\n"
+        )
+    return {"markdown": str(md), "jsonl": str(jsonl)}
+
+
+def _write_t8i_manifest(kind: str, payload: dict) -> Path:
+    folder = t8i_path("manifest_dir")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    target = unique_path(folder, f"{stamp}_{safe_name(kind)}.json")
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return target
+
+
+def _choose_folder_windows(initial: str) -> str:
+    if os.name != "nt":
+        raise RuntimeError("O seletor gráfico de pastas está disponível somente no Windows.")
+    env = os.environ.copy()
+    env["AURION_PICK_INITIAL"] = initial
+    script = (
+        "Add-Type -AssemblyName System.Windows.Forms; "
+        "$d=New-Object System.Windows.Forms.FolderBrowserDialog; "
+        "$d.Description='AURION T8i - escolha a pasta'; "
+        "if(Test-Path $env:AURION_PICK_INITIAL){$d.SelectedPath=$env:AURION_PICK_INITIAL}; "
+        "if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){Write-Output $d.SelectedPath}"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-STA", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        shell=False,
+        env=env,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "Falha ao abrir seletor de pastas.")
+    return result.stdout.strip()
 
 BLENDER_JOBS: dict = {}
 BLENDER_PROCESSES: dict = {}
@@ -55,10 +188,14 @@ app.config.update(MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024, JSON_AS_ASCII=False
 
 @app.before_request
 def protect_mutations():
-    protected_mobile = request.path.startswith("/api/mobile/")
+    protected_private = (
+        request.path.startswith("/api/mobile/")
+        or request.path.startswith("/api/t8i/")
+        or request.path.startswith("/api/records")
+    )
     if request.method == "OPTIONS":
         return None
-    if (protected_mobile or request.method not in {"GET", "HEAD"}) and request.headers.get("X-Aurion-Token") != TOKEN:
+    if (protected_private or request.method not in {"GET", "HEAD"}) and request.headers.get("X-Aurion-Token") != TOKEN:
         return jsonify(ok=False, error="Token local inválido."), 401
 
 
@@ -176,20 +313,192 @@ def image_convert():
     return jsonify(ok=True, result=result)
 
 
+@app.route("/api/t8i/settings", methods=["GET", "POST"])
+def t8i_settings():
+    if request.method == "GET":
+        settings = load_t8i_settings()
+        return jsonify(
+            ok=True,
+            settings=settings,
+            exists={key: Path(value).is_dir() for key, value in settings.items()},
+        )
+    body = request.get_json(silent=True) or {}
+    try:
+        settings = save_t8i_settings(body)
+    except (OSError, ValueError) as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+    STORE.add("evidence", "T8i · depósitos atualizados", json.dumps(settings, ensure_ascii=False), {})
+    return jsonify(ok=True, settings=settings)
+
+
+@app.post("/api/t8i/folder/select")
+def t8i_select_folder():
+    body = request.get_json(silent=True) or {}
+    key = str(body.get("key", "")).strip()
+    if key not in T8I_PATH_KEYS:
+        return jsonify(ok=False, error="Depósito inválido."), 400
+    try:
+        selected = _choose_folder_windows(load_t8i_settings()[key])
+        if not selected:
+            return jsonify(ok=False, cancelled=True, error="Seleção cancelada."), 409
+        settings = save_t8i_settings({key: selected})
+    except (OSError, RuntimeError, ValueError) as exc:
+        return jsonify(ok=False, error=str(exc)), 424
+    STORE.add("evidence", "T8i · pasta escolhida", settings[key], {"key": key})
+    return jsonify(ok=True, key=key, path=settings[key], settings=settings)
+
+
+@app.post("/api/t8i/folder/create")
+def t8i_create_folder():
+    body = request.get_json(silent=True) or {}
+    key = str(body.get("key", "")).strip()
+    if key not in T8I_PATH_KEYS:
+        return jsonify(ok=False, error="Depósito inválido."), 400
+    try:
+        child = t8i_path(key) / _safe_folder_name(body.get("name", ""))
+        child.mkdir(parents=True, exist_ok=True)
+    except (OSError, ValueError) as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+    STORE.add("evidence", "T8i · subpasta criada", str(child), {"key": key})
+    return jsonify(ok=True, path=str(child))
+
+
+@app.post("/api/t8i/folder/open")
+def t8i_open_folder():
+    body = request.get_json(silent=True) or {}
+    key = str(body.get("key", "")).strip()
+    if key not in T8I_PATH_KEYS:
+        return jsonify(ok=False, error="Depósito inválido."), 400
+    try:
+        return jsonify(open_path(t8i_path(key)))
+    except (OSError, FileNotFoundError) as exc:
+        return jsonify(ok=False, error=str(exc)), 424
+
+
+def _t8i_list(root: Path, suffixes: tuple[str, ...] = (), limit: int = 80) -> list[dict]:
+    rows = []
+    try:
+        files = [p for p in root.iterdir() if p.is_file() and (not suffixes or p.suffix.lower() in suffixes)]
+        files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        for item in files[:limit]:
+            stat = item.stat()
+            rows.append({
+                "name": item.name,
+                "path": str(item),
+                "size": stat.st_size,
+                "modified": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+            })
+    except OSError:
+        return []
+    return rows
+
+
+@app.get("/api/t8i/library")
+def t8i_library():
+    return jsonify(
+        ok=True,
+        raw=_t8i_list(t8i_path("raw_dir"), (".cr3",)),
+        exports=_t8i_list(t8i_path("export_dir"), (".jpg", ".jpeg", ".png", ".tif", ".tiff")),
+        conversations=_t8i_list(t8i_path("conversation_dir"), (".md", ".jsonl", ".txt")),
+        projects=_t8i_list(t8i_path("project_dir")),
+        manifests=_t8i_list(t8i_path("manifest_dir"), (".json",)),
+    )
+
+
+@app.post("/api/t8i/note")
+def t8i_note():
+    body = request.get_json(silent=True) or {}
+    title = str(body.get("title", "")).strip() or "Nota T8i"
+    text = str(body.get("body", "")).strip()
+    if not text:
+        return jsonify(ok=False, error="Escreva a nota antes de salvar."), 400
+    record = STORE.add("conversation", title, text, {"context": "T8i"})
+    files = _append_t8i_conversation("NOTA T8I", title, text)
+    return jsonify(ok=True, record=record, files=files), 201
+
+
+@app.post("/api/t8i/snapshot")
+def t8i_snapshot():
+    body = request.get_json(silent=True) or {}
+    if body.get("confirm") != "SNAPSHOT_T8I":
+        return jsonify(ok=False, confirmation_required=True, error="Confirmação explícita exigida: SNAPSHOT_T8I"), 409
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_dir = t8i_path("backup_dir")
+    db_copy = backup_dir / f"aurion_memory_{stamp}.sqlite3"
+    STORE.backup_to(db_copy)
+    zip_path = unique_path(backup_dir, f"AURION_T8I_SNAPSHOT_{stamp}.zip")
+    settings = load_t8i_settings()
+    included = []
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.write(db_copy, arcname=db_copy.name)
+        included.append(db_copy.name)
+        if T8I_SETTINGS_FILE.exists():
+            archive.write(T8I_SETTINGS_FILE, arcname="t8i-settings.json")
+            included.append("t8i-settings.json")
+        for key in ("conversation_dir", "preset_dir", "log_dir", "manifest_dir"):
+            root = Path(settings[key])
+            if not root.is_dir():
+                continue
+            for item in root.rglob("*"):
+                if not item.is_file():
+                    continue
+                try:
+                    rel = item.relative_to(root)
+                except ValueError:
+                    continue
+                archive.write(item, arcname=f"{key}/{rel}")
+                included.append(f"{key}/{rel}")
+    try:
+        db_copy.unlink()
+    except OSError:
+        pass
+    manifest = _write_t8i_manifest(
+        "snapshot_t8i",
+        {
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "snapshot": str(zip_path),
+            "sha256": sha256(zip_path),
+            "includes_media": False,
+            "included_count": len(included),
+            "settings": settings,
+        },
+    )
+    STORE.add("evidence", "T8i · snapshot documental", str(zip_path), {"manifest": str(manifest)})
+    return jsonify(ok=True, path=str(zip_path), sha256=sha256(zip_path), manifest=str(manifest), includes_media=False)
+
+
 @app.post("/api/t8i/develop")
 def t8i_develop():
     uploaded = request.files.get("file")
     if not uploaded or Path(uploaded.filename or "").suffix.lower() != ".cr3":
         return jsonify(ok=False, error="Selecione um arquivo .CR3."), 400
-    source = unique_path(WORKSPACE / "RAW", uploaded.filename)
+    params = json.loads(request.form.get("params", "{}"))
+    source = unique_path(t8i_path("raw_dir"), uploaded.filename)
     uploaded.save(source)
-    output = unique_path(WORKSPACE / "EXPORTS", f"{source.stem}_AURION.jpg")
+    output_format = str(params.get("format", "JPEG")).upper()
+    suffix = ".tif" if output_format == "TIFF" else ".jpg"
+    output = unique_path(t8i_path("export_dir"), f"{source.stem}_AURION{suffix}")
     try:
-        result = develop_cr3(source, output, json.loads(request.form.get("params", "{}")))
+        result = develop_cr3(source, output, params)
     except RuntimeError as exc:
         return jsonify(ok=False, error=str(exc), imported=str(source)), 424
-    STORE.add("evidence", f"CR3 revelado: {source.name}", json.dumps(result, ensure_ascii=False), {})
-    return jsonify(ok=True, result=result, original=str(source), download_name=output.name)
+    manifest_payload = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "original": str(source),
+        "original_sha256": sha256(source),
+        "output": str(output),
+        "output_sha256": sha256(output),
+        "params": params,
+        "result": result,
+    }
+    manifest = _write_t8i_manifest("cr3_develop", manifest_payload)
+    STORE.add(
+        "evidence",
+        f"CR3 revelado: {source.name}",
+        json.dumps(manifest_payload, ensure_ascii=False),
+        {"manifest": str(manifest)},
+    )
+    return jsonify(ok=True, result=result, original=str(source), manifest=str(manifest), download_name=output.name)
 
 
 def _t8i_dependency_state() -> dict:
@@ -201,15 +510,18 @@ def _t8i_dependency_state() -> dict:
 def t8i_status_mobile():
     state = _t8i_dependency_state()
     python_exe = MODULE_ROOT / ".venv" / "Scripts" / "python.exe"
+    settings = load_t8i_settings()
     return jsonify(
         ok=True,
         ready=all(state.values()),
         modules=state,
         python=str(python_exe),
         python_exists=python_exe.is_file(),
-        raw_dir=str(WORKSPACE / "RAW"),
-        export_dir=str(WORKSPACE / "EXPORTS"),
-        note="CR3 é RAW de fotografia; revelação usa rawpy/LibRaw e preserva o original.",
+        settings=settings,
+        raw_dir=settings["raw_dir"],
+        export_dir=settings["export_dir"],
+        conversation_dir=settings["conversation_dir"],
+        note="CR3 é RAW fotográfico; não é C-Log de vídeo. Revelação usa rawpy/LibRaw e preserva o original.",
     )
 
 
@@ -255,11 +567,12 @@ def t8i_install_deps_mobile():
 @app.get("/api/mobile/t8i/export/<path:name>")
 def t8i_export_mobile(name: str):
     filename = safe_name(name)
-    target = (WORKSPACE / "EXPORTS" / filename).resolve()
-    exports = (WORKSPACE / "EXPORTS").resolve()
+    target = (t8i_path("export_dir") / filename).resolve()
+    exports = t8i_path("export_dir")
     if target.parent != exports or not target.is_file():
         return jsonify(ok=False, error="Exportação T8i não encontrada."), 404
-    return send_file(target, as_attachment=True, download_name=target.name, mimetype="image/jpeg")
+    return send_file(target, as_attachment=True, download_name=target.name)
+
 
 
 @app.post("/api/media/convert")
@@ -290,7 +603,12 @@ def ollama_chat():
     payload = {"model": model, "prompt": prompt, "stream": False}
     result = http_json(load_config()["ollama"].rstrip("/") + "/api/generate", "POST", payload, timeout=180)
     if result.get("ok"):
-        STORE.add("conversation", f"Ollama · {model}", prompt + "\n\n" + str(result.get("data", {}).get("response", "")), {"model": model})
+        response_text = str(result.get("data", {}).get("response", ""))
+        STORE.add("conversation", f"Ollama · {model}", prompt + "\n\n" + response_text, {"model": model})
+        try:
+            result["conversation_files"] = _append_t8i_conversation(model, prompt, response_text)
+        except OSError as exc:
+            result["conversation_save_warning"] = str(exc)
     return jsonify(result)
 
 
