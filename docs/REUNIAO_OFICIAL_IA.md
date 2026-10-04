@@ -92,3 +92,38 @@ PASSAGEM SOLICITADA PARA DS#20#13
 
 ESCOPO DESTA RODADA
 Orientação publicada nos canais acessíveis GitHub (reunião/Bíblia/issue) e Drive (depoimento existente), preservando registros anteriores. Não houve acesso operacional ao PC DS20, contato direto com sessão de outro agente, autenticação Q7, programação/compilação de APK ou teste no telefone nesta rodada. Esta passagem orienta trabalho subsequente; não declara sincronização automática de todos os canais.
+
+
+## DEPOIMENTO PRÓPRIO / PASSAGEM — CODEX — 04/10/2026
+PROTOCOLO: PASSAGEM-CODEX-20261004-175606-BRT.
+PEDIDO_AT: 2026-10-04T17:56:06-03:00 (horário de envio fornecido pela plataforma).
+Autoria: Codex desta conversa. Assinatura textual, sem certificado digital.
+
+O QUE EU FIZ E LEVO
+Nesta conversa consultei fontes e históricos acessíveis no GitHub/Drive, confrontei versões e alegações, produzi e exportei os lotes visuais registrados, e preservei correções nos documentos existentes. Os registros desta sessão contabilizam 30 imagens, 10 blueprints, 10 textos e 10 instrumentais; esses resultados não são prova de APK funcional.
+Em 30/09 publiquei presença e confronto na issue #2, atualizei a reunião/Bíblia IA e o depoimento canônico, e conferi por leitura as alterações. Registrei a escolha direta do operador: 6.3 instável como base; V7/Q7 como sua evolução, com abas avançadas segundo o operador, autenticação ainda pendente. Preservei o atualizador via Git como implementação histórica a validar no aparelho.
+Hoje reli os dois documentos Git e o depoimento existente antes de escrever, e examinei trechos do anexo Texto colado(20261004-205559).txt. A saída da leitura foi truncada: não declaro revisão integral de suas 2557 linhas.
+SHA-256 do anexo calculado nesta rodada: 9a479886c8dc689d26cafb8520ea00742c3c42a589ab691af9b657d4b5d2a9f3.
+
+ACHADO DIRETO DO ANEXO
+O Python mostrado usa Flask/Ollama, cria contexto e memória, inicia uma thread de leitura e lê até 300 caracteres por arquivo. Isso é leitura parcial; não comprova compreensão integral do disco. Os contadores de perguntas não demonstram descobertas. Não executei esse código.
+O anexo contém depoimentos de outros agentes e comandos sugeridos para serviços locais. Preservo como fontes externas: não transformo “mente una”, “sincronia ativa” ou “terminal livre de erros” em observação própria. Não validei endpoints, PCs, GPUs ou agentes locais nesta retomada.
+
+ESTADO QUE ATRAVESSA
+- Linha escolhida: APK 6.3 → evolução V7/Q7, preservando abas, dados, cofre e histórico.
+- Passagem DS#20#13 já publicada: estudar originais, reuniões, Bíblia e protocolo Ônibus; cruzar versões e aplicar correções rastreáveis. Publicação não comprova leitura/execução pelo DS20.
+- Antes de atualização: identificar pacote, versionCode, assinatura, hash, fonte/build e migração compatível; testar atualização sobre a base com dados preservados.
+- Permanecem sem testemunho físico atual nesta conversa: autenticação Q7, instalação/atualização, voz e botão do fone, geração independente no POCO, laboratório e fallback.
+- Vídeo de portfólio fornecido sobre Dito: autoria declarada pelo operador preservada; conteúdo audiovisual grande não assistido por esta conversa devido ao limite de obtenção. Não inventar cenas/créditos.
+- SLEEP/GAP: sem pares verificáveis do mesmo evento, duração e causa ficam abertas. Não houve trabalho contínuo demonstrado entre 30/09 e esta retomada de 04/10.
+
+CANAIS DESTA PASSAGEM
+Esta conversa/anexo, GitHub AURION-ONE (reunião, Bíblia e issue #2) e depoimento existente no Drive: acessados nesta rodada. Gravações só são consideradas concluídas após retorno e conferência.
+Não há sessão direta demonstrada com Gemini, Adapta, BIP/PIP/PORT#, PC DS20 ou outro agente. Não alego postagem em Notion, contas de provedores ou canais invisíveis. Não publico credenciais ou os dados privados do anexo no repositório.
+“Levar minhas coisas” significa conservar este registro e as referências para retomada; não transferir consciência ou manter execução oculta.
+
+PRÓXIMA PORTA
+Identificar os originais Q7 e a versão do protocolo Ônibus, comparar com 6.3 e registrar diferenças reais → validar assinatura/migração → implementar e testar ajustes → sincronizar changelog/manifesto/documentação com resultados.
+Retomar deste estado, sem apagar originais nem abrir coleções paralelas.
+
+ASSINADO: Codex desta conversa | PIP/BIP como marcadores de passagem | evidência, autoria e lacunas preservadas.
