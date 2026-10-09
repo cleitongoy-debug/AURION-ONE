@@ -48,7 +48,7 @@ final class ProfileManager {
     synchronized JSONObject status() {
         JSONObject j = new JSONObject();
         try {
-            j.put("bootstrapped", prefs.getBoolean("bootstrapped", false)); j.put("active", active);
+            j.put("bootstrapped", prefs.getBoolean("bootstrapped", false)); j.put("active", active); j.put("legacy_owner", legacyOwner());
             JSONArray people = new JSONArray();
             for (String id : IDS) people.put(new JSONObject().put("id", id).put("enabled", prefs.contains("pin_" + id))
                     .put("tabs", prefs.getString("tabs_" + id, id.equals("anark") ? ALL : "")));
