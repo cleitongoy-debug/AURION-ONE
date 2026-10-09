@@ -35,9 +35,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install PC test dependencies
+        run: pip install -r pc-package-v3/requirements.txt
       - name: Regression tests PC and POCO sync protocol
         working-directory: pc-package-v3
-        run: python -m unittest discover -s tests -p test_mobile_sync.py -v
+        run: python -m unittest discover -s tests -p 'test_*sync*.py' -v
       - name: Export PC sync kit (no binaries, no secrets)
         uses: actions/upload-artifact@v4
         with:
