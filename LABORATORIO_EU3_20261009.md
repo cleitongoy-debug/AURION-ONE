@@ -440,3 +440,26 @@ HIPÓTESE REJEITADA: testes reais Tk mostraram que canvas.tag_bind('sphere') per
 PROVA: 14 verificações PASSARAM com xvfb-run e Tkinter, incluindo criação da GUI, arrasto incremental, redesenho, texto dentro do canvas, backup do módulo (não do launcher falso), backup idempotente, recibo do envio local sem texto privado e sem segundos humanos inventados. AST/py_compile aprovados.
 ARTEFATOS LOCAIS (não enviados ao Drive/Git): AURION_PAINEL_V5_LAB_REVISAO.py (18546 bytes, SHA256 67d2d89d3f1d59424412a617da00b1ff97d135c47515e399c26d57dd9d652b1a); AURION_PAINEL_V5_REESTUDO_20261009.diff; AURION_HAPTO_AUDITORIA_MANIFESTO_20261009.json; aurion_eu3_qa/test_gui_v5_xvfb.py. Versão anterior d36448... arquivada localmente.
 STATUS: CÓDIGO EM CÓPIA DE LABORATÓRIO, TESTE GRÁFICO Xvfb APROVADO, WINDOWS FÍSICO NÃO TESTADO, PR #42 DRAFT; nenhuma hora humana retroativa inferida.
+
+
+## REANALISE_PROFILE_SCOPE_LEGACY_OWNER_20261009 — < reestudo e >> continuação, propriedade dos dados legados
+
+**Contexto:** pesquisa EU3, mentoria e dedicação usam `localStorage` na WebView. Durante a primeira análise parecia que as três coleções estavam compartilhadas entre perfis, mas a revisão da camada inicial `android/app/src/main/assets/profile_scope.js` demonstrou que **JÁ EXISTE** reescrita central de chaves `Storage.prototype` com namespace `aurionProfile:ID:` para não-ANARK. Logo, a hipótese de mistura geral estava INCORRETA; foi rejeitada antes de mudanças redundantes.
+
+**Falha real reproduzida:** a camada antiga fixava ANARK como único dono das chaves sem prefixo, enquanto `ProfileManager.bootstrap` admite DS como primeiro proprietário e persiste `legacy_owner=ds`. Fixture com chave antiga `aurionDedicationV1="DS legacy"`: com login DS, `getItem` retornava `null`; com login ANARK, retornava o conteúdo de DS. Isso é **risco de atribuição incorreta de estudo/história** entre perfis e pode expor registros numa instalação com transição de identidades, apesar de a origem física do dado não estar comprovada pelo código sozinho.
+
+**Correção conservadora na branch DRAFT:**
+- `76779464127d6320b3b2c1280b12ecca6cabb92b` inclui `legacy_owner` em `AurionProfiles.status()` a partir do valor já persistido em SharedPreferences.
+- `26df702d472663034605035dc6a88246f4b04134` faz `profile_scope.js` usar esse proprietário nativo para as chaves legadas; outros perfis mantêm chaves distintas. Se o proprietário não puder ser identificado, o app **interrompe o mapeamento**, sem atribuir originais a outra identidade. Não apaga, move nem migra automaticamente os dados antigos.
+- `5d1b0b7bb87ba8d6abba7d652a5413d4c9591de9`: teste permanente `tools/test_profile_scope_legacy_owner.cjs` para DS, ANARK, DAVI, propriedade, ausência de registro e preservação de originais.
+- `a9f6a1a0cf04bd04f069f71cf6ee8837f7ae209d`: novo workflow `.github/workflows/aurion-eu3-lab-qa.yml` dispara sintaxe JS e quatro suites no Node 22.
+
+**Verificações:**
+- Antes da correção: BUG reproduzido em V8; DS não lia a própria chave antiga, ANARK lia.
+- Depois: 19 afirmações V8 PASSARAM (mesmo arquivo CJS publicado).
+- **GitHub Actions REAL executado e conferido:** run ID `38006092522`, job `synthetic-evidence` id `114075111643`, resultado `completed/success`. Etapas “Verify assets syntax” e “Prove independent research, mentoring, sleep and profile history” concluídas com sucesso. URL: https://github.com/cleitongoy-debug/AURION-ONE/actions/runs/38006092522.
+- **Não testado:** assinatura/instalação no POCO, múltiplos logins reais, backup de WebView do aparelho, persistência após upgrade, isolamento de memória SQLite nativa (outro módulo) e controle efetivo contra JS não confiável. `Storage.prototype` segmenta o acesso lógico de módulos cooperativos; **não constitui barreira de segurança nativa** contra JS hostil na mesma WebView.
+
+**REGRA HISTÓRICA:** nenhuma hora do usuário é transferida de um perfil a outro sem fonte, nenhum sleep/teste sintético entra no tempo humano. O código anterior é histórico; a correção não foi mesclada nem instalada. Próximo P0: validar política de acesso e fluxo bootstrap DS em emulador/dispositivo isolado e prover cópia verificável antes de qualquer migração.
+
+**Outros ciclos:** as cinco rotinas AURION existentes estão habilitadas em cadência horária e têm notificações desabilitadas, portanto não comprovam monitoramento ou push em tempo real. Mais comandos `>` não são requisito para as rodadas horárias já configuradas. Leituras/status reais exigem recibo de cada rodada.
