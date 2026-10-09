@@ -9,6 +9,7 @@
     if(button)button.disabled=true;
     try{
       setStatus('INICIADO: verificações do Android foram solicitadas. Nenhum resultado remoto foi confirmado. Tentando sincronização de memória textual via USB.');
+      if(typeof window.AurionAndroid==='undefined'){setStatus('BLOQUEADO: ponte Android indisponível nesta tela. Volte ao perfil titular e entre novamente; nenhuma sincronização foi confirmada.');return;}
       if(typeof native!=='function')throw Error('Ponte Android não disponível');
       native('runHourlySyncNow');
       // Native bridge retains previously saved token when the argument is empty.
