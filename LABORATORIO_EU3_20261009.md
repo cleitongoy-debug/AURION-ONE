@@ -124,3 +124,5 @@ Documentação Android prevê instalação sem ação em condições específica
 - 19:18:15–19:18:30: encadeamento de voz e laboratório A/B legado conferidos.
 - 19:19:34: início da conferência das regras Android para atualização.
 Esses marcos são registros do trabalho desta IA, não eventos de estudo de Cleiton, nem instrumentação segundo a segundo de um aparelho. A duração de fechamento deve usar o último timestamp efetivamente observado, sem preencher tempo inexistente.
+
+Checkpoint final observado: 2026-10-09T19:22:50Z. Janela desde 19:03:03Z: 19min47s, incluindo leitura, testes, gravações e conferências. Meta de 20min não foi lançada como tempo humano ou duração fictícia. Prefixo original do relatório e 747 blocos anteriores do diário nativo preservados na conferência. APK permaneceu sem alteração; resultados e gates pendentes estão documentados acima.
