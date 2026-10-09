@@ -18,7 +18,25 @@ window.aurionDedicationResult=raw=>{dedSyncing=false;try{let result=JSON.parse(r
 function dedRender(){if(!$('dedTotal'))return;let events=dedMerged(),local=dedLocal();$('dedTotal').textContent=dedDuration(dedUnion(dedActive?[...events,{kind:'session',start:dedActive.start,end:dedActive.last}]:events));$('dedCounts').textContent=events.filter(e=>e.kind==='session').length+' sessões · '+events.filter(e=>e.kind==='progress').length+' leituras de progresso · '+events.filter(e=>e.kind==='milestone').length+' marcos · '+local.length+' registros neste POCO';let cats={};for(let e of events.filter(e=>e.kind==='session'))(cats[e.category||'outro']||=[]).push(e);$('dedByArea').textContent=Object.entries(cats).map(([k,v])=>k+': '+dedDuration(dedUnion(v))).join(' · ')||'Nenhuma sessão medida.';$('dedActiveState').textContent=dedActive?'Sessão ativa: '+dedActive.topic+' · '+dedDuration(dedActive.last-dedActive.start):'Nenhuma sessão ativa.';$('dedEvents').innerHTML=events.slice(-100).reverse().map(e=>`<div class="archiveItem"><small>${esc(new Date(e.at).toLocaleString('pt-BR'))} · ${esc(e.source)} · ${esc(e.kind)}</small><b>${esc(e.title||e.course||e.topic||'Registro')}</b><span>${e.kind==='session'?dedDuration(e.end-e.start)+' · '+esc(e.category||''):e.kind==='progress'?esc(e.percent)+'% · '+(e.completed?'concluído':'em andamento')+' · '+esc(e.sourceRef||'fonte não indicada'):esc(e.project||'')}</span></div>`).join('')||'<p class="muted">Nenhum registro medido ainda.</p>'}
 document.addEventListener('visibilitychange',()=>{if(dedActive){dedActive.last=Math.min(Date.now(),dedLastBeat+1500);if(document.hidden)dedStop('app em segundo plano')}});
 (function(){let raw=localStorage.getItem('aurionDedActive');if(raw){localStorage.removeItem('aurionDedActive');try{let s=JSON.parse(raw);if(s.last>s.start)dedRecord('session',{start:s.start,end:s.last,topic:s.topic,category:s.category,project:s.project,reason:'recuperado após reinício'})}catch{}}})();
-setInterval(()=>{if(!document.hidden){dedLastBeat=Date.now();if(dedActive){dedActive.last=dedLastBeat;localStorage.setItem('aurionDedActive',JSON.stringify(dedActive));dedRender()}}},1000);
+// Heartbeat only: a delayed timer cannot certify work during a freeze or Android sleep.
+const DED_MAX_HEARTBEAT_GAP_MS=2500;
+function dedCheckpoint(now=Date.now()){
+  const gap=now-dedLastBeat;
+  dedLastBeat=now;
+  if(document.hidden)return;
+  if(!dedActive)return;
+  if(!Number.isFinite(gap)||gap<0||gap>DED_MAX_HEARTBEAT_GAP_MS){
+    const last=dedActive.last;
+    const topic=dedActive.topic;
+    dedStop('sem heartbeat — lacuna excluída');
+    if(now>last)dedRecord('sleep',{start:last,end:now,topic,reason:'intervalo sem heartbeat (causa não aferida)',counted:false});
+    return;
+  }
+  dedActive.last=now;
+  localStorage.setItem('aurionDedActive',JSON.stringify(dedActive));
+  dedRender();
+}
+setInterval(()=>dedCheckpoint(Date.now()),1000);
 (function seedObservedProgress(){if(AURION_ID!=='anark'||localStorage.getItem('aurionDedScreenshotsImported'))return;let events=dedLocal(),at=new Date().toISOString();for(let [id,course,percent,sourceRef] of [['observed-3dstart-58','3D Start · Gabriel Guerra / Node Academy',58,'GUERRA#STARTER#58.png'],['observed-compositor-50','Compositor HighEnd · Rerick Brasileiro',50,'cursos.png'],['observed-dose-52','Combo Dose Diária de AudioVisual · Pedro Risse',52,'cursos.png']])if(!events.some(e=>e.id===id))events.push({id,source:'pc',kind:'progress',at,course,percent,completed:false,sourceRef,observedDate:'2026-09-28',note:'Percentual observado na captura enviada; sem duração inferida.'});dedSave(events);localStorage.setItem('aurionDedScreenshotsImported','1')})();
 setTimeout(()=>{if($('dedPcUrl'))$('dedPcUrl').value=localStorage.getItem(DED_BASE)||'';dedRender();dedSync()},700);
 
