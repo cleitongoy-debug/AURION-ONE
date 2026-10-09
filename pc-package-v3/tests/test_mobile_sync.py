@@ -56,6 +56,28 @@ class MobileMemoryTests(unittest.TestCase):
         self.assertEqual(again["recordCount"],2)
         self.assertEqual(again["pcNew"],0)
 
+
+    def test_json_metadata_credentials_are_rejected_before_writes(self):
+        baseline=mobile_sync.exchange(self.mirror,self.payload([self.row(1)]))
+        self.assertEqual(baseline["recordCount"],1)
+        for meta in (
+            '{"api_key":"TEST_ONLY_FAKE_VALUE"}',
+            '{"nested":{"access_token":"TEST_ONLY_FAKE_VALUE"}}',
+            '{"records":[{"client_secret":"TEST_ONLY_FAKE_VALUE"}]}',
+            '{"cookie":"TEST_ONLY_FAKE_VALUE"}',
+        ):
+            dangerous=self.row(77)
+            dangerous["meta"]=meta
+            with self.subTest(meta=meta), self.assertRaisesRegex(ValueError,"segredo_potencial"):
+                mobile_sync.exchange(self.mirror,self.payload([self.row(3),dangerous]))
+            self.assertEqual(mobile_sync.state(self.mirror)["phoneMirroredRecords"],1)
+
+    def test_json_metadata_safe_fields_still_sync(self):
+        row=self.row(18)
+        row["meta"]='{"source":"TESTE_LOCAL","evidence":{"kind":"DOC","date":"2026-10-09"}}'
+        result=mobile_sync.exchange(self.mirror,self.payload([row]))
+        self.assertEqual(result["recordCount"],1)
+
     def test_invalid_counts_and_size_guard(self):
         with self.assertRaisesRegex(ValueError,"contagem"):
             mobile_sync.exchange(self.mirror,dict(format="aurion-memory-v4",profile="anark",
