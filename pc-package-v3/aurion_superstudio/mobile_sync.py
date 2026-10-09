@@ -67,7 +67,35 @@ def state(path: Path) -> dict:
                 pcToPhoneExportsVerified=False, physicalTest="PENDENTE")
 
 
-def exchange(path: Path, request: dict) -> dict:
+
+def pc_native_records(pc_store_path: Path) -> list[dict]:
+    """Somente memoria textual do SQLite da interface PC, nunca caminhos/segredos."""
+    if not pc_store_path.is_file():
+        return []
+    out = []
+    with sqlite3.connect(pc_store_path) as db:
+        for pcid, kind, title, body, meta, created, updated in db.execute(
+            "SELECT id,kind,title,body,metadata,created_at,updated_at FROM records ORDER BY id"
+        ):
+            if kind not in ALLOWED or not isinstance(body, str):
+                continue
+            try:
+                ts1=int(datetime.fromisoformat(created.replace("Z","+00:00")).timestamp()*1000)
+                ts2=int(datetime.fromisoformat(updated.replace("Z","+00:00")).timestamp()*1000)
+                metadata=json.loads(meta or "{}")
+                if not isinstance(metadata, dict):
+                    metadata={}
+                metadata.update({"origin":"AURION_PC_SUPERSTUDIO","pcRecordId":pcid})
+                row=_canonical(dict(type=kind,title=title,body=body,
+                   meta=json.dumps(metadata,ensure_ascii=False,sort_keys=True),
+                   createdAt=ts1,updatedAt=ts2))
+                out.append(row)
+            except (ValueError,TypeError,json.JSONDecodeError,OverflowError):
+                continue
+    return out
+
+
+def exchange(path: Path, request: dict, pc_store_path: Path | None = None) -> dict:
     if not isinstance(request, dict) or request.get("format") != "aurion-memory-v4" or request.get("profile") != "anark":
         raise ValueError("formato_ou_perfil_invalidos")
     rows=request.get("records")
@@ -76,11 +104,12 @@ def exchange(path: Path, request: dict) -> dict:
     if request.get("recordCount") != len(rows):
         raise ValueError("contagem_do_backup_divergente")
     normalized=[_canonical(x) for x in rows]  # Tudo validado ANTES de escrita.
+    pc_native=pc_native_records(pc_store_path) if pc_store_path is not None else []
     inserted=0
     now=datetime.now(timezone.utc).isoformat()
     with LOCK, _database(path) as db:
         db.execute("BEGIN IMMEDIATE")
-        for item in normalized:
+        for item in normalized + pc_native:
             fp=_fingerprint(item)
             encoded=json.dumps(item,ensure_ascii=False,separators=(",",":"))
             inserted+=db.execute("INSERT OR IGNORE INTO sync_records VALUES(?,?,?)",(fp,encoded,now)).rowcount
@@ -93,7 +122,8 @@ def exchange(path: Path, request: dict) -> dict:
     h=hashlib.sha256(payload.encode("utf-8")).hexdigest()
     return dict(ok=True, format="aurion-pc-poco-v1", profile="anark",
                 records=pc_items, recordCount=len(pc_items), received=len(rows),
-                pcNew=inserted, pcDuplicates=len(rows)-inserted, responseSha256=h,
+                pcNew=inserted, pcNativeConsidered=len(pc_native),
+                phoneAccepted=len(rows), responseSha256=h,
                 serverReceiptAt=now,
                 pcReceipt="COMMIT_SQLITE", phoneReceipt="AGUARDANDO_IMPORTACAO_E_READBACK")
 
