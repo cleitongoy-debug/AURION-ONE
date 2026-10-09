@@ -141,3 +141,43 @@ console.log('PASS: EU3 restore import: idempotência, validação, backup, não-
  assert.equal(n('euImportApply').disabled,true);
 }
 console.log('PASS: EU3 interface sintética: file chooser, prévia, consentimento e restauração local');
+
+
+// CONTRATO DE COBERTURA DOCUMENTAL EU3 — cannot invent a human learning percentage.
+{
+ const {s}=store();const e=open(s);
+ assert.equal(e.metrics().total,0);
+ assert.equal(e.metrics().percent,null,'sem tarefas: N/D, nao 0% nem 100%');
+ assert.equal(e.metrics().humanLearningPercent,null);
+ assert.equal(e.metrics().humanStudyHours,null);
+ const a=e.add('A','arquivo:01'),b=e.add('B','arquivo:02',[a.id]);
+ assert.equal(e.metrics().percent,0,'apenas cadastrar não é estudar');
+ e.proof(a.id,'linhas 10-12','resultado reproduzido',true);
+ assert.equal(e.metrics().percent,50);
+ e.proof(b.id,'linhas 13-20','resultado reproduzido',true);
+ assert.equal(e.metrics().percent,100);
+ const c=e.add('C','arquivo:03');
+ assert.equal(e.metrics().percent,66.67,'novos itens aumentam denominador');
+ e.proof(a.id,'contraprova','falhou',false);
+ assert.equal(e.metrics().percent,0,'contraprova invalida cadeia');
+ assert.equal(e.metrics().byStatus.REVISAO_PENDENTE,1);
+ e.proof(a.id,'nova evidencia','reproduzida',true);
+ assert.equal(e.metrics().percent,33.33,'dependente precisa de prova própria');
+ assert.equal(e.metrics().humanStudyHours,null,'contadores sintéticos não são estudo humano');
+ e.proof(b.id,'nova evidencia B','reproduzida',true);
+ assert.equal(e.metrics().percent,66.67);
+ e.proof(c.id,'evidência C','confirmada',true);
+ assert.equal(e.metrics().percent,100);
+}
+{
+ const {d,s}=store();
+ d.set('aurion_eu3_research_v1',JSON.stringify({version:1,items:[
+   {id:'v1',title:'VALIDADO SEM PROVA',source:'arquivo',dependencies:[],status:'VALIDADO',milliseconds:0,receipts:[]}
+ ]}));
+ const e=open(s);
+ assert.equal(e.metrics().total,1);
+ assert.equal(e.metrics().percent,0,'status importado não basta');
+ assert.equal(e.metrics().missingProof,1);
+ assert.equal(e.metrics().humanLearningPercent,null);
+}
+console.log('PASS: EU3 cobertura documental mensurável, queda com reprovação, N/D, sem porcentagem humana');
