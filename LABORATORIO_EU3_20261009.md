@@ -71,3 +71,29 @@ WorkManager serve para tarefas persistentes sujeitas às restrições do sistema
 - Backup consistente e atomicidade SQLite: https://sqlite.org/backup.html e https://sqlite.org/atomiccommit.html
 
 Gate mínimo: teste de contraprova transitiva com rótulos corretos; exportar→restaurar preservando IDs/provas/tempos/perfil; falha no meio da importação sem perda; erro parcial visível por serviço; retomada sem duplicação; temporizador sem contar sono/background; QA físico posterior. Não marcar esses gates como aprovados antes de executá-los.
+
+### Complemento: pacote conferido, relógios e uso pelo capacete
+Verificação posterior desta mesma rodada, sem instalação: materializado o ZIP AURION_LAB_EU3_20261009.zip (12.454.396 bytes, SHA256 fa80e1d64b51f82bebb4ee2ccb7d9d30287a764a35fed6b0da96f640d6c03e1c). CRC íntegro; os 20 itens declarados em SHA256SUMS.txt conferem. O módulo assets/research_eu3.js em ambos os APKs tem 6092 bytes, SHA256 2b770cc991479bcda27cbc8797604b94a21d0e22779cefef0ad1c13f5e583f76 e corresponde byte a byte ao conteúdo Git auditado. Diferença inicial de um newline era da cópia de auditoria, não do pacote. Isso comprova identidade dos bytes, não instalação ou funcionamento físico.
+
+A prévia tem SHA256 23138ba5d7e71cdbecd1cf818253662c7e8568b96d5dc867bb70ca528c4fd3b5; o release sem assinatura tem SHA256 8e1068a40c83a506b1b8949dc4666ce26d916f8cc20092389009670c264cec1c. O release sem assinatura não é instalador pronto. O ZIP continua sendo o pacote anterior; estas anotações não são um APK novo.
+
+Nova contraprova sintética no dedication.js exato da PR #42 (blob 178366abb43b2ac53ebd2982d7afb4ab0d27e69f): iniciar em Date.now=0, disparar callback de 1s em 1000, próximo callback em 61000, document.hidden=false, encerrar. Saída: start=0/end=61000/seconds=61. Um intervalo não observado de 60s entra no total. A união de intervalos elimina sobreposição quando relógios estão alinhados, mas não corrige saltos de relógio nem lacunas de observação. Não houve suspensão real do POCO neste teste.
+Correção proposta: timestamps UTC para contexto, duração por relógio monotônico local e eventos de atividade; guardar início/fim, clockDomain/bootId, elapsedMs, lastObservedAt e interrupções. Não comparar diretamente performance.now de PC e POCO/reinícios. Incerteza de relógio entre aparelhos precisa ficar visível antes de chamar a soma de exata. Espera de automação é uma categoria separada.
+
+Tela apagada não significa ausência de estudo por áudio. Separar TEMPO_DE_SESSAO_OBSERVADO, TEMPO_DE_REPRODUCAO_AUDIO, PROGRESSO_OBSERVADO, CARGA_HORARIA_DO_CURSO, HORAS_DECLARADAS_CERTIFICADO e RESULTADO_DE_EXERCICIO. Somar segundos de dedicação sem duplicar uma sessão simultânea PC/POCO; não somar essas categorias heterogêneas como se fossem todas horas medidas. Áudio reproduzido prova reprodução, não compreensão; avaliação/projeto/contraprova documentam aplicação.
+
+Código do capacete auditado no MainActivity.java exato da PR #42 (blob e674db0cb4369018c67ff0d9728b09a8016c378e): o callback de HEADSETHOOK/MEDIA_PLAY_PAUSE chama listenVoice; onResume ativa a MediaSession e onPause a desativa. Ditado usa Activity de reconhecimento; fala usa TextToSpeech. Isso não demonstra assistente sempre ativo em background. Manifest/build.gradle atuais não declaram MediaSessionService de áudio nem dependência Media3. Não prometer “tudo funcionando no capacete” sem teste físico.
+
+Proposta baseada em documentação oficial: sessão de mídia em serviço para estudo por áudio, recibos das transições isPlaying/pausa/buffering/erro, conteúdo e posição, controles do fone e retomada explícita. Não usar diferença de posição após seek como segundos de estudo; em velocidade 2x, registrar separadamente tempo real e extensão do conteúdo. Manter áudio em background não exige marcar todo tempo de tela apagada como estudo. Microfone e comandos contínuos exigem implementação própria e validação; MediaSessionService de reprodução, sozinho, não entrega conversa livre nem reconhecimento sempre ativo.
+
+Gates adicionais antes de contadores “precisos”: salto de relógio para frente/trás; suspensão sem visibilitychange; reinício; áudio pausado/buffering/seek/2x; falha de rede; duas sessões simultâneas; perfis separados; restore sem perder recibos. Capturar testes físicos do fone parado quando disponível, sem pedir interação durante o trajeto.
+
+Fontes primárias adicionais:
+- Relógios Android: https://developer.android.com/reference/android/os/SystemClock
+- Tempo monotônico/contextos: https://www.w3.org/TR/hr-time/
+- Eventos de reprodução: https://developer.android.com/media/media3/exoplayer/listening-to-player-events
+- Sessão em background/controles Bluetooth: https://developer.android.com/media/media3/session/background-playback
+
+### Matriz de reaproveitamento dos estudos
+O laboratório de fusão/Octane localizado é um protótipo que declara registrar referências sem ler os bytes e perder o estado ao fechar. Deve alimentar a fila persistente por importação verificável, não ser tratado como executor já conectado. Para cada experimento digital, preservar origens A/B, versões, objetivo, critério, configuração, saída e contraprova. Em comparação de render, manter cena/resolução/samples/denoiser/driver/GPU comparáveis; em rig/personagem, critério e teste devem ser próprios do objetivo. Não confundir diferenças de configuração com descoberta reproduzida.
+O documento compartilhado de IAs é passagem histórica de contexto; seus estados datados não substituem recibos atuais. Cruzar cada alegação com sua prova e versão, mantendo “relatado”, “observado por ferramenta”, “testado sinteticamente” e “testado no aparelho” separados. Documentos podem contradizer-se sem apagar a evidência mais antiga.
