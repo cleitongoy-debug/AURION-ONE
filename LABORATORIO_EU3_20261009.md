@@ -20,3 +20,10 @@ A listagem da pasta principal teve paginação parcial. Este mapa identifica o a
 
 ## APK e instalação
 Build local tentou resolver Android Gradle Plugin 8.7.3 e falhou por proxy inacessível. Arquivo APK anterior não contém esta correção. Não disponibilizar APK antigo como novo. Não desinstalar para contornar divergência de assinatura. O comando de instalação deve parar quando build, hash, assinatura ou conexão falham.
+
+## Continuação: compilação concluída e instalador sem Gradle no PC
+A falha inicial foi resolvida usando o proxy atual de HTTPS_PROXY em GRADLE_OPTS. assembleDebug e assembleRelease concluíram. A versão 7.0.2-preview (código72) tem rótulo AURION ONE · LAB EU3; a inclusão e os bytes do módulo foram conferidos dentro do APK. APK SHA256: 23138ba5d7e71cdbecd1cf818253662c7e8568b96d5dc867bb70ca528c4fd3b5. Certificado da prévia SHA256: 82504955d5b16244c634731d39c2c8add520e0842c7f4312faf5cb1526f6e3ea. A assinatura difere da prévia anterior. O pacote principal só pode ser atualizado com sua chave original.
+
+O comando APLICAR_LAB_EU3.cmd agora utiliza APK e ADB Windows incluídos, verifica hash, escolhe um aparelho autorizado, instala com -r e abre a prévia. Registra horários e falhas em logs, sem desinstalar. PowerShell validado em parser e testes sintéticos: sucesso, falha de assinatura e hash divergente antes de ADB. Não houve instalação física.
+
+Teste de Chromium real indisponível neste ambiente (socket não permitido; headless shell encerrou). Não declarar aprovação visual ou física. O módulo possui testes de lógica; regressões existentes passaram. A fila ainda não sincroniza ao Drive e não lê documentos automaticamente.
