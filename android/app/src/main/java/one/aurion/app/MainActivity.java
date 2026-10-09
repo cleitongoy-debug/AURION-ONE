@@ -152,7 +152,9 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        s.setAllowFileAccessFromFileURLs(false);
+        s.setAllowUniversalAccessFromFileURLs(false);
         s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.8");
         web.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
         web.setWebChromeClient(new WebChromeClient() {
@@ -165,9 +167,9 @@ public class MainActivity extends Activity {
         });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView v, String url, Bitmap favicon) {
-                if (url != null && url.startsWith("file:///android_asset/")) {
+                if (isTrustedAppDocument(url)) {
                     v.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
-                    if (url.startsWith("file:///android_asset/index.html") && profiles.signedIn())
+                    if (url.equals("file:///android_asset/index.html") && profiles.signedIn())
                         v.addJavascriptInterface(profiles.owner() ? bridge : memberBridge, "AurionAndroid");
                     else v.removeJavascriptInterface("AurionAndroid");
                 } else { v.removeJavascriptInterface("AurionAndroid"); v.removeJavascriptInterface("AurionProfiles"); }
@@ -175,10 +177,15 @@ public class MainActivity extends Activity {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                String scheme = uri.getScheme() == null ? "" : uri.getScheme();
-                if ((scheme.equals("http") || scheme.equals("https")) && isAllowedPanelHost(uri.getHost())) return false;
-                if (scheme.equals("file")) return false;
-                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
+                if (!request.isForMainFrame()) return true; // Never allow untrusted iframe navigation.
+                if (isTrustedAppDocument(uri.toString())) return false;
+                String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+                // All remote panels and public links open outside the privileged Android WebView.
+                if (!(scheme.equals("http") || scheme.equals("https") || scheme.equals("mailto") || scheme.equals("tel"))) {
+                    toast("Navegação bloqueada: endereço não autorizado");
+                    return true;
+                }
+                try { startActivity(new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)); }
                 catch (Exception ignored) { toast("Não foi possível abrir o endereço"); }
                 return true;
             }
@@ -196,6 +203,12 @@ public class MainActivity extends Activity {
     @Override protected void onResume() { super.onResume(); if (headsetSession != null) headsetSession.setActive(true); }
     @Override protected void onPause() { if (headsetSession != null) headsetSession.setActive(false); super.onPause(); }
     @Override protected void onDestroy() { if (headsetSession != null) headsetSession.release(); if (speech != null) speech.shutdown(); super.onDestroy(); }
+
+    /** Only the two packaged top-level documents can run within the privileged WebView. */
+    private boolean isTrustedAppDocument(String url) {
+        return "file:///android_asset/profiles.html".equals(url) ||
+               "file:///android_asset/index.html".equals(url);
+    }
 
     private boolean isAllowedPanelHost(String host) {
         if (host == null) return false;
@@ -1339,7 +1352,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void listenVoice() { runOnUiThread(() -> { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR"); startActivityForResult(intent, VOICE_INPUT); } catch (Exception e) { toast("Ditado não disponível neste aparelho"); } }); }
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
-        @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
+        @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try {
+            Uri u = Uri.parse(raw);
+            String scheme = u.getScheme() == null ? "" : u.getScheme().toLowerCase(Locale.ROOT);
+            if (!(scheme.equals("http") || scheme.equals("https")) || !isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException();
+            startActivity(new Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE));
+        } catch (Exception e) { toast("Use endereço HTTP(S) privado do PC ou Tailscale"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
         @JavascriptInterface public void probePcStack(String base, String token, String comfy, String ollama) { MainActivity.this.probePcStack(base, token, comfy, ollama); }
         @JavascriptInterface public void syncDedication(String base, String json) { MainActivity.this.syncDedication(base, json); }
