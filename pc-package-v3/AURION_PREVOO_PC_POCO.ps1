@@ -112,25 +112,15 @@ if(-not $st){
     try{ $null= & $pyExe @probeArgs 2>$null; $ok=($LASTEXITCODE -eq 0)}catch{}
     if(-not $ok){Say '[BLOQUEADO] Python/Flask/requests/Pillow incompletos; nao instalar automaticamente.'}
     else {
-      $pinned='fbde6c0ac0f6ab660fa2c1d9578153c213dc53a1'
-      $src=Join-Path $root ("source_"+$pinned.Substring(0,12))
-      $module=Join-Path $src 'pc-package-v3\aurion_superstudio\app.py'
+      # Preferir o pacote versionado ja extraido. Nao baixar uma revisao velha
+      # nem iniciar outro painel diferente do APK/kit da mesma entrega.
+      $package=$PSScriptRoot
+      $module=Join-Path $package 'aurion_superstudio\app.py'
       if(-not (Test-Path -LiteralPath $module)){
-        try {
-          $zip=Join-Path $root ("source_"+$pinned.Substring(0,12)+'.zip')
-          $unpack=Join-Path $root 'unpack_pinned'
-          Say '[DOWNLOAD] Codigo PC publico fixado em commit GitHub, sem instaladores.'
-          Invoke-WebRequest -UseBasicParsing -Uri ("https://github.com/cleitongoy-debug/AURION-ONE/archive/"+$pinned+".zip") -OutFile $zip -TimeoutSec 45
-          Expand-Archive -LiteralPath $zip -DestinationPath $unpack -Force
-          $found=Get-ChildItem -LiteralPath $unpack -Directory | Where-Object {$_.Name -like 'AURION-ONE-*'} | Select-Object -First 1
-          if(-not $found){throw 'Arquivo Git nao reconhecido'}
-          Move-Item -LiteralPath $found.FullName -Destination $src -Force
-        }catch{
-          Say '[BLOQUEADO] Download ou extracao do Git falhou. Nenhum painel antigo alterado.'
-        }
-      }
-      if(Test-Path -LiteralPath $module){
-        $package=Join-Path $src 'pc-package-v3'
+        Say '[BLOQUEADO] Modulo do Super Studio ausente ao lado deste roteiro.'
+        Say '[ACAO] Extraia o kit PC completo em pasta separada; nenhum download foi feito.'
+      }else{
+        Say '[PACOTE LOCAL] Super Studio encontrado no mesmo kit PC, sem download.'
         $runtime=Join-Path $root 'runtime'
         New-Item -ItemType Directory -Path $runtime -Force | Out-Null
         $env:AURION_PANEL_ROOT=$runtime
