@@ -1,7 +1,7 @@
 {
-  "versionCode": 65,
-  "versionName": "6.5.0",
-  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/AURION-ONE-POCO-v6.5.0.apk",
-  "sha256": "df5996a672eac54830831eed57590350f368597411d9e31336fd63cfe128de29",
-  "notes": "Dedicação POCO + PC; cursos, sessões, certificados e provas com fonte."
+  "versionCode": 70,
+  "versionName": "7.0.0",
+  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/aurion-memory-release-20261005/android/updates/AURION-ONE-POCO-v7.0.0-MEMORIA.apk",
+  "sha256": "73da6b5c8ecebfeda597e9cf9f229f857d0804ca07052828655703539a4545c8",
+  "notes": "AURION ONE: memória operacional, atrator de links, entrada de arquivos, PLAY estudo, anotações, caixa preta. Modelo via rotas já configuradas. Teste físico POCO ainda pendente."
 }
