@@ -43,9 +43,10 @@ class MobileSyncEndpointTests(unittest.TestCase):
         self.assertEqual(current["phoneMirroredRecords"],1)
 
     def test_bad_profile_no_write(self):
+        before=self.client.get("/api/mobile/memory-sync",headers=self.headers).json["phoneMirroredRecords"]
         invalid=self.payload();invalid["profile"]="outro"
         a=self.client.post("/api/mobile/memory-sync",headers=self.headers,json=invalid)
         self.assertEqual(a.status_code,400)
-        self.assertEqual(self.client.get("/api/mobile/memory-sync",headers=self.headers).json["phoneMirroredRecords"],1)
+        self.assertEqual(self.client.get("/api/mobile/memory-sync",headers=self.headers).json["phoneMirroredRecords"],before)
 
 if __name__=="__main__":unittest.main()
