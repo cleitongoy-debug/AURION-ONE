@@ -8,6 +8,7 @@ on:
       - 'tools/test_aurion_web_memory.cjs'
       - 'tools/test_aurion_assets.cjs'
       - 'tools/test_archive_gallery.cjs'
+      - 'tools/test_aurion_webview_bridge.cjs'
       - '.github/workflows/aurion-one-integridade.yml'
   pull_request:
     branches: [deliver/poco-v70-profiles]
@@ -31,6 +32,8 @@ jobs:
         run: node tools/test_aurion_assets.cjs
       - name: Biblioteca, capas e depoimentos (sintetico)
         run: node tools/test_archive_gallery.cjs
+      - name: WebView origin and native bridge source contract
+        run: node tools/test_aurion_webview_bridge.cjs
   pc-memory-sync-tests:
     runs-on: ubuntu-latest
     steps:
