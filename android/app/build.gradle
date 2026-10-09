@@ -6,15 +6,15 @@ android {
         applicationId 'one.aurion.poco.v6'
         minSdk 26
         targetSdk 35
-        versionCode 70
-        versionName '7.0.0'
+        versionCode 71
+        versionName '7.0.1'
         manifestPlaceholders = [appLabel: 'AURION ONE · POCO']
     }
     buildTypes {
         debug {
-            applicationIdSuffix '.preview.usb'
+            applicationIdSuffix '.preview.quickfix'
             versionNameSuffix '-preview'
-            manifestPlaceholders = [appLabel: 'AURION ONE · USB SYNC']
+            manifestPlaceholders = [appLabel: 'AURION ONE · CHAT & SYNC']
         }
     }
 }
