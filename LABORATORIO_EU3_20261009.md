@@ -321,3 +321,39 @@ Validação de memória: comparar conjunto de IDs de origem, perfil, revisão e 
 
 ### Checkpoint seguinte
 Próximo comando >: contador de estudo/áudio, intervalos entre PC e POCO, lacunas e relógios. Depois, voz e botão do capacete. Situação: auditoria e propostas documentadas; sem implementação, geração de APK ou teste físico.
+
+
+## Pauta 2 — comando >: contadores, áudio e segundos comprováveis
+Registro: 2026-10-09; comando recebido às 17:16:51 America/Sao_Paulo. Rodada de estudo/auditoria, sem alterações no aplicativo e sem lançamento de horas pessoais.
+
+### Fontes atuais e resultados
+[POCO dedication.js](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/assets/dedication.js), blob 178366abb43b2ac53ebd2982d7afb4ab0d27e69f.
+[PC dedication.js](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/pc-package-v3/aurion_superstudio/static/dedication.js), blob 7367acd5da069b512a1b57317d3022be8149099d.
+[MainActivity.java](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/java/one/aurion/app/MainActivity.java), blob e674db0cb4369018c67ff0d9728b09a8016c378e.
+
+- **Acerto preservado:** dedUnion/cleanIntervals já unem intervalos sobrepostos. Teste sintético na função dedUnion: [0,1200000] e [600000,1800000] produzem 1800000ms (30min), não 40min. Não reimplementar o que já funciona.
+- **Lacuna:** ambos os timers usam Date.now e atualizam last em cada callback; duração é last-start. Gap entre callbacks entra no intervalo. Revisão do PC confirma o mesmo padrão previamente reproduzido no POCO. Horário civil alterado pode distorcer duração.
+- **Conflito oculto:** dedMerged usa Map de IDs com eventos remotos antes dos locais; evento local vence sem conferir equivalência. Teste real da função: mesmo ID remoto com end=2000 e local com end=1000 resulta somente na versão local de 1000. Identidade igual não comprova conteúdo igual.
+- **Porcentagem vazia no PC:** pcProgress aplica Number ao campo sem rejeitar string vazia; Number('')=0, logo curso preenchido e porcentagem vazia podem gerar 0%. POCO já verifica campo vazio. Desconhecido não deve ser convertido em zero observado.
+- **Certificados:** painel POCO consulta getMemories com limite 500; AurionStore.list também limita a 500. Contagem e soma desse recorte não comprovam acervo integral. Hash identifica arquivo idêntico, não equivalência entre dois certificados exportados em formatos diferentes. Horas declaradas continuam separadas de segundos medidos.
+- **Áudio e tela apagada:** o timer de dedicação para ao ocultar o painel; não é contador de reprodução de mídia. TTS existe, mas nos arquivos analisados não há ligação de callbacks/posição de reprodução a sessões de dedicação. Falar uma resposta não demonstra que ela foi ouvida ou estudada. Cobertura desta conclusão restrita aos arquivos examinados.
+- **Tempo ativo no painel PC:** renderPcLedger calcula total sobre pcEvents; sessão ativa aparece em texto próprio, sem integrar total global ao vivo como no POCO. Pode produzir aparência divergente durante a sessão, embora após gravação o intervalo passe a integrar o diário.
+- **Histórico importado:** existem sementes de porcentagem observada com observedDate separado de at. Preservar essa distinção e as fontes originais; não usar data de importação como data exata do estudo nem inferir duração da porcentagem.
+
+Não houve teste físico de reprodução, microfone, PC/POCO ou relógio do aparelho.
+
+### Resoluções propostas e provas
+1. **Medição:** duração por relógio monotônico e intervalos observados; horário UTC/fuso para posicionar eventos. Cada lacuna guarda início/fim, razão e incerteza. Não contabilizar lacuna apenas porque a janela continuava aberta; visibilidade sozinha também não comprova atenção.
+2. **Histórico:** conservar bruto original e marcar versão/base de cálculo. Novo total comprovado não apaga o total legado. Mudança de método recebe recibo e explicação; não corrigir retroativamente anos de dedicação sem fonte.
+3. **Sincronização:** por ID, revisar/hash do payload e recibo. Mesmo ID + mesmo conteúdo é repetição; mesmo ID + conteúdo diferente é conflito com as duas versões preservadas. Não escolher local silenciosamente.
+4. **Campos:** porcentagem vazia permanece desconhecida; exigir evidência para “observada”. completed não mede tempo; horas de certificado não somam ao cronômetro.
+5. **Categorias:** total global por união; categorias/assuntos podem sobrepor. Exibir essa sobreposição, sem apresentar soma das categorias como total global quando coincidem.
+6. **Áudio:** registrar recurso/versão, play/pause/end/buffering/error, velocidade, posição e relógio monotônico. Pausas, seek e buffering não contam como reprodução. A 2x, 10min reais podem abranger 20min de conteúdo: campos distintos, exemplo didático sem lançamento real. Reprodução é evidência de entrega, não compreensão; estudo por áudio deve ter base explicitada.
+7. **Background:** dados de reprodução exigem caminho nativo/lifecycle que sobreviva à tela apagada quando suportado. Antes de implementação, preservar cronômetro atual e não prometer medição em background.
+8. **Certificados:** contagem paginada integral com escopo, originais, hashes e horas declaradas; tratar sobreposição/duplicidade de curso separadamente de duplicata binária.
+9. **Painéis:** alinhar “total fechado”, “sessão atual observada”, “lacunas” e “horas declaradas” em PC/POCO. Desconhecido não vira zero; dado antigo não vira tempo real.
+
+Casos de aceitação preparados: salto para frente/para trás no relógio; gap de callback; background/reboot; duas sessões sobrepostas; mesmo ID conflitante; porcentagem vazia; 501 certificados; áudio pausado/buffering/seek/2x; perda de conexão e retomada sem duplicação. Testes de produção dessas resoluções ainda pendentes.
+
+### Checkpoint seguinte
+Próximo comando >: voz, atalhos e botão do fone/capacete — rastrear entrada, despacho, ação e resposta falada; preparar critérios de interrupção e tela apagada. LUZ pausada. Esta etapa deixa novos achados e resoluções documentados, não implementados.
