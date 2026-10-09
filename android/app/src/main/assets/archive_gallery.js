@@ -31,7 +31,7 @@
   const NOTE='Capas salvas apenas neste aparelho. Não sincronizadas no Drive/PC nem incluídas automaticamente no backup SQLite.';
   const safe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const scrub=s=>String(s||'').trim().slice(0,2500);
-  const suspicious=s=>/(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_-]{12,}|github_pat_[A-Za-z0-9_-]{12,}|hf_[A-Za-z0-9_-]{18,}|gsk_[A-Za-z0-9_-]{12,}|nvapi-[A-Za-z0-9_-]{12,}|\b(?:password|passwd|senha|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|authorization|cookie)\s*[:=]\s*\S+)/i.test(String(s));
+  const suspicious=s=>/(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_-]{12,}|github_pat_[A-Za-z0-9_-]{12,}|hf_[A-Za-z0-9_-]{18,}|gsk_[A-Za-z0-9_-]{12,}|nvapi-[A-Za-z0-9_-]{12,}|\b(?:password|passwd|senha|token|secret|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|authorization|cookie)\s*[:=]\s*\S+)/i.test(String(s));
   const profile=()=>typeof AURION_ID==='string'&&AURION_ID?AURION_ID:'local';
   const globalState=()=>{
     try{
