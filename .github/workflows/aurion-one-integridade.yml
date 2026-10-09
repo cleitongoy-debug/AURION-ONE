@@ -9,6 +9,7 @@ on:
       - 'tools/test_aurion_assets.cjs'
       - 'tools/test_archive_gallery.cjs'
       - 'tools/test_aurion_webview_bridge.cjs'
+      - 'tools/test_mobile_quick_sync.cjs'
       - '.github/workflows/aurion-one-integridade.yml'
   pull_request:
     branches: [deliver/poco-v70-profiles]
@@ -28,6 +29,8 @@ jobs:
           for f in android/app/src/main/assets/*.js; do node --check "$f"; done
       - name: Memory and sync state synthetic tests
         run: node tools/test_aurion_web_memory.cjs
+      - name: Quick USB sync saved-port and safety tests
+        run: node tools/test_mobile_quick_sync.cjs
       - name: Onboarding inline JS and source contract checks
         run: node tools/test_aurion_assets.cjs
       - name: Biblioteca, capas e depoimentos (sintetico)
