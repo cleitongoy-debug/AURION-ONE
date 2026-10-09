@@ -98,6 +98,52 @@
 function memoryAttract(){const e=window.AurionMemoryEngine;if(!e)return;const ref=document.getElementById('memSrcRef').value.trim(),title=document.getElementById('memSrcTitle').value.trim(),body=document.getElementById('memSrcBody').value.trim();const r=e.addSource('manual',title||'Fonte sem título',body,ref);document.getElementById('memoryOpsLog').textContent=!r.ok?'BLOQUEADO: '+r.error:r.duplicate?'Fonte já conhecida.':'Fonte salva LOCALMENTE; Drive ainda não sincronizado.'}
 function memoryStudyNow(){const e=window.AurionMemoryEngine;if(!e)return;const r=e.study();document.getElementById('memoryOpsLog').textContent=!r.ok?'ERRO: '+r.error:'SCAN DOCUMENTAL: '+r.indexed+' fontes indexadas (não horas de estudo); '+r.conflicts+' conflitos; '+r.totalMemories+' registros locais.'}
 function memoryShowMind(){const e=window.AurionMemoryEngine;if(!e)return;const s=e.state();document.getElementById('memoryOpsLog').textContent=JSON.stringify((s.memories||[]).slice(-12),null,2)}
+function pocoPcSyncStatus(){
+  const raw=native('pocoPcSyncStatus'),box=document.getElementById('pocoPcSyncLog');
+  if(!box)return;
+  try{
+    const p=JSON.parse(raw||'{}');
+    box.textContent=JSON.stringify({
+      estado:p.lastSuccessAt?'ÚLTIMO RECIBO LOCAL':'NÃO SINCRONIZADO',
+      autoSync:p.enabled?'AUTORIZADO (sujeito a execução Android/USB)':'PAUSADO',
+      ultimoSync:p.lastSuccessAt?new Date(p.lastSuccessAt).toLocaleString('pt-BR'):'NUNCA',
+      comprovante:p.lastReport||{},
+      googleDrive:p.googleDriveSynced?'VERIFICADO':'NÃO COMPROVADO'
+    },null,2);
+  }catch(e){box.textContent='Status Android indisponível: '+e.message}
+}
+function pocoPcSyncNow(){
+  const box=document.getElementById('pocoPcSyncLog');
+  const url=document.getElementById('pocoSyncUrl').value.trim();
+  const token=document.getElementById('pocoSyncToken').value.trim();
+  if(!/^http:\/\/(127\.0\.0\.1|localhost):5060$/.test(url)){
+    box.textContent='BLOQUEADO: sincronização somente via cabo USB, endereço http://127.0.0.1:5060.';
+    return;
+  }
+  box.textContent='Solicitado no POCO. Conferindo token, PC e contagem dos registros...';
+  native('pocoPcSyncNow',url,token);
+  document.getElementById('pocoSyncToken').value='';
+}
+function pocoPcAutoSync(enabled){
+  const raw=native('pocoPcAutoSync',enabled);
+  pocoPcSyncStatus();
+  if(!enabled&&raw)document.getElementById('pocoPcSyncLog').textContent=
+    'AUTO SYNC PAUSADO. O último recibo permanece preservado; nenhum registro foi excluído.';
+}
+window.aurionPocoPcSyncResult=function(raw){
+  const box=document.getElementById('pocoPcSyncLog');
+  try{
+    const x=JSON.parse(raw);
+    box.textContent=JSON.stringify({
+      status:x.ok?'SINCRONIZAÇÃO COM RECIBOS LOCAIS':'BLOQUEADO/ERRO',
+      enviados:x.sent??0,excluidosDaCopia:x.excludedLocal??0,
+      novosNoPc:x.pcNew??0,recebidosDoPc:x.received??0,
+      importadosNoPoco:x.imported??0,duplicatasPreservadas:x.duplicates??0,
+      pcReadback:x.pcReadbackCount??null,erro:x.error||null,
+      comprovacao:'PC e POCO somente quando ambos fornecerem os recibos'
+    },null,2);
+  }catch(e){box.textContent='Resposta invalida: '+e.message}
+};
 function bandPaintStatus(raw){
   let j;
   try { j=(typeof raw==='string'?JSON.parse(raw):raw)||{}; }
