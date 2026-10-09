@@ -195,7 +195,7 @@ def mobile_memory_sync():
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             raise ValueError("JSON invalido")
-        outcome = mobile_sync.exchange(SYNC_DB, data)
+        outcome = mobile_sync.exchange(SYNC_DB, data, STORE.database)
         SYNC_INTENT.unlink(missing_ok=True)
         return jsonify(outcome)
     except (ValueError, TypeError) as exc:
