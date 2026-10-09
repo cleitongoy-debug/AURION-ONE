@@ -1479,6 +1479,26 @@ public class MainActivity extends Activity {
         if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
         }
+        if (request == PICK_PRIVATE_CATALOG && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri catalogUri = data.getData();
+            new Thread(() -> {
+                JSONObject reply = new JSONObject();
+                try (InputStream in = getContentResolver().openInputStream(catalogUri)) {
+                    if (in == null) throw new IllegalArgumentException("catalogo_indisponivel");
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    byte[] buffer = new byte[4096];
+                    int n;
+                    while ((n = in.read(buffer)) != -1) {
+                        if (out.size() + n > 70000) throw new IllegalArgumentException("catalogo_excede_70KB");
+                        out.write(buffer, 0, n);
+                    }
+                    reply = AurionBootstrapIndex.importPrivateCatalog(this,store,out.toString("UTF-8"));
+                } catch (Exception e) {
+                    try { reply.put("ok",false).put("error",e.getClass().getSimpleName()); } catch (Exception ignored) {}
+                }
+                emit("aurionBootstrapCatalogResult",reply.toString());
+            }).start();
+        }
         if (request == PICK_KEYS_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             Uri chosen = data.getData(); new Thread(() -> {
                 JSONObject imported;
