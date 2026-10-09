@@ -93,6 +93,48 @@ public final class AurionBootstrapIndex {
         }catch(Exception ignored){}
         return j;
     }
+    /** Importacao LOCAL por escolha explicita: indexa somente referencias de links.
+     * NUNCA faz download dos documentos nem importa chaves.
+     */
+    public static JSONObject importPrivateCatalog(Context c, AurionStore store, String raw){
+        JSONObject result=new JSONObject(); int accepted=0, blocked=0;
+        try{
+            if(raw==null||raw.length()>70000)throw new IllegalArgumentException("manifesto_maior_que_70KB");
+            JSONObject doc=new JSONObject(raw);
+            if(!"aurion-reference-catalog-v1".equals(doc.optString("format")))
+                throw new IllegalArgumentException("formato_de_catalogo_desconhecido");
+            JSONArray list=doc.optJSONArray("sources");
+            if(list==null||list.length()>80)throw new IllegalArgumentException("maximo_80_links_por_manifesto");
+            for(int i=0;i<list.length();i++){
+                JSONObject item=list.optJSONObject(i);
+                if(item==null){blocked++;continue;}
+                String title=item.optString("title","").trim(),url=item.optString("url","").trim();
+                if(title.isEmpty()||title.length()>160||url.length()>500||!url.startsWith("https://")){
+                    blocked++;continue;
+                }
+                Uri u=Uri.parse(url),host=u.getHost();
+                if(host==null||!(host.equals("drive.google.com")
+                    ||host.equals("docs.google.com")||host.equals("github.com"))
+                    ||u.getUserInfo()!=null||u.getQuery()!=null||u.getFragment()!=null
+                    ||excluded(title)||excluded(url)) {blocked++;continue;}
+                JSONObject meta=new JSONObject()
+                    .put("origin","MANIFESTO_IMPORTADO_PELO_OPERADOR")
+                    .put("url",url).put("evidence","REFERENCIA_NAO_LIDA")
+                    .put("visibility","privada_ou_desconhecida")
+                    .put("contentRead",false);
+                store.upsertReference("CAT "+digest(url).substring(0,18)+" · "+title,
+                    url,meta.toString());
+                accepted++;
+            }
+            result.put("ok",true).put("indexedLinks",accepted).put("blocked",blocked)
+                  .put("contentRead",false).put("connectedDrive",false);
+        }catch(Exception e){
+            try{result.put("ok",false).put("error",e.getMessage());}
+            catch(Exception ignored){}
+        }
+        return result;
+    }
+
     /** Idempotente por assinatura de metadados + caminho, com orcamento por rodada. */
     public static synchronized JSONObject scanWorkspace(Context c, AurionStore store, boolean force){
         SharedPreferences p=pref(c);long now=System.currentTimeMillis();
