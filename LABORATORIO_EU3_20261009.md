@@ -187,3 +187,40 @@ Fluxo documental: fonte/versionamento → hipótese → critério verificável �
 
 ### Pendências identificadas
 Restam: nome/época do servidor dos Caveiras; evidência histórica dos rankings; anúncio oficial de encerramento; conteúdo de fóruns e wiki inacessíveis; transcrições dos vídeos; identidade do instalador; acesso autenticado a uma plataforma ainda operante e prova de continuidade de dados. Alterações de aplicativo, automação e testes físicos não realizados nesta extensão documental.
+
+
+## Pauta 2 — retomada pelo sinal >, atualizações e resolução de problemas
+Registro de continuidade: 2026-10-09, solicitação às 17:01:51 em America/Sao_Paulo. Cleiton está na rua e prevê chegar a partir das 18h; isso é previsão, não comprovação de chegada, conexão ou estudo. Cada mensagem > significa retomar o próximo trabalho pendente nesta conversa. Não significa execução permanente entre mensagens, monitoramento do telefone ou tarefa agendada às 18h.
+
+### Sequência recuperada
+1. Primeiro núcleo >: estudo em deslocamento, bate/rebate, sleep/step/tempo real, referências no Git/Drive e origem EU3 da automação AURION.
+2. Pesquisa ampliada: história, tutoriais, comentários, fórmulas comunitárias, situação dos servidores e memória ANARK/Caveiras. Extensão histórica anterior preservada neste relatório.
+3. Pauta 2 atual: cruzar descobertas e problemas reais, especificar resoluções e seus critérios; manter assuntos, evidências e tempos em registros distintos. Continuidade usa o checkpoint atual, sem apagar fontes ou reiniciar contadores.
+
+### Ordem de resolução e critérios concretos
+| Ordem | Problema observado | Resolução proposta | Prova exigida antes de chamar resolvido |
+|---|---|---|---|
+| 1 | Contraprova em A bloqueia B/C, mas mantém rótulo VALIDADO | Marcar dependentes transitivos REVISAO_PENDENTE; guardar recibos originais e causa de invalidação; pausar dependente ativo | A→B→C aprovados; reprovar A; B/C bloqueados e com rótulo coerente; reaprovar A não revalida B/C automaticamente |
+| 2 | EU3 exporta JSON sem caminho de restauração | Importação com versão/perfil, validação e commit atômico; IDs e recibos preservados; rejeitar ciclos, referências inexistentes e números inválidos | Exportar→restaurar em estado novo; conteúdo/tempos/recibos equivalentes; JSON inválido não muda nada |
+| 3 | Backup geral exclui dedicação, memória documental e EU3 | Manifesto por domínio, perfil, versão, hash e quantidade; cópia segura antes da substituição | Restaurar todos os domínios em perfil compatível; falha mantém estado anterior; eventos de datas diferentes não se fundem por título igual |
+| 4 | Resultado geral de conexão pode ocultar falhas parciais | Recibo separado de cada rota e resultado final após sincronização; distinguir metadados de conteúdo lido | Uma rota aprovada e outra falha aparecem separadas; Drive metadata-only não aparece como conteúdo aprendido |
+| 5 | Contador geral aceita salto sem observação | Relógio monotônico para duração; horário civil apenas para data; heartbeat/atividade; lacunas separadas e preservação dos totais históricos | Gap, background, alteração do relógio, reboot e duas sessões concorrentes não fabricam segundos; recibo informa exclusões |
+| 6 | Voz do capacete perde sessão fora do primeiro plano e dispatcher é sobrescrito | Unificar despacho de atalhos/voz e ciclo de vida; registrar entrada, decisão, ação e resposta falada | QA físico em casa: botão, microfone, tela apagada, interrupção e reconexão; execução única e retorno audível |
+| 7 | Laboratório A/B recebe respostas, sem provar descoberta EU3 | Critério antes do teste, fonte fixa, orçamento, tentativa identificada e contraprova independente | Repetição comparável; erro preservado; nenhuma promoção por HTTP 200, fluência ou voto de modelos |
+| 8 | Canal de atualização da prévia difere do principal | Manifesto compatível com pacote/assinatura/versão; backup e migração verificados; changelog por release | Atualização sobre instalação de teste preserva dados e retoma corretamente; aprovação do Android não tratada como instalação silenciosa |
+
+Situação desta pauta: resoluções especificadas e documentação atualizada. Nenhum item foi promovido a correção implementada por este texto. APK/código permanecem preservados nesta fase de estudo e auditoria.
+
+### Assuntos e tempos — contrato para PC e POCO
+Cada sessão futura precisa de sessionId, deviceId, assunto, curso/conteúdo, projeto, tipo de atividade, horário de início/fim com fuso, intervalos observados, pausas/lacunas e referência da evidência. operationId identifica a ação e attemptId cada tentativa. Sincronização deve ser idempotente por ID; mesmo texto em outra data não é duplicata automática.
+
+Assuntos já trabalhados nesta sequência: história EU3 e ANARK/Caveiras; dependências de pesquisa; rotas/wormholes; triangulação; composição modular; taxas e denominadores; contraprova; backup/restauração; sincronização e falhas parciais; dedicação e áudio; voz do capacete; atualização e retomada. Estes são assuntos desta pesquisa, não certificação de domínio nem prova de horas pessoais.
+
+Tempo total humano confirmado = medida da união dos intervalos confirmados entre dispositivos. Sobreposição PC/POCO conta uma vez no total global. Por assunto, intervalos recebem marcações; categorias sobrepostas não devem ser somadas cegamente ao global. Espera de IA, download, sleep, buffering e cronômetro sem atividade não comprovam atenção humana.
+
+Exemplo didático, sem lançamento real: intervalo PC 10:00–10:20 e POCO 10:10–10:30 somam 30 minutos únicos, e não 40. O número é apenas teste de definição. Áudio: separar tempo real reproduzido de posição/duração de conteúdo; avanço manual não soma estudo. Porcentagem de curso, carga horária e certificado conservam valores próprios e fonte; não viram segundos exatos por inferência.
+
+Na falta de dados históricos, marcar desconhecido/relatado. Receber prints e certificados com fonte e data observável; não transformar sua pesquisa atual em reconstrução fictícia do ano inteiro. Não houve lançamento de 20 minutos, de 10+5 minutos ou de tempo até as 18h nesta pauta.
+
+### Checkpoint para o próximo >
+Próximo estudo documental: contrato de restauração completa e invalidação transitiva, com casos de falha/reversão; depois recibos de conexão, contador e voz. Preservar LUZ pausada. Ao chegar em casa, conexão PC↔POCO e voz só passam a comprovadas após evidência dos dispositivos. Fontes encontradas e conclusões anteriores permanecem; repetir verificação apenas diante de alteração, falha ou lacuna nova.
