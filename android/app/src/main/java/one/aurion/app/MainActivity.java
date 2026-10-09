@@ -1282,7 +1282,7 @@ public class MainActivity extends Activity {
             if (result.optBoolean("ok")) store.setProfile(id);
             return result.toString();
         }
-        @JavascriptInterface public void enter() { if (profiles.signedIn()) runOnUiThread(() -> { if (profiles.owner()) { scheduleHourlySync(); handler.postDelayed(MainActivity.this::checkForUpdate, 1800); } web.loadUrl("file:///android_asset/index.html"); }); }
+        @JavascriptInterface public void enter() { if (profiles.signedIn()) runOnUiThread(() -> { if (profiles.owner()) { scheduleHourlySync(); handler.postDelayed(MainActivity.this::checkForUpdate, 1800); } /* addJavascriptInterface must run BEFORE loadUrl so the next document can see AurionAndroid */ web.addJavascriptInterface(profiles.owner() ? bridge : memberBridge, "AurionAndroid"); web.loadUrl("file:///android_asset/index.html"); }); }
         @JavascriptInterface public void logout() {
             profiles.logout(); store.setProfile("anark");
             runOnUiThread(() -> { WorkManager.getInstance(MainActivity.this).cancelUniqueWork("aurion-hourly-sync"); web.removeJavascriptInterface("AurionAndroid"); web.loadUrl("file:///android_asset/profiles.html"); });
