@@ -116,7 +116,7 @@ function pocoPcSyncNow(){
   const box=document.getElementById('pocoPcSyncLog');
   const url=document.getElementById('pocoSyncUrl').value.trim();
   const token=document.getElementById('pocoSyncToken').value.trim();
-  if(!/^http:\/\/(127\.0\.0\.1|localhost):5060$/.test(url)){
+  if(!/^http:\/\/(127\.0\.0\.1|localhost):506[0-9]$/.test(url)){
     box.textContent='BLOQUEADO: sincronização somente via cabo USB, endereço http://127.0.0.1:5060.';
     return;
   }
