@@ -134,6 +134,41 @@ public final class AurionPcMemorySync {
         }finally{if(con!=null)con.disconnect();}
     }
 
+    /** Canonical binary record digest: same 4 UTF-8 length-prefixed fields as the PC. */
+    private static String shaHex(byte[] input)throws Exception{
+        java.security.MessageDigest sha=java.security.MessageDigest.getInstance("SHA-256");
+        byte[] digest=sha.digest(input);
+        StringBuilder hex=new StringBuilder(digest.length*2);
+        for(byte b:digest)hex.append(String.format(Locale.ROOT,"%02x",b&255));
+        return hex.toString();
+    }
+    private static String recordFingerprint(JSONObject item)throws Exception{
+        java.security.MessageDigest sha=java.security.MessageDigest.getInstance("SHA-256");
+        for(String field:new String[]{"type","title","body","meta"}){
+            if(!item.has(field)||item.isNull(field))throw new IllegalArgumentException("campo_ausente");
+            Object raw=item.get(field);
+            if(!(raw instanceof String))throw new IllegalArgumentException("campo_nao_textual");
+            byte[] bytes=((String)raw).getBytes(StandardCharsets.UTF_8);
+            int n=bytes.length;
+            sha.update(new byte[]{(byte)(n>>>24),(byte)(n>>>16),(byte)(n>>>8),(byte)n});
+            sha.update(bytes);
+        }
+        byte[] digest=sha.digest();
+        StringBuilder out=new StringBuilder(digest.length*2);
+        for(byte b:digest)out.append(String.format(Locale.ROOT,"%02x",b&255));
+        return out.toString();
+    }
+    private static String recordSetDigest(JSONArray rows)throws Exception{
+        java.util.ArrayList<String> all=new java.util.ArrayList<>();
+        for(int i=0;i<rows.length();i++)all.add(recordFingerprint(rows.getJSONObject(i)));
+        java.util.Collections.sort(all);
+        StringBuilder joined=new StringBuilder();
+        for(String fp:all){
+            if(joined.length()>0)joined.append('\n');
+            joined.append(fp);
+        }
+        return shaHex(joined.toString().getBytes(StandardCharsets.UTF_8));
+    }
     public static synchronized JSONObject run(Context c,AurionStore store,boolean manual){
         long started=System.currentTimeMillis();
         SharedPreferences p=state(c);
@@ -175,6 +210,9 @@ public final class AurionPcMemorySync {
             JSONArray remote=response.optJSONArray("records");
             if(remote==null||remote.length()!=response.optInt("recordCount",-1))
                 throw new IllegalStateException("registros_PC_incompletos");
+            String digest=recordSetDigest(remote);
+            if(!digest.equals(response.optString("recordsFingerprintSha256","")))
+                throw new IllegalStateException("PC_conteudo_divergente_nao_importado");
             JSONObject backup=new JSONObject();
             backup.put("format","aurion-memory-v4").put("profile","anark").put("records",remote);
             JSONObject imported=store.importAll(backup.toString());
@@ -184,6 +222,8 @@ public final class AurionPcMemorySync {
             JSONObject readback=http(endpoint,token,"GET",null);
             if(readback.optInt("phoneMirroredRecords",-1)!=remote.length())
                 throw new IllegalStateException("PC_readback_divergente");
+            if(!digest.equals(readback.optString("recordsFingerprintSha256","")))
+                throw new IllegalStateException("PC_readback_hash_divergente");
             JSONObject report=new JSONObject();
             report.put("ok",true).put("status","RECIBOS_PC_E_POCO_CONFIRMADOS")
                   .put("sent",safe.length()).put("excludedLocal",excluded)
@@ -192,6 +232,7 @@ public final class AurionPcMemorySync {
                   .put("imported",imported.optInt("imported"))
                   .put("duplicates",imported.optInt("skippedDuplicates"))
                   .put("pcReadbackCount",readback.optInt("phoneMirroredRecords"))
+                  .put("contentDigestVerified",true)
                   .put("completedAt",System.currentTimeMillis())
                   .put("pcReceipt",response.optString("pcReceipt"))
                   .put("receiptType","CONTAGENS_E_READBACK_LOCAL_NAO_TESTE_FISICO_DESTA_SESSAO");
