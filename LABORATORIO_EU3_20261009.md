@@ -430,3 +430,5 @@ Assinatura documental `CAPITÃO <JSON#13> (comando) | FALCÃO 🦅 (ações exec
 
 
 **ERRATA_DERIVADO_V5_SEM_SIDE_EFFECT_IMPORT_20261009:** após a primeira geração de `AURION_PAINEL_V5_LAB_REVISAO.py`, uma checagem adicional encontrou a chamada histórica `create_skill_folder()` em escopo global; removida da cópia para impedir criação de pastas ao *importar* o módulo. O hash da primeira cópia `5adfaa...e9ba` é apenas uma versão intermediária, NÃO a entrega final. **Cópia final**: 18.398 bytes, SHA256 completo `d36448c991a8049e208135bca640e83ca442f4f767601d3b10b058abe76721b3`. Confirmações finais: AST, `py_compile`, arrasto incremental (95,95) e ausência de chamadas top-level `create_skill_folder`/`backup_current_panel` PASSARAM. Backup permanece apenas no start_app, condicionado à execução autorizada do usuário. Originais preservados; UI Windows NÃO TESTADA.
+
+false
