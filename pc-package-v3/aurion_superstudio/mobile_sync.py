@@ -18,6 +18,44 @@ LOCK = threading.RLock()
 SENSITIVE = re.compile(r"(?i)(sk-proj-|gsk_[A-Za-z0-9]{12}|nvapi-[A-Za-z0-9]{12}|gh[pousr]_[A-Za-z0-9]{12}|hf_[A-Za-z0-9]{20}|local#server|\.webui_secret_key|(?:api[_ -]?key|access[_ -]?token|password|senha|secret)\s*[:=])")
 
 
+# Blocking JSON keys as well as flat strings prevents accidental transfer of
+# nested credentials. This is deliberately stricter than a plain text scan.
+PRIVATE_METADATA_KEYS = re.compile(
+    r"(?i)^(?:(?:api|access|refresh|id)[_-]?key|(?:access|refresh|id)[_-]?token|"
+    r"password|passwd|senha|secret|client[_-]?secret|private[_-]?key|"
+    r"authorization|cookie|bearer|credentials?)$"
+)
+PRIVATE_JSON_TEXT_KEYS = re.compile(
+    r'(?i)["\\\'](?:api[_-]?key|access[_-]?token|refresh[_-]?token|'
+    r'password|senha|secret|client[_-]?secret|private[_-]?key|'
+    r'authorization|cookie|credentials?)["\\\']\\s*:'
+)
+
+
+def _metadata_sensitive(metadata: str) -> bool:
+    if SENSITIVE.search(metadata) or PRIVATE_JSON_TEXT_KEYS.search(metadata):
+        return True
+    try:
+        parsed = json.loads(metadata)
+    except (ValueError, TypeError):
+        # Legacy metadata may be plaintext. Keep the old behavior for it.
+        return False
+
+    def check(obj, depth: int = 0) -> bool:
+        if depth > 20:  # fail closed for deeply nested or cyclic structures
+            return True
+        if isinstance(obj, dict):
+            return any(PRIVATE_METADATA_KEYS.match(str(k)) or check(v, depth + 1)
+                       for k, v in obj.items())
+        if isinstance(obj, list):
+            return any(check(v, depth + 1) for v in obj)
+        if isinstance(obj, str):
+            return bool(SENSITIVE.search(obj))
+        return False
+
+    return check(parsed)
+
+
 def _fingerprint(obj: dict) -> str:
     # Mesmo protocolo Android: len em 4 bytes big endian + bytes UTF-8 dos 4 campos.
     h = hashlib.sha256()
@@ -38,7 +76,7 @@ def _canonical(item: dict) -> dict:
         raise ValueError("tipo_ou_titulo_invalido")
     if len(title) > 200 or len(body) > 15000 or len(meta) > 5000 or len(ty) > 40:
         raise ValueError("registro_muito_grande")
-    if SENSITIVE.search(title) or SENSITIVE.search(body) or SENSITIVE.search(meta):
+    if SENSITIVE.search(title) or SENSITIVE.search(body) or _metadata_sensitive(meta):
         raise ValueError("segredo_potencial")
     # Timestamps sao apenas metadados historicos; nunca se convertem em horas estudadas.
     created, updated = item.get("createdAt", 0), item.get("updatedAt", 0)
@@ -113,7 +151,7 @@ def exchange(path: Path, request: dict, pc_store_path: Path | None = None) -> di
             fp=_fingerprint(item)
             encoded=json.dumps(item,ensure_ascii=False,separators=(",",":"))
             inserted+=db.execute("INSERT OR IGNORE INTO sync_records VALUES(?,?,?)",(fp,encoded,now)).rowcount
-        pc_items=[json.loads(x[0]) for x in db.execute("SELECT payload FROM sync_records ORDER BY fingerprint")]
+        pc_items=[_canonical(json.loads(x[0])) for x in db.execute("SELECT payload FROM sync_records ORDER BY fingerprint")]
         payload=json.dumps(pc_items,ensure_ascii=False,separators=(",",":"))
         if len(payload.encode("utf-8"))>MAX_BYTES or len(pc_items)>MAX_RECORDS:
             raise ValueError("resposta_excede_limite_sem_truncamento")
