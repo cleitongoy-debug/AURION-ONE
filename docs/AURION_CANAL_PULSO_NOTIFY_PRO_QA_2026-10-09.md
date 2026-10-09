@@ -6,7 +6,7 @@ Data documental: 2026-10-09. Linha de trabalho: PR #41, branch `fix/one-memoria-
 - O operador ativa ou pausa alertas no painel Band; teste de notificação exige permissão Android e opt-in.
 - A UI mostra permissão, status Android, último envio e recibo **informado manualmente pelo operador**. Envio ao Android não prova entrega no relógio.
 - O aplicativo verifica se `com.mc.xiaomi1` está instalado e abre a instância existente sem instalar, migrar ou mexer em licença.
-- O verificador WorkManager existente (aprox. 1 hora, quando houver condições de rede e execução Android) envia alertas ao canal somente em transições detectadas por consulta efetiva: nova versão indicada, mudança de commit, listagem do Drive, índice HF, ou snapshot PC. Não declara sync, estudo ou agente online apenas pela emissão.
+- O verificador WorkManager existente (aprox. 1 hora, quando houver condições de rede e execução Android) envia alertas ao canal em mudanças detectadas por consulta efetiva: nova versão indicada, mudança de commit, listagem do Drive, índice HF, ou snapshot PC. Também emite **um boletim por janela de ao menos uma hora** quando o trabalho realmente executa, contendo só a contagem das fontes que responderam. Sem prova de execução, não há boletim. Não declara sync, estudo ou agente online apenas pela emissão.
 - Títulos e conteúdos das notificações vêm de catálogo fixo: **sem nomes de clientes, chaves, ID privados, prompts ou conteúdo de arquivos**.
 - ChatGPT tem cronograma documental separado: boletim horário não significa que a plataforma exibiu push Android, nem que Notify entregou no pulso.
 
