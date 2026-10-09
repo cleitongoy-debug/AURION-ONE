@@ -103,7 +103,7 @@ public final class AurionPcMemorySync {
                   .getString("pcStudio","").replaceAll("/+$","");
             String token=store.getSecret("dedicationPc");
             // Nunca enviar memoria para hosts da LAN, internet, ou portas desconhecidas.
-            if(!root.matches("http://(127\\.0\\.0\\.1|localhost):5060"))
+            if(!root.matches("http://(127\\.0\\.0\\.1|localhost):506[0-9]"))
                 throw new IllegalStateException("use_HTTP_localhost_5060_via_cabo_ADB");
             if(token.isEmpty())throw new IllegalStateException("token_local_PC_nao_configurado");
             JSONObject upstream=store.exportAll();
