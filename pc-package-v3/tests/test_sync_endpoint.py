@@ -45,13 +45,37 @@ class MobileSyncEndpointTests(unittest.TestCase):
     def test_external_origin_never_receives_token_cors_access(self):
         malicious={"Origin":"https://outside.example"}
         home=self.client.get("/",headers=malicious)
-        self.assertEqual(home.status_code,200)
+        self.assertEqual(home.status_code,403)
         self.assertNotIn("Access-Control-Allow-Origin",home.headers)
         probe=self.client.options("/api/mobile/memory-sync",headers={
             **malicious,"Access-Control-Request-Method":"POST",
             "Access-Control-Request-Headers":"X-Aurion-Token"})
+        self.assertEqual(probe.status_code,403)
         self.assertNotIn("Access-Control-Allow-Origin",probe.headers)
-        self.assertNotIn("Access-Control-Allow-Credentials",home.headers)
+
+    def test_dns_rebinding_is_denied_even_from_loopback(self):
+        # Rebinding still arrives from 127.0.0.1, but Host stays attacker-controlled.
+        bad_host={"Host":"outside.example:5060"}
+        home=self.client.get("/",headers=bad_host)
+        self.assertEqual(home.status_code,403)
+        self.assertNotIn(TOKEN,home.get_data(as_text=True))
+        sync=self.client.get("/api/mobile/memory-sync",
+                             headers={**bad_host,**self.headers})
+        self.assertEqual(sync.status_code,403)
+        good=self.client.get("/",headers={"Host":"127.0.0.1:5060"})
+        self.assertEqual(good.status_code,200)
+        alternate=self.client.get("/api/mobile/memory-sync",
+            headers={**self.headers,"Host":"localhost:5069"})
+        self.assertEqual(alternate.status_code,200)
+
+    def test_reject_site_origin_despite_valid_host_and_token(self):
+        headers={**self.headers,"Host":"localhost:5060",
+                 "Origin":"https://outside.example"}
+        self.assertEqual(self.client.post("/api/mobile/memory-sync/request",
+                                          headers=headers,json={}).status_code,403)
+        headers["Origin"]="http://localhost:5060"
+        self.assertEqual(self.client.post("/api/mobile/memory-sync/request",
+                                          headers=headers,json={}).status_code,200)
 
     def test_bad_profile_no_write(self):
         before=self.client.get("/api/mobile/memory-sync",headers=self.headers).json["phoneMirroredRecords"]
