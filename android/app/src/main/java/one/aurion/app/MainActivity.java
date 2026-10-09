@@ -97,6 +97,7 @@ public class MainActivity extends Activity {
     private static final int PICK_CLIENT_PHOTOS = 421;
     private static final int PICK_CERTIFICATE = 422;
     private static final int REQUEST_NOTIFICATIONS = 423;
+    private boolean bandPermissionEnablePending = false;
     private TextToSpeech speech;
     private MediaSession headsetSession;
     private WebView web;
@@ -245,6 +246,7 @@ public class MainActivity extends Activity {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             j.put("batteryUnrestricted", pm != null && pm.isIgnoringBatteryOptimizations(getPackageName()));
             j.put("miFitness", packageInstalled("com.xiaomi.wearable"));
+            j.put("bandNotificationChannel", AurionBandChannel.status(this));
             j.put("termux", packageInstalled("com.termux"));
             j.put("tailscale", packageInstalled("com.tailscale.ipn"));
             j.put("healthConnect", packageInstalled("com.google.android.apps.healthdata") || Build.VERSION.SDK_INT >= 34);
@@ -1390,6 +1392,28 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s) || "mailto".equals(s) || "tel".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
         @JavascriptInterface public void scanBand() { runOnUiThread(MainActivity.this::requestBluetoothOrScan); }
         @JavascriptInterface public void notifyBand() { runOnUiThread(() -> BandNotificationTest.requestOrSend(MainActivity.this)); }
+        @JavascriptInterface public String bandChannelStatus() {
+            return AurionBandChannel.status(MainActivity.this).toString();
+        }
+        @JavascriptInterface public void bandChannelEnable(boolean enabled) {
+            runOnUiThread(() -> {
+                if (enabled && !AurionBandChannel.hasPermission(MainActivity.this)
+                    && Build.VERSION.SDK_INT >= 33) {
+                    bandPermissionEnablePending = true;
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            AurionBandChannel.REQUEST_PERMISSION);
+                    return;
+                }
+                emit("aurionBandChannelResult", AurionBandChannel.setEnabled(MainActivity.this, enabled).toString());
+            });
+        }
+        @JavascriptInterface public void bandChannelTest() {
+            runOnUiThread(() -> emit("aurionBandChannelResult",
+                    AurionBandChannel.sendManualTest(MainActivity.this).toString()));
+        }
+        @JavascriptInterface public String bandChannelConfirmReceipt() {
+            return AurionBandChannel.confirmOperatorReceipt(MainActivity.this).toString();
+        }
         @JavascriptInterface public void openMiFitness() { openPackage("com.xiaomi.wearable", "https://play.google.com/store/apps/details?id=com.xiaomi.wearable"); }
         @JavascriptInterface public void openTermux() { openPackage("com.termux", "https://github.com/termux/termux-app"); }
         @JavascriptInterface public void openTailscale() { openPackage("com.tailscale.ipn", "https://play.google.com/store/apps/details?id=com.tailscale.ipn"); }
@@ -1486,6 +1510,14 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
         BandNotificationTest.onPermissionResult(this, code, results);
+        if (code == AurionBandChannel.REQUEST_PERMISSION) {
+            boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+            if (bandPermissionEnablePending) {
+                bandPermissionEnablePending = false;
+                emit("aurionBandChannelResult",
+                     AurionBandChannel.setEnabled(this, granted).toString());
+            }
+        }
         if (code == REQUEST_BLUETOOTH) { boolean ok = true; for (int r : results) ok &= r == PackageManager.PERMISSION_GRANTED; if (ok) startBleScan(); else emit("aurionBandResult", "{\"status\":\"blocked\",\"message\":\"Permissão Bluetooth negada\"}"); }
     }
     @Override public void onBackPressed() {
