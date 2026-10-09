@@ -246,6 +246,7 @@ public class MainActivity extends Activity {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             j.put("batteryUnrestricted", pm != null && pm.isIgnoringBatteryOptimizations(getPackageName()));
             j.put("miFitness", packageInstalled("com.xiaomi.wearable"));
+            j.put("notifyForXiaomi", packageInstalled("com.mc.xiaomi1"));
             j.put("bandNotificationChannel", AurionBandChannel.status(this));
             j.put("termux", packageInstalled("com.termux"));
             j.put("tailscale", packageInstalled("com.tailscale.ipn"));
@@ -1415,6 +1416,15 @@ public class MainActivity extends Activity {
             return AurionBandChannel.confirmOperatorReceipt(MainActivity.this).toString();
         }
         @JavascriptInterface public void openMiFitness() { openPackage("com.xiaomi.wearable", "https://play.google.com/store/apps/details?id=com.xiaomi.wearable"); }
+        @JavascriptInterface public void openNotifyPro() {
+            runOnUiThread(() -> {
+                try {
+                    Intent launch = getPackageManager().getLaunchIntentForPackage("com.mc.xiaomi1");
+                    if (launch != null) startActivity(launch);
+                    else toast("Notify Pro não identificado no POCO. Nada será instalado automaticamente.");
+                } catch (Exception e) { toast("Não foi possível abrir Notify Pro."); }
+            });
+        }
         @JavascriptInterface public void openTermux() { openPackage("com.termux", "https://github.com/termux/termux-app"); }
         @JavascriptInterface public void openTailscale() { openPackage("com.tailscale.ipn", "https://play.google.com/store/apps/details?id=com.tailscale.ipn"); }
         @JavascriptInterface public void openSetting(String key) { MainActivity.this.openSetting(key); }
