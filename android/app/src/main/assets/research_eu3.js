@@ -128,16 +128,49 @@ function engine(storage){
    return {added:p.added,unchanged:p.unchanged,review:p.review,total:p.total};
  }
 
+ // Documentary coverage is a local registry statistic, never a claim of human learning.
+ function metrics(){
+   const rows=state.items,map=new Map(rows.map(x=>[x.id,x]));
+   const memo=new Map(),visiting=new Set();
+   const qualifies=item=>{
+     if(!item||visiting.has(item.id))return false;
+     if(memo.has(item.id))return memo.get(item.id);
+     visiting.add(item.id);
+     const latest=Array.isArray(item.receipts)?item.receipts[item.receipts.length-1]:null;
+     const ownProof=item.status==='VALIDADO'&&latest&&latest.passed===true&&
+       typeof latest.range==='string'&&latest.range.trim().length>0&&
+       typeof latest.result==='string'&&latest.result.trim().length>0;
+     const good=!!ownProof&&Array.isArray(item.dependencies)&&
+       item.dependencies.every(id=>qualifies(map.get(id)));
+     visiting.delete(item.id);memo.set(item.id,good);return good;
+   };
+   const byStatus={CANDIDATO:0,EM_ESTUDO:0,EXPERIMENTAL:0,VALIDADO:0,REVISAO_PENDENTE:0};
+   let documented=0,missingProof=0,blocked=0;
+   for(const x of rows){
+     if(Object.prototype.hasOwnProperty.call(byStatus,x.status))byStatus[x.status]++;
+     if(qualifies(x))documented++;
+     if(x.status==='VALIDADO'&&!qualifies(x))missingProof++;
+     if(!ready(x))blocked++;
+   }
+   const total=rows.length;
+   return {total,documented,percent:total?Math.round(10000*documented/total)/100:null,
+     byStatus,missingProof,blocked,
+     description:'Cobertura documental das pesquisas cadastradas neste perfil. Provas declaradas no app, não auditadas externamente.',
+     humanLearningPercent:null,humanStudyHours:null};
+ }
+
  reconcilePersistedValidation();
- return {add,start,pause,tick,proof,ready,previewRestore,restore,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
+ return {add,start,pause,tick,proof,ready,metrics,previewRestore,restore,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
 }
 root.AurionResearchEngine=engine;
 if(typeof document==='undefined')return;
 const e=engine(localStorage),host=document.querySelector('#lab');if(!host)return;
-const panel=document.createElement('div');panel.className='card';panel.innerHTML='<h2>🧪 Pesquisa · método EU3</h2><p>Fonte → estudo → experimento → prova → desbloqueio. Tempo registrado nesta sessão, sem transformar resposta de IA em validação. Os registros sobrevivem ao fechamento; exporte para backup.</p><label>Título</label><input id="euTitle"><label>Fonte: ID, caminho, linhas ou print</label><input id="euSource"><label>Pré-requisito validado</label><select id="euDependency"><option value="">Nenhum</option></select><button id="euAdd">ENFILEIRAR PESQUISA</button><div id="euItems"></div><label>Trecho efetivamente lido</label><input id="euRange" placeholder="Arquivo e linhas / página / região do print"><label>Resultado e procedimento reproduzível</label><textarea id="euResult"></textarea><label><input type="checkbox" id="euPassed"> Conferi a prova e o critério foi atendido</label><button id="euProof">REGISTRAR PROVA DA PESQUISA SELECIONADA</button><button id="euPause">PAUSAR</button><button id="euExport">EXPORTAR JSON</button><p><strong>Importação manual:</strong> selecione uma exportação EU3 deste perfil ou de outro dispositivo. Conflitos de ID interrompem a operação sem sobrescrever provas.</p><input id="euImportFile" type="file" accept=".json,application/json"><p id="euImportPreview" aria-live="polite">Nenhum backup escolhido.</p><label><input type="checkbox" id="euImportApprove"> Conferi a origem e autorizo mesclar os registros sem sobrescrever os existentes.</label><button id="euImportApply" disabled>CONFIRMAR IMPORTAÇÃO</button><p id="euStatus" aria-live="polite"></p><p>Acervo localizado: <a href="https://docs.google.com/document/d/1Zh2uT-__vlHAXkz36Ia-_-jXkoRUYcZUsJcF6oc2DSc" target="_blank" rel="noopener">Laboratório de fusão</a> · <a href="https://docs.google.com/document/d/1-oLBlBtPzsvCExOuLvKDZDkW6pnStOAxU2C44ruWcyM" target="_blank" rel="noopener">Índice dos estudos</a> · <a href="https://drive.google.com/drive/folders/1480epyBbO9QGf7y1Nk9Vy1nWIQaPbZy3" target="_blank" rel="noopener">Biblioteca de conhecimento</a>. Acesso ao Drive exige conexão; cadastrar uma fonte não significa lê-la.</p>';host.prepend(panel);
+const panel=document.createElement('div');panel.className='card';panel.innerHTML='<h2>🧪 Pesquisa · método EU3</h2><p>Fonte → estudo → experimento → prova → desbloqueio. Tempo registrado nesta sessão, sem transformar resposta de IA em validação. Os registros sobrevivem ao fechamento; exporte para backup.</p><label>Título</label><input id="euTitle"><label>Fonte: ID, caminho, linhas ou print</label><input id="euSource"><label>Pré-requisito validado</label><select id="euDependency"><option value="">Nenhum</option></select><button id="euAdd">ENFILEIRAR PESQUISA</button><div id="euCoverage" role="status" aria-live="polite">Cobertura documental: sem pesquisas cadastradas.</div><div id="euItems"></div><label>Trecho efetivamente lido</label><input id="euRange" placeholder="Arquivo e linhas / página / região do print"><label>Resultado e procedimento reproduzível</label><textarea id="euResult"></textarea><label><input type="checkbox" id="euPassed"> Conferi a prova e o critério foi atendido</label><button id="euProof">REGISTRAR PROVA DA PESQUISA SELECIONADA</button><button id="euPause">PAUSAR</button><button id="euExport">EXPORTAR JSON</button><p><strong>Importação manual:</strong> selecione uma exportação EU3 deste perfil ou de outro dispositivo. Conflitos de ID interrompem a operação sem sobrescrever provas.</p><input id="euImportFile" type="file" accept=".json,application/json"><p id="euImportPreview" aria-live="polite">Nenhum backup escolhido.</p><label><input type="checkbox" id="euImportApprove"> Conferi a origem e autorizo mesclar os registros sem sobrescrever os existentes.</label><button id="euImportApply" disabled>CONFIRMAR IMPORTAÇÃO</button><p id="euStatus" aria-live="polite"></p><p>Acervo localizado: <a href="https://docs.google.com/document/d/1Zh2uT-__vlHAXkz36Ia-_-jXkoRUYcZUsJcF6oc2DSc" target="_blank" rel="noopener">Laboratório de fusão</a> · <a href="https://docs.google.com/document/d/1-oLBlBtPzsvCExOuLvKDZDkW6pnStOAxU2C44ruWcyM" target="_blank" rel="noopener">Índice dos estudos</a> · <a href="https://drive.google.com/drive/folders/1480epyBbO9QGf7y1Nk9Vy1nWIQaPbZy3" target="_blank" rel="noopener">Biblioteca de conhecimento</a>. Acesso ao Drive exige conexão; cadastrar uma fonte não significa lê-la.</p>';host.prepend(panel);
 const q=id=>document.getElementById(id);let selected=null;
 function label(x){return (selected===x.id?'▶ ':'')+x.title+' · '+x.status+' · '+Math.floor(x.milliseconds/1000)+'s'+(e.ready(x)?'':' · BLOQUEADA');}
-function render(){const dependency=q('euDependency').value;q('euItems').replaceChildren();q('euDependency').innerHTML='<option value="">Nenhum</option>';for(const x of e.items()){const b=document.createElement('button');b.dataset.researchId=x.id;b.textContent=label(x);b.onclick=()=>{selected=x.id;q('euStatus').textContent='Selecionada: '+x.title;if(x.status!=='VALIDADO')act(()=>e.start(x.id,performance.now()));};q('euItems').append(b);if(x.status==='VALIDADO'){const o=document.createElement('option');o.value=x.id;o.textContent=x.title;q('euDependency').append(o);}}q('euDependency').value=dependency;}
+function render(){const m=e.metrics(),coverage=m.percent===null?'N/D':m.percent.toFixed(2)+'%';
+ q('euCoverage').textContent='Cobertura documental: '+coverage+' · '+m.documented+'/'+m.total+' pesquisas com último recibo aprovado e pré-requisitos documentados · '+m.byStatus.REVISAO_PENDENTE+' em revisão · '+m.missingProof+' validadas sem recibo suficiente. NÃO representa aprendizado humano nem leitura automática de arquivos.';
+ const dependency=q('euDependency').value;q('euItems').replaceChildren();q('euDependency').innerHTML='<option value="">Nenhum</option>';for(const x of e.items()){const b=document.createElement('button');b.dataset.researchId=x.id;b.textContent=label(x);b.onclick=()=>{selected=x.id;q('euStatus').textContent='Selecionada: '+x.title;if(x.status!=='VALIDADO')act(()=>e.start(x.id,performance.now()));};q('euItems').append(b);if(x.status==='VALIDADO'){const o=document.createElement('option');o.value=x.id;o.textContent=x.title;q('euDependency').append(o);}}q('euDependency').value=dependency;}
 function act(fn){try{fn();q('euStatus').textContent='Registro salvo localmente.';render();}catch(err){q('euStatus').textContent=err.message;}}
 q('euAdd').onclick=()=>act(()=>e.add(q('euTitle').value,q('euSource').value,q('euDependency').value?[q('euDependency').value]:[]));
 q('euPause').onclick=()=>act(()=>e.pause(performance.now()));q('euProof').onclick=()=>act(()=>e.proof(selected,q('euRange').value,q('euResult').value,q('euPassed').checked));
