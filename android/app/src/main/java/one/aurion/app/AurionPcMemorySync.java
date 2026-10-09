@@ -22,7 +22,7 @@ public final class AurionPcMemorySync {
     private static final Set<String> TYPES = new HashSet<>();
     static {
         for (String v:new String[]{"memory","reference","conversation","project",
-              "preset","evidence","sync_event","experiment"}) TYPES.add(v);
+              "preset","evidence","experiment"}) TYPES.add(v);
     }
     private AurionPcMemorySync() { }
 
