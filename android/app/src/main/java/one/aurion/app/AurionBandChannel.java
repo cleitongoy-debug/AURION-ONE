@@ -109,6 +109,27 @@ public final class AurionBandChannel {
         return post(c, eventId, "AURION ONE · Alteracao detectada", body);
     }
 
+    /** Boletim local uma vez por janela de >= 1h, somente se Worker REALMENTE executou.
+     * Nao ha integracao ChatGPT, nem execucao garantida em minuto fixo pelo WorkManager.
+     */
+    public static boolean sendCheckSummary(Context c, JSONObject report) {
+        SharedPreferences p = prefs(c);
+        if (!p.getBoolean(ENABLED, false)) return false;
+        long now = System.currentTimeMillis();
+        if (now - p.getLong("lastSummaryAt", 0) < 3600000L) return false;
+        int answered = 0;
+        if (report.has("apk")) answered++;
+        if (!report.optString("gitHead", "").isEmpty()) answered++;
+        if ("ok".equals(report.optString("drive", ""))) answered++;
+        if (report.has("huggingface")) answered++;
+        if ("online".equals(report.optString("pc", ""))) answered++;
+        String msg = "Verificador executou: " + answered
+                + " fonte(s) responderam. Isto NAO prova sync nem estudo.";
+        boolean sent = post(c, 3902, "AURION ONE · Relatorio de verificacao", msg);
+        if (sent) p.edit().putLong("lastSummaryAt", now).apply();
+        return sent;
+    }
+
     public static JSONObject sendManualTest(Context c) {
         JSONObject out = status(c);
         if (!prefs(c).getBoolean(ENABLED, false)) {
