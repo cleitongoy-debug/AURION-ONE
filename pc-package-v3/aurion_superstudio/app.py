@@ -15,6 +15,7 @@ from . import __version__
 from .creative3d import BLENDER_EXE, C4D_EXE, blender_status, c4d_status, ensure_3d_workspace, launch, open_path, start_blender_render
 from .services import develop_cr3, inventory_base, process_image, run_ffmpeg, safe_name, service_status, sha256, unique_path
 from .store import Store
+from . import mobile_sync
 
 MODULE_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PANEL = Path(r"C:\Users\ADM_PESS\Desktop\painelseguro#1 - Copia")
@@ -171,6 +172,44 @@ def mobile_snapshot():
         code_manifest=_bounded_manifest(BASE_ROOT, 180),
         records=len(STORE.list("", limit=500)),
     )
+
+
+# Sincronizacao SOMENTE via loopback/USB. Porta 5060 do Super Studio;
+# nao existe acesso remoto implicito, nem dependencia do V14 original.
+SYNC_DB = DATA_ROOT / "mobile_sync" / "mirror.sqlite3"
+SYNC_INTENT = DATA_ROOT / "mobile_sync" / "requested.flag"
+
+
+@app.route("/api/mobile/memory-sync", methods=["GET", "POST"])
+def mobile_memory_sync():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify(ok=False, error="SYNC requer loopback/USB; LAN bloqueada."), 403
+    if request.method == "GET":
+        status = mobile_sync.state(SYNC_DB)
+        status["syncRequested"] = SYNC_INTENT.exists()
+        status["pcPort"] = int(os.environ.get("AURION_STUDIO_PORT", "5060"))
+        return jsonify(status)
+    if not mobile_sync.post_size_ok(request.content_length):
+        return jsonify(ok=False, error="Payload ausente ou acima de 3MB."), 413
+    try:
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("JSON invalido")
+        outcome = mobile_sync.exchange(SYNC_DB, data)
+        SYNC_INTENT.unlink(missing_ok=True)
+        return jsonify(outcome)
+    except (ValueError, TypeError) as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+
+
+@app.post("/api/mobile/memory-sync/request")
+def request_memory_sync():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify(ok=False, error="Operacao local apenas."), 403
+    SYNC_INTENT.parent.mkdir(parents=True, exist_ok=True)
+    SYNC_INTENT.write_text(datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    return jsonify(ok=True, requested=True,
+                   message="Pedido local registrado; o POCO fara sync ao conectar e conferir o pedido.")
 
 
 @app.route("/api/mobile/dedication", methods=["GET", "POST"])
