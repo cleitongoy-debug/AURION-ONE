@@ -105,4 +105,85 @@ function bandConfirmReceipt(){
   const raw=native('bandChannelConfirmReceipt');if(raw)bandPaintStatus(raw);
 }
 function memoryShowBlackBox(){const e=window.AurionMemoryEngine;if(!e)return;const s=e.state();document.getElementById('memoryOpsLog').textContent=JSON.stringify({integridade:e.integrity(),sincronizacao:e.syncStatus(),lastScan:s.lastScan||null,notes:(s.notes||[]).slice(-20),sources:(s.sources||[]).slice(-20)},null,2)}
+
+const bootPrivateLinks=[];
+function bootstrapRenderLinks(){
+  const box=document.getElementById('bootstrapLinks'),summary=document.getElementById('bootstrapSummary');
+  if(!box||!summary)return;
+  const rows=typeof getMemories==='function'?getMemories('reference','',350):[];
+  bootPrivateLinks.length=0;
+  const safe=rows.filter(x=>{
+    const uri=String(x.body||'').trim();
+    try {const u=new URL(uri);return u.protocol==='https:' && ['github.com','docs.google.com','drive.google.com'].includes(u.hostname);}
+    catch{return false;}
+  }).slice(0,80);
+  box.innerHTML='<div class="log">Fonte | Canal | Abertura</div>'+safe.map((x,i)=>{
+    bootPrivateLinks.push(x.body);
+    const channel=x.body.includes('github.com')?'GitHub':'Google Drive';
+    return '<div class="row"><span>'+esc(x.title).slice(0,90)+'<small> · '+channel+' · referência indexada</small></span><button onclick="bootstrapOpenLink('+i+')">ABRIR</button></div>';
+  }).join('');
+  const check=getMemories('sync_event','',1);
+  summary.textContent='Referências com URL nesta amostra: '+safe.length+
+    '; total consultado: '+rows.length+
+    '. Último registro de verificação: '+(check.length?check[0].title+' · '+new Date(check[0].updatedAt).toLocaleString('pt-BR'):'NÃO TESTADO')+
+    '. Contas e conteúdos só ficam verificados depois de resposta autenticada.';
+}
+function bootstrapOpenLink(i){
+  const url=bootPrivateLinks[i];
+  if(url)native('openExternal',url);
+}
+async function bootstrapImportFile(input){
+  const file=input.files&&input.files[0],status=document.getElementById('bootstrapSummary');
+  if(!file)return;
+  if(file.size>70000){status.textContent='BLOQUEADO: catálogo excede 70 KB.';input.value='';return}
+  try{
+    const raw=await file.text(),manifest=JSON.parse(raw);
+    if(manifest.format!=='aurion-reference-catalog-v1'||!Array.isArray(manifest.sources)||manifest.sources.length>80)
+      throw Error('Formato inválido ou mais de 80 referências');
+    let indexed=0,skip=0;
+    const existing=new Set(getMemories('reference','',500).map(x=>String(x.body||'').trim()));
+    for(const source of manifest.sources){
+      const label=String(source?.title||'').trim(),url=String(source?.url||'').trim();
+      let u;
+      try{u=new URL(url)}catch{skip++;continue}
+      if(!label||label.length>160||u.protocol!=='https:' ||
+        !['github.com','docs.google.com','drive.google.com'].includes(u.hostname) ||
+        u.search||u.hash||u.username||u.password||
+        /(?:local#server|secret|token|key|senha|password|credencial|chave|\.env)/i.test(label+' '+url)||
+        existing.has(url)){skip++;continue}
+      const meta=JSON.stringify({source:'CATALOGO_PRIVADO_ESCOLHIDO',provenance:'operador',contentRead:false,evidence:'REFERENCIA_NAO_LIDA'});
+      const n=native('memoryAdd','reference','CAT '+label,url,meta);
+      if(n>0){indexed++;existing.add(url)}else skip++;
+    }
+    status.textContent='Importação local: '+indexed+' referências indexadas, '+skip+' rejeitadas/repetidas. Arquivos NÃO foram baixados nem lidos.';
+    bootstrapRenderLinks();
+  }catch(e){status.textContent='Importação bloqueada: '+e.message}
+  input.value='';
+}
+window.aurionBootstrapScanResult=raw=>{
+  const status=document.getElementById('bootstrapSummary');
+  if(status)status.textContent='Varredura de pasta autorizada: '+raw+' (METADADOS, não leitura de conteúdo).';
+  bootstrapRenderLinks();
+};
+window.aurionBootstrapCatalogResult=raw=>{
+  const status=document.getElementById('bootstrapSummary');if(status)status.textContent='Índice: '+raw;
+  bootstrapRenderLinks();
+};
+window.aurionVoiceResult=heard=>{
+  const text=String(heard||'').trim(),field=document.getElementById('agentText');
+  if(!text||!field)return;
+  field.value=text;
+  const log=document.getElementById('voiceLog');
+  if(log)log.textContent='Ditado reconhecido: '+text+'. '+(localStorage.getItem('aurion_voice_safe_autosend')==='1'?'Modo local opt-in ativado.':'Revise e use ENVIAR COM MEMÓRIA.');
+  const provider=document.getElementById('aiProvider')?.value;
+  // Jamais executar comandos por voz nem gastar creditos de API por padrao.
+  if(localStorage.getItem('aurion_voice_safe_autosend')==='1'&&['offline','local'].includes(provider))sendAgent();
+};
+function toggleVoiceSafe(){
+  const next=localStorage.getItem('aurion_voice_safe_autosend')!=='1';
+  if(next&&!confirm('Autorizar envio automático SOMENTE ao modo OFFLINE ou ao modelo LOCAL selecionado? Não controla apps do PC e não deve ser usado em movimento.'))return;
+  localStorage.setItem('aurion_voice_safe_autosend',next?'1':'0');
+  const log=document.getElementById('voiceLog');
+  if(log)log.textContent=next?'Ditado: envio OFFLINE/LOCAL ativado; serviços pagos continuam exigindo confirmação.':'Ditado sem envio automático.';
+}
 </script></body></html>
