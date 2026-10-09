@@ -12,9 +12,14 @@
       if(typeof window.AurionAndroid==='undefined'){setStatus('BLOQUEADO: ponte Android indisponível nesta tela. Volte ao perfil titular e entre novamente; nenhuma sincronização foi confirmada.');return;}
       if(typeof native!=='function')throw Error('Ponte Android não disponível');
       native('runHourlySyncNow');
-      // Native bridge retains previously saved token when the argument is empty.
-      // It always validates operator profile and USB loopback on Android.
-      native('pocoPcSyncNow','http://127.0.0.1:5060','');
+      // Use the sanitized saved loopback endpoint, not an assumed fixed port.
+      // Never return or render the stored token. The native bridge retains it.
+      const state=JSON.parse(native('pocoPcSyncStatus')||'{}');
+      const endpoint=state.configuredEndpoint || 'http://127.0.0.1:5060';
+      if(!/^http:\/\/(?:127\.0\.0\.1|localhost):506[0-9]$/.test(endpoint)){
+        throw Error('Porta PC fora da faixa USB autorizada');
+      }
+      native('pocoPcSyncNow',endpoint,'');
     }catch(err){
       setStatus('BLOQUEADO: '+err.message+'. Os dados permanecem no POCO.');
     }finally{if(button)button.disabled=false;}
