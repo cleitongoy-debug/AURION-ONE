@@ -1466,9 +1466,18 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_WORKSPACE && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
-            try { getContentResolver().takePersistableUriPermission(uri, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)); } catch (Exception ignored) {}
-            getSharedPreferences("aurion_workspace", MODE_PRIVATE).edit().putString("tree", uri.toString()).apply();
-            emit("aurionWorkspaceResult", uri.toString());
+            boolean retained = false;
+            try {
+                getContentResolver().takePersistableUriPermission(uri,
+                    data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+                retained = true;
+            } catch (Exception ignored) {}
+            if (retained) {
+                getSharedPreferences("aurion_workspace", MODE_PRIVATE).edit().putString("tree", uri.toString()).apply();
+                emit("aurionWorkspaceResult", uri.toString());
+                new Thread(() -> emit("aurionBootstrapScanResult",
+                    AurionBootstrapIndex.scanWorkspace(this,store,true).toString())).start();
+            } else emit("aurionBootstrapScanResult", "{\"status\":\"BLOQUEADO\",\"reason\":\"Permissao_de_leitura_nao_persistida\"}");
         }
         if (request == PICK_CONVERT_IMAGE && result == RESULT_OK && data != null && data.getData() != null) convertImage(data.getData());
         if (request == CAPTURE_PHOTO) {
