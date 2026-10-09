@@ -1312,6 +1312,26 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void runHourlySyncNow() { MainActivity.this.runHourlySyncNow(); }
         @JavascriptInterface public void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) { MainActivity.this.saveNodeSettings(panel, agent, token, comfy, ollama); }
         @JavascriptInterface public void savePcStudio(String base, String token) { MainActivity.this.savePcStudio(base, token); }
+        @JavascriptInterface public String pocoPcSyncStatus() {
+            return AurionPcMemorySync.status(MainActivity.this).toString();
+        }
+        @JavascriptInterface public void pocoPcSyncNow(String base, String token) {
+            if (!profiles.owner()) return;
+            if (base == null || !base.trim().matches("http://(127\\.0\\.0\\.1|localhost):5060")) {
+                emit("aurionPocoPcSyncResult", "{\"ok\":false,\"error\":\"Use http://127.0.0.1:5060 com ADB reverse\"}");
+                return;
+            }
+            savePcStudio(base.trim(), token);
+            new Thread(() -> emit("aurionPocoPcSyncResult",
+                AurionPcMemorySync.run(MainActivity.this,store,true).toString()),
+                "aurion-usb-sync").start();
+        }
+        @JavascriptInterface public String pocoPcAutoSync(boolean enabled) {
+            if (!profiles.owner()) return "{\"ok\":false}";
+            AurionPcMemorySync.setEnabled(MainActivity.this,enabled);
+            return AurionPcMemorySync.status(MainActivity.this).toString();
+        }
+
         @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
         @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
         @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
