@@ -16,8 +16,8 @@ import java.util.Locale;
 
 public class AurionHourlyWorker extends Worker {
   private static final String CHANNEL="aurion_updates";
-  private static final String UPDATE="https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/latest.json";
-  private static final String HEAD="https://api.github.com/repos/cleitongoy-debug/AURION-ONE/commits?sha=feat%2Fdedicacao-certificados-20260928&per_page=1";
+  private static final String UPDATE="https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/latest.json";
+  private static final String HEAD="https://api.github.com/repos/cleitongoy-debug/AURION-ONE/commits?sha=main&per_page=1";
   public AurionHourlyWorker(@NonNull Context c,@NonNull WorkerParameters p){super(c,p);}
   @NonNull public Result doWork(){Context c=getApplicationContext();AurionStore store=new AurionStore(c);SharedPreferences n=c.getSharedPreferences("aurion_nodes",0),s=c.getSharedPreferences("aurion_auto_sync",0);JSONObject r=new JSONObject();boolean ok=false;
     try{JSONObject x=get(UPDATE,"");if(x.optBoolean("ok")){ok=true;JSONObject m=new JSONObject(x.optString("body","{}"));long cur=ver(c),next=m.optLong("versionCode");r.put("apk",new JSONObject().put("current",cur).put("available",next).put("versionName",m.optString("versionName")));if(next>cur)note(c,1001,"AURION "+m.optString("versionName")+" pendente",m.optString("notes","Atualização disponível."));}}catch(Exception e){put(r,"apkError",e.getMessage());}
