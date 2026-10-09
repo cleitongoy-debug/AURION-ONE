@@ -38,6 +38,16 @@ jobs:
       - name: Regression tests PC and POCO sync protocol
         working-directory: pc-package-v3
         run: python -m unittest discover -s tests -p test_mobile_sync.py -v
+      - name: Export PC sync kit (no binaries, no secrets)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AURION-PC-POCO-SYNC-KIT
+          path: |
+            pc-package-v3/
+            !pc-package-v3/**/__pycache__/**
+            !pc-package-v3/**/.venv/**
+            !pc-package-v3/**/logs/**
+          retention-days: 14
   android-debug-build:
     needs: offline-web-tests
     runs-on: ubuntu-latest
