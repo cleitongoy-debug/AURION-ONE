@@ -86,6 +86,20 @@ class MobileMemoryTests(unittest.TestCase):
         self.assertFalse(mobile_sync.post_size_ok(3_000_001))
         self.assertTrue(mobile_sync.post_size_ok(123))
 
+    def test_cross_device_record_set_sha256_and_readback(self):
+        import hashlib
+        rows=[self.row(i) for i in (12,3,42,42)]
+        request=mobile_sync.exchange(self.mirror,self.payload(rows))
+        self.assertEqual(request["recordCount"],3)
+        expected=hashlib.sha256("\n".join(sorted(
+            mobile_sync._fingerprint(r) for r in request["records"]
+        )).encode("utf-8")).hexdigest()
+        self.assertEqual(request["recordsFingerprintSha256"],expected)
+        self.assertEqual(mobile_sync.state(self.mirror)["recordsFingerprintSha256"],expected)
+        again=mobile_sync.exchange(self.mirror,self.payload(rows))
+        self.assertEqual(again["pcNew"],0)
+        self.assertEqual(again["recordsFingerprintSha256"],expected)
+
     def test_sha_content_correct(self):
         rows=[self.row(77)]
         result=mobile_sync.exchange(self.mirror,self.payload(rows))
