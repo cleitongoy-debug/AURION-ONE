@@ -100,7 +100,10 @@ def state(path: Path) -> dict:
     with LOCK, _database(path) as db:
         n = db.execute("SELECT count(*) FROM sync_records").fetchone()[0]
         stamp = db.execute("SELECT max(first_seen) FROM sync_records").fetchone()[0]
+        fp = [row[0] for row in db.execute("SELECT fingerprint FROM sync_records ORDER BY fingerprint")]
+        set_digest = hashlib.sha256("\n".join(fp).encode("utf-8")).hexdigest()
     return dict(ok=True, format="aurion-pc-poco-v1", phoneMirroredRecords=n,
+                recordsFingerprintSha256=set_digest,
                 lastReceivedAt=stamp, phoneConnectedNow=False,
                 pcToPhoneExportsVerified=False, physicalTest="PENDENTE")
 
@@ -158,10 +161,12 @@ def exchange(path: Path, request: dict, pc_store_path: Path | None = None) -> di
         # WITH fecha a transacao so se todos os passos tiverem passado.
         db.commit()
     h=hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    set_digest=hashlib.sha256("\n".join(sorted(_fingerprint(x) for x in pc_items)).encode("utf-8")).hexdigest()
     return dict(ok=True, format="aurion-pc-poco-v1", profile="anark",
                 records=pc_items, recordCount=len(pc_items), received=len(rows),
                 pcNew=inserted, pcNativeConsidered=len(pc_native),
                 phoneAccepted=len(rows), responseSha256=h,
+                recordsFingerprintSha256=set_digest,
                 serverReceiptAt=now,
                 pcReceipt="COMMIT_SQLITE", phoneReceipt="AGUARDANDO_IMPORTACAO_E_READBACK")
 
