@@ -37,6 +37,8 @@ jobs:
           python-version: '3.12'
       - name: Install PC test dependencies
         run: pip install -r pc-package-v3/requirements.txt
+      - name: Check PC dashboard JavaScript syntax
+        run: node --check pc-package-v3/aurion_superstudio/static/studio.js
       - name: Regression tests PC and POCO sync protocol
         working-directory: pc-package-v3
         run: python -m unittest discover -s tests -p 'test_*sync*.py' -v
