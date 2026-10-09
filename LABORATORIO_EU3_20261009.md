@@ -378,3 +378,26 @@ Próximo comando >: voz, atalhos e botão do fone/capacete — rastrear entrada,
 
 
 **Adendo de QA (QA_UI_EU3_55_ASSERTS_20261009):** seletor HTML/JavaScript verificado adicionalmente com DOM/FileReader simulados (sem aparelho físico). A suíte `tools/test_research_eu3.cjs` foi ampliada em `db0740478fd097a8b12941e4e902504bf4641123`. **Resultado: 55 afirmações passaram em harness V8**, inclusive consentimento explícito, prévia sem gravação e backup do estado local; GitHub Actions consultado para `db074047...` não retornou execuções. Continua **NÃO TESTADO**: execução do `node` binário/CI, abertura real do picker no POCO, migração do APK existente e sincronização entre dispositivos.
+
+
+## METROLOGIA_MENTORIA_FLAGS_SLEEPS_20261009 — metrologia de treinamento professor–aluno, FLAGS e sleeps excluídos
+
+**Determinação do operador em 09/10/2026:** registrar quanto tempo o operador de fato interage com IA, preservando a aprendizagem técnica, sem somar travamentos, esperas não aferidas, sessões espelhadas nem sleeps. `>` segue trabalho incremental; `<` reabre evidências anteriores para reestudo; `>>` e `>>>` indicam continuação, não segundos automaticamente trabalhados.
+
+**Revisão de fonte original, início cronológico disponível:** `Q#6.json13`, Drive ID `1x9WrQPpkF-zGOdpFjtqS6qsWvrWKyGY7` e cópia indexada `1eiVRmPysnHlZb0TVNAzODN_5wgpH6Xr5`. Um arquivo foi materializado e verificado: 2.184 bytes, SHA-256 `18f70660d60f4787beec167dd3115c420097552358365de6c665cafffaa28c57`. O JSON declara pacote DigitalPen v1.6 Q-05, `last_update=2025-10-19T11:39:38.289596Z`, `sync_log[0].cycle_id=52`, evento declarado `Hybrid merge complete`, mas não é recibo primário do primeiro boot nem comprova duração humana. O horário interno é diferente da data de criação no Drive (03/11/2025). Outros arquivos mais antigos continuam por investigar; este é um **marco localizado**, não o Dia Zero comprovado. Os ciclos do simulador ancestral (300s, horas somadas automaticamente) não são dedicação humana.
+
+**Falha comprovada de contabilização:** `android/app/src/main/assets/dedication.js` anterior atribuía todo o intervalo desde a última rodada do timer `setInterval` a uma sessão. Teste controlado com relógio simulado: dois heartbeats de 1 segundo, depois 60 segundos sem callback. Baseline = **62.000 ms** creditados, sem sleep; versão corrigida = **2.000 ms** creditados e uma lacuna/sleep de **60.000 ms** explicitamente `counted:false`. Causa concreta do intervalo não aferida (não declarar travamento real só pelo gap). Quando a página sai de primeiro plano, há pausa e salvamento; sem heartbeat não se adicionam segundos.
+
+**Nova instrumentação da PR de prévia (sem instalar aparelho):**
+- `mentoria_ia.js`: registra apenas pulsos de entrada observada em `agentText`, `guideQuestion`, `labPrompt`, segmentados em janelas de no máximo 8 segundos entre eventos consecutivos. Não atribui tempo de resposta da IA, espera, leitura não observada nem ChatGPT externo a interação humana.
+- `app.js`: marcadores de `OPERADOR_ENVIO`, `IA_RECEBIMENTO` e `IA_FALHA` para o chat do AURION; nenhum texto da pergunta/resposta é gravado no novo ledger. Se o registro falhar, não deve bloquear a conversa.
+- `index.html`: painel de mentoria com segundos observados, contadores de mensagens e sleeps excluídos, exportação de prova JSON e distinção de cronômetro manual em primeiro plano. Não existe integração de captura de eventos nativos do ChatGPT.com.
+- Flags operacionais documentadas: `INPUT_OBSERVADO`, `ENVIO`, `RESPOSTA`, `SLEEP_LACUNA_NAO_AFERIDA`, `BACKGROUND_PAUSA`, `RESTART_SEM_MEDICAO`, `HUMANO_SEM_BASE`, `CI_NAO_TESTADO`. `TRAVAMENTO_CONFIRMADO` só com fonte independente, não apenas timeout.
+
+**QA executada nesta rodada:** `tools/test_mentoria_ia.cjs` e `tools/test_dedication_heartbeat.cjs`, 27 afirmações em harness JavaScript V8 compatível; mais 5 checagens estáticas de ligações UI/JS = 32 verificações. Além do teste antes/depois com 62 s versus 2 s, foi observado que o ledger novo preserva apenas 3,5 s de interação entre 190 s de gaps simulados, sem creditar esses gaps. Esses tempos são **fixtures sintéticas**, não tempo humano do Capitão. **NÃO TESTADO:** execução Node binário/CI, WebView física, relógio real/Android Doze, sincronização PC↔POCO e emissão automática de registros a partir deste ChatGPT.
+
+**Próximos passos priorizados:** testar em Node/CI com evidência de execução; reconstruir primeiro boot com log primário separado do snapshot Q#6; validar lado a lado app em primeiro plano, digitação real, pausa/retomada e erro de rede no POCO parado; exportar/importar registros em dois perfis sem duplicata; sincronizar ao PC com ACK e hashes após validar segurança. Não mesclar a PR nem instalar APK até QA físico e chave de assinatura original.
+
+**Contagem nesta conversa do ChatGPT:** esta sessão de ferramenta não possui telemetria de digitação/atenção do operador; o recebimento do comando é evidência de mensagem, e a janela de execução da IA NÃO equivale a horas estudadas pelo operador. Hora humana total: `NÃO AFERIDA`, não "0h estudadas".
+
+Assinatura documental `CAPITÃO <JSON#13> (comando) | FALCÃO 🦅 (ações executadas) | <¥€¢∆§>`.
