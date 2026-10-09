@@ -431,4 +431,12 @@ Assinatura documental `CAPITÃO <JSON#13> (comando) | FALCÃO 🦅 (ações exec
 
 **ERRATA_DERIVADO_V5_SEM_SIDE_EFFECT_IMPORT_20261009:** após a primeira geração de `AURION_PAINEL_V5_LAB_REVISAO.py`, uma checagem adicional encontrou a chamada histórica `create_skill_folder()` em escopo global; removida da cópia para impedir criação de pastas ao *importar* o módulo. O hash da primeira cópia `5adfaa...e9ba` é apenas uma versão intermediária, NÃO a entrega final. **Cópia final**: 18.398 bytes, SHA256 completo `d36448c991a8049e208135bca640e83ca442f4f767601d3b10b058abe76721b3`. Confirmações finais: AST, `py_compile`, arrasto incremental (95,95) e ausência de chamadas top-level `create_skill_folder`/`backup_current_panel` PASSARAM. Backup permanece apenas no start_app, condicionado à execução autorizada do usuário. Originais preservados; UI Windows NÃO TESTADA.
 
-false
+
+## RETESTE_TK_REAL_XVFB_STATUS_BACKUP_20261009 — ciclo > depois de < (09/10/2026)
+Auditoria de PAINEL#V5.py / HAPTO SPHERE - Copia.py. A cópia local revisada foi testada com Tkinter real numa tela virtual Linux Xvfb; não houve instalação no Windows, nem conexão PC/POCO/Band.
+BUG VISUAL: antes, caixa do status da esfera (29,135,122,163) num canvas 150x150 ultrapassava a borda. Corrigido: texto com tag status separada e posição fixa no canto, caixa (3,4,96,32), sem corte.
+BUG DE BACKUP: sys.argv[0] podia representar outro launcher; cópia corrigida usa os.path.realpath(__file__) e backup idempotente por hash do próprio módulo, exercitado em pasta temporária.
+HIPÓTESE REJEITADA: testes reais Tk mostraram que canvas.tag_bind('sphere') persiste depois de delete/create de itens com a mesma tag; não foi necessária modificação.
+PROVA: 14 verificações PASSARAM com xvfb-run e Tkinter, incluindo criação da GUI, arrasto incremental, redesenho, texto dentro do canvas, backup do módulo (não do launcher falso), backup idempotente, recibo do envio local sem texto privado e sem segundos humanos inventados. AST/py_compile aprovados.
+ARTEFATOS LOCAIS (não enviados ao Drive/Git): AURION_PAINEL_V5_LAB_REVISAO.py (18546 bytes, SHA256 67d2d89d3f1d59424412a617da00b1ff97d135c47515e399c26d57dd9d652b1a); AURION_PAINEL_V5_REESTUDO_20261009.diff; AURION_HAPTO_AUDITORIA_MANIFESTO_20261009.json; aurion_eu3_qa/test_gui_v5_xvfb.py. Versão anterior d36448... arquivada localmente.
+STATUS: CÓDIGO EM CÓPIA DE LABORATÓRIO, TESTE GRÁFICO Xvfb APROVADO, WINDOWS FÍSICO NÃO TESTADO, PR #42 DRAFT; nenhuma hora humana retroativa inferida.
