@@ -45,7 +45,7 @@ public final class AurionBandChannel {
         NotificationManager nm = manager(c);
         if (nm == null) return;
         NotificationChannel ch = new NotificationChannel(CHANNEL, "AURION ONE · Pulso", NotificationManager.IMPORTANCE_DEFAULT);
-        ch.setDescription("Alertas reais do AURION no POCO. O Mi Fitness controla o espelhamento no relogio.");
+        ch.setDescription("Alertas reais do AURION no POCO. O Notify Pro ou Mi Fitness controla o espelhamento no relogio.");
         ch.enableVibration(true);
         nm.createNotificationChannel(ch);
     }
@@ -73,7 +73,7 @@ public final class AurionBandChannel {
             j.put("operatorBandReceiptAt", p.getLong("operatorBandReceiptAt", 0));
             j.put("lastError", p.getString("lastError", ""));
             j.put("wristDeliveryVerifiedAutomatically", false);
-            j.put("mirroring", "DEPENDENTE_DO_MI_FITNESS_E_DA_PERMISSAO_DO_USUARIO");
+            j.put("mirroring", "DEPENDENTE_DO_NOTIFY_PRO_OU_MI_FITNESS_E_DA_PERMISSAO_DO_USUARIO");
         } catch (Exception e) {
             try { j.put("error", "diagnostico_indisponivel"); } catch (Exception ignored) { }
         }
