@@ -211,13 +211,8 @@ public class MainActivity extends Activity {
     }
 
     private boolean isAllowedPanelHost(String host) {
-        if (host == null) return false;
-        String h = host.toLowerCase(Locale.ROOT);
-        return h.equals("localhost") || h.equals("127.0.0.1") || h.endsWith(".ts.net") || h.endsWith(".local") ||
-            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*") ||
-            h.matches("100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\..*");
+        return AurionPrivateHosts.isAllowed(host);
     }
-
     private boolean has(String permission) { return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED; }
     private boolean packageInstalled(String pkg) {
         try { getPackageManager().getApplicationInfo(pkg, 0); return true; }
