@@ -1,10 +1,29 @@
 'use strict';
 const $=id=>document.getElementById(id), token=window.AURION.token;
-const pages=[['home','CENTRAL'],['dedication','DEDICAÇÃO'],['certificates','CERTIFICADOS'],['project','PROJETOS'],['t8i','CANON T8i'],['photo','FOTO'],['color','COR'],['fx','FX'],['video','VÍDEO'],['timeline','TIMELINE'],['motion','MOTION'],['audio','ÁUDIO'],['convert','CONVERTER'],['blender','BLENDER 3D'],['c4d','C4D & OCTANE'],['agent','AGENTE'],['memory','MEMÓRIA'],['lab','LAB IA'],['generate','GERAR'],['resources','RECURSOS'],['connections','CONEXÕES'],['devices','POCO & BAND'],['portfolio','PORTFÓLIO'],['delivery','CLIENTE'],['docs','BÍBLIA & REUNIÕES'],['diag','DIAGNÓSTICO'],['legacy','PAINEL REAL']];
+const pages=[['home','CENTRAL'],['pocoSync','SYNC POCO ↔ PC'],['dedication','DEDICAÇÃO'],['certificates','CERTIFICADOS'],['project','PROJETOS'],['t8i','CANON T8i'],['photo','FOTO'],['color','COR'],['fx','FX'],['video','VÍDEO'],['timeline','TIMELINE'],['motion','MOTION'],['audio','ÁUDIO'],['convert','CONVERTER'],['blender','BLENDER 3D'],['c4d','C4D & OCTANE'],['agent','AGENTE'],['memory','MEMÓRIA'],['lab','LAB IA'],['generate','GERAR'],['resources','RECURSOS'],['connections','CONEXÕES'],['devices','POCO & BAND'],['portfolio','PORTFÓLIO'],['delivery','CLIENTE'],['docs','BÍBLIA & REUNIÕES'],['diag','DIAGNÓSTICO'],['legacy','PAINEL REAL']];
 let cfg={},statusCache={},fx=[],timeline=[],keyframes=[];
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function api(path,opt={}){opt.headers={...(opt.headers||{}),'X-Aurion-Token':token};if(opt.json!==undefined){opt.body=JSON.stringify(opt.json);opt.headers['Content-Type']='application/json';delete opt.json}let r=await fetch(path,opt),j=await r.json().catch(()=>({ok:false,error:'Resposta inválida'}));if(!r.ok&&!j.error)j.error='HTTP '+r.status;return j}
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));$('pageTitle').textContent=pages.find(x=>x[0]===id)?.[1]||id;if(id==='memory')loadRecords();if(id==='dedication')refreshPcLedger();if(id==='certificates')loadCertificates();if(id==='legacy')$('legacyFrame').src=cfg.panel||'about:blank'}
+async function pcSyncRefresh(){
+  const box=$('pocoSyncLog');if(!box)return;
+  try{
+    const r=await api('/api/mobile/memory-sync');
+    box.textContent=JSON.stringify({
+      pcSyncEndpoint:r.ok?'RESPOSTA_COM_TOKEN':'SEM_RESPOSTA_AUTENTICADA',
+      espelhoNoPc:r.phoneMirroredRecords??0,ultimoRecebimento:r.lastReceivedAt||'NUNCA',
+      pedidoPendente:!!r.syncRequested,
+      recepcaoNoPOCO:'SOMENTE_MEDIANTE_RECIBO_DO_APK',
+      testeFisico:r.physicalTest||'NAO_TESTADO',erro:r.error||null
+    },null,2);
+  }catch(e){box.textContent='SYNC não verificado: '+e.message}
+}
+async function pcSyncRequest(){
+  const box=$('pocoSyncLog');
+  const r=await api('/api/mobile/memory-sync/request',{method:'POST',json:{}});
+  if(box)box.textContent=r.ok?'Pedido registrado no PC. No POCO toque em SINCRONIZAR AGORA; sem isso não há transferência.':'BLOQUEADO: '+(r.error||'erro');
+  if(r.ok)await pcSyncRefresh();
+}
+function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));$('pageTitle').textContent=pages.find(x=>x[0]===id)?.[1]||id;if(id==='memory')loadRecords();if(id==='pocoSync')pcSyncRefresh();if(id==='dedication')refreshPcLedger();if(id==='certificates')loadCertificates();if(id==='legacy')$('legacyFrame').src=cfg.panel||'about:blank'}
 function initNav(){$('nav').innerHTML=pages.map(([id,name],i)=>`<button data-page="${id}" class="${i?'':'active'}" onclick="go('${id}')">${name}</button>`).join('')}
 function state(id,obj){let el=$(id),ok=!!obj?.ok;el.className=ok?'ok':'bad';el.textContent=el.textContent.split(' · ')[0]+' · '+(ok?'ON':'OFF')}
 async function refreshStatus(){let [j,p]=await Promise.all([api('/api/status'),api('/api/preflight')]);statusCache=j;state('sPanel',j.panel);state('sOllama',j.ollama);state('sComfy',j.comfy);$('metrics').innerHTML=[['CPU',j.system?.cpu??'—'],['RAM',j.system?.ram??'—'],['DISCO',j.system?.disk??'—'],['VERSÃO','v'+j.version]].map(x=>`<div class="metric"><small>${x[0]}</small><b>${x[1]}${typeof x[1]==='number'?'%':''}</b></div>`).join('');$('healthCards').innerHTML=['panel','ollama','comfy'].map(k=>`<div class="row"><span>${k.toUpperCase()}</span><b class="${j[k]?.ok?'ok':'bad'}">${j[k]?.ok?'VERIFICADO':'INDISPONÍVEL'} ${j[k]?.ms??'—'}ms</b></div>`).join('');$('baseFiles').textContent=(j.base?.files||[]).map(f=>`${f.name}\n${f.size} bytes · ${f.sha256}`).join('\n\n')||'Nenhum arquivo protegido encontrado nesta cópia. O módulo não criou nem alterou esses arquivos.';$('diagLog').textContent=JSON.stringify({estado_atual:j,pre_voo:p.report||p},null,2);let models=j.ollama?.models||[];$('ollamaModel').innerHTML=models.map(m=>`<option>${esc(m)}</option>`).join('')||'<option value="">Nenhum modelo confirmado</option>';let cps=j.comfy?.checkpoints||[];$('checkpoint').innerHTML=cps.map(m=>`<option>${esc(m)}</option>`).join('')||'<option value="">Catálogo não confirmado</option>'}
