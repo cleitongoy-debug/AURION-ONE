@@ -52,3 +52,54 @@ function chain(e){
  assert.equal(repaired.items()[2].receipts.length,1);
 }
 console.log('PASS: EU3 dependency invalidation, review, revalidation, persistence and bounded timer');
+
+
+// CONTRATO DE RESTAURAÇÃO EU3 — nenhuma importação deve apagar provas locais.
+function fresh(){const {d,s}=store();return {d,s,e:open(s)};}
+function exported(x){return JSON.stringify({version:1,items:x});}
+function item(id,deps=[],status='VALIDADO'){
+ return {id,title:id,source:'arquivo:'+id,dependencies:deps,status,milliseconds:0,
+   receipts:[{at:'2026-10-09T20:00:00.000Z',range:'linhas 1-2',result:'reproduzido',passed:true}]};
+}
+{
+ const source=fresh(),a=source.e.add('Fonte offline A','arquivo local');
+ source.e.start(a.id,0);source.e.proof(a.id,'linhas 1-2','evidência local',true);
+ const backup=source.e.export(),target=fresh();
+ const preview=target.e.previewRestore(backup);
+ assert.equal(preview.added,1);assert.equal(preview.unchanged,0);
+ assert.equal(target.d.size,0,'prévia não grava no armazenamento');
+ target.e.restore(backup);
+ assert.equal(target.e.items()[0].receipts.length,1);
+ assert.ok(target.d.has('aurion_eu3_research_v1_pre_restore_v1'),'backup pré-importação retido');
+ target.e.restore(backup);
+ assert.equal(target.e.items().length,1,'a mesma importação é idempotente');
+ assert.throws(()=>target.e.restore(backup.slice(0,-1)),'JSON truncado recusado');
+ assert.equal(target.e.items().length,1);
+ assert.throws(()=>target.e.restore(exported([{...source.e.items()[0],title:'Alterado'}])),'ID divergente não sobrescreve');
+ assert.equal(target.e.items()[0].title,'Fonte offline A');
+}
+{
+ const x=fresh(),before=x.e.export();
+ assert.throws(()=>x.e.restore(exported([item('X',['desconhecido'])])),'dependência desconhecida rejeitada');
+ assert.throws(()=>x.e.restore(exported([item('A',['B']),item('B',['A'])])),'ciclo rejeitado');
+ assert.throws(()=>x.e.restore(exported([item('A'),item('A')])),'duplicação no backup rejeitada');
+ assert.throws(()=>x.e.restore(exported([{...item('A'),milliseconds:-1}])),'tempo negativo rejeitado');
+ assert.throws(()=>x.e.restore(exported([{...item('A'),receipts:[{...item('A').receipts[0],passed:'true'}]}])),'comprovante inválido rejeitado');
+ assert.equal(x.e.export(),before,'nenhuma importação falha altera os dados');
+ assert.equal(x.d.size,0,'nenhuma tentativa falha grava no armazenamento');
+}
+{
+ const x=fresh();const raw=exported([item('A',[],'EXPERIMENTAL'),item('B',['A']),item('C',['B'])]);
+ assert.equal(x.e.previewRestore(raw).review,2);
+ x.e.restore(raw);
+ assert.equal(statuses(x.e),'EXPERIMENTAL,REVISAO_PENDENTE,REVISAO_PENDENTE');
+ assert.equal(x.e.items()[2].receipts.length,1,'provas antigas mantidas ao marcar revisão');
+}
+{
+ const initial=fresh(),original=initial.e.add('Existente','fonte original');
+ const unsafe={getItem:initial.s.getItem,setItem:(k,v)=>{if(k==='aurion_eu3_research_v1')throw Error('quota simulada');initial.s.setItem(k,v)}};
+ const e=open(unsafe),before=e.export();
+ assert.throws(()=>e.restore(exported([{...original,id:'novo'}])),'gravação indisponível interrompe');
+ assert.equal(e.export(),before,'nenhuma alteração de memória em falha de escrita');
+}
+console.log('PASS: EU3 restore import: idempotência, validação, backup, não-sobrescrita, atomicidade e revisão');
