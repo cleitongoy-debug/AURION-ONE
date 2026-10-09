@@ -54,6 +54,40 @@ public final class AurionPcMemorySync {
            t.contains("nvapi-")||t.matches("(?s).*hf_[a-z0-9]{20,}.*")||
            t.matches("(?s).*(api[_ -]?key|access[_ -]?token|password|senha|secret)\\s*[:=].*");
     }
+
+    /* Fail closed on nested metadata keys; a quoted JSON "api_key" must not
+       pass merely because the raw-string filter expected ":" immediately. */
+    private static boolean sensitiveMeta(String raw){
+        if(sensitive(raw))return true;
+        try{
+            Object root=new org.json.JSONTokener(raw).nextValue();
+            return sensitiveNode(root,0);
+        }catch(Exception ignored){return false;}
+    }
+    private static boolean sensitiveNode(Object node,int depth)throws org.json.JSONException {
+        if(depth>20)return true;
+        if(node instanceof JSONObject){
+            JSONObject obj=(JSONObject)node;
+            java.util.Iterator<String> it=obj.keys();
+            while(it.hasNext()){
+                String key=it.next();
+                String flat=key.toLowerCase(Locale.ROOT).replaceAll("[ _-]","");
+                if(flat.equals("apikey")||flat.equals("token")||flat.equals("accesstoken")
+                   ||flat.equals("refreshtoken")||flat.equals("password")||flat.equals("passwd")
+                   ||flat.equals("senha")||flat.equals("secret")||flat.equals("clientsecret")
+                   ||flat.equals("privatekey")||flat.equals("authorization")||flat.equals("cookie")
+                   ||flat.equals("credential")||flat.equals("credentials"))return true;
+                if(sensitiveNode(obj.opt(key),depth+1))return true;
+            }
+        }else if(node instanceof JSONArray){
+            JSONArray list=(JSONArray)node;
+            for(int i=0;i<list.length();i++)if(sensitiveNode(list.opt(i),depth+1))return true;
+        }else if(node instanceof String){
+            return sensitive((String)node);
+        }
+        return false;
+    }
+
     private static JSONObject failure(String error){
         JSONObject x=new JSONObject();
         try{x.put("ok",false).put("error",error);}catch(Exception ignored){}
@@ -117,7 +151,7 @@ public final class AurionPcMemorySync {
                 String body=row.optString("body",""), meta=row.optString("meta","");
                 if(!TYPES.contains(type)||title.isEmpty()||title.length()>200||
                     body.length()>15000||meta.length()>5000||
-                    sensitive(title)||sensitive(body)||sensitive(meta)){
+                    sensitive(title)||sensitive(body)||sensitiveMeta(meta)){
                     excluded++;continue;
                 }
                 safe.put(row);
