@@ -31,7 +31,22 @@
   const NOTE='Capas salvas apenas neste aparelho. Não sincronizadas no Drive/PC nem incluídas automaticamente no backup SQLite.';
   const safe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const scrub=s=>String(s||'').trim().slice(0,2500);
-  const suspicious=s=>/(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_-]{12,}|github_pat_[A-Za-z0-9_-]{12,}|hf_[A-Za-z0-9_-]{18,}|gsk_[A-Za-z0-9_-]{12,}|nvapi-[A-Za-z0-9_-]{12,}|\b(?:password|passwd|senha|token|secret|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|authorization|cookie)\s*[:=]\s*\S+)/i.test(String(s));
+  const sensitiveKey=k=>/^(?:password|passwd|senha|token|secret|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|client[_ -]?secret|private[_ -]?key|authorization|cookie|credentials?)$/i.test(String(k).replace(/([a-z])([A-Z])/g,'$1_$2'));
+  function suspicious(value){
+    const text=String(value||'');
+    if(/(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_-]{12,}|github_pat_[A-Za-z0-9_-]{12,}|hf_[A-Za-z0-9_-]{18,}|gsk_[A-Za-z0-9_-]{12,}|nvapi-[A-Za-z0-9_-]{12,}|-----BEGIN (?:OPENSSH |RSA )?PRIVATE KEY-----)/i.test(text))return true;
+    if(/(?:password|passwd|senha|token|secret|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|client[_ -]?secret|private[_ -]?key|authorization|cookie|credentials?)[\"']?\s*[:=]\s*\S+/i.test(text))return true;
+    try{
+      const parsed=JSON.parse(text);
+      const check=(v,depth)=>{
+        if(depth>16)return true;
+        if(Array.isArray(v))return v.some(x=>check(x,depth+1));
+        if(v&&typeof v==='object')return Object.entries(v).some(([k,x])=>sensitiveKey(k)||check(x,depth+1));
+        return false;
+      };
+      return check(parsed,0);
+    }catch(e){return false;}
+  }
   const profile=()=>typeof AURION_ID==='string'&&AURION_ID?AURION_ID:'local';
   const globalState=()=>{
     try{
