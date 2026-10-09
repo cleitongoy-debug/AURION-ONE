@@ -269,3 +269,55 @@ Depois de invalidar A, reaprovar A não reaprova B/C/D automaticamente. Cada dep
 
 ### Próximo ponto de retomada
 Recibos por conexão e aprendizado real: identificar o resultado final de Drive/Git/PC/API, separar metadados de conteúdo lido e impedir status verde geral de ocultar falha parcial. Depois, contador e voz do capacete. LUZ permanece pausada. Situação atual: novas falhas reproduzidas ou verificadas por leitura, contratos escritos; correções não implementadas.
+
+
+## Pauta 2 — comando >: conexões, recibos e conteúdo realmente lido
+Registro: 2026-10-09, retomada solicitada às 17:15:04 America/Sao_Paulo. > é comando de estudo nesta conversa. Esta rodada executa leitura/auditoria e consolidação documental; não faz lançamento de dedicação humana nem altera APK.
+
+### Código conferido e novas conclusões
+Fontes na branch feature/laboratorio-eu3-20261009:
+- [AurionHourlyWorker.java](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/java/one/aurion/app/AurionHourlyWorker.java), blob 050a2c60ba1238642032363fa7025b143cb4c044.
+- [AurionPcMemorySync.java](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/java/one/aurion/app/AurionPcMemorySync.java), blob 966fb3ab089480599ed1e24e9b8b32c80000ccfb.
+
+1. Worker usa ok acumulado: sucesso de uma consulta ao manifesto/Git basta para Result.success(), mesmo se Drive/PC falharem. “Ciclo concluído” significa que alguma rota respondeu, não todas as conexões corretas.
+2. sync_event é salvo antes de executar pcMemorySync. O resultado posterior vai para r enviado à Band, mas não para o JSON já persistido em sync_event. Diário e resumo podem representar fases diferentes do mesmo ciclo.
+3. Drive consulta uma página de metadados por rodada; contentRead=false explícito e permissionState não verificado pela consulta. driveComplete significa ausência de nextPageToken nessa página; não comprova leitura integral do Drive, snapshot imutável ou conhecimento aprendido.
+4. Consulta Git lê HEAD; detectar SHA novo não lê arquivos alterados. Hugging Face whoami e lista de modelos detectam identidade/metadados; não comprovam geração de imagem, download ou inferência.
+5. PC snapshot online não equivale a transferência de memória. Memory-sync separado exige loopback via ADB, token, POST, importação e GET de conferência.
+6. Memory-sync monta payload e backup com profile="anark" fixo, enquanto exportAll exporta perfil atual. Para perfil diferente, pode enviar registros com rótulo de origem incorreto antes de importAll rejeitar retorno. Correção proposta: carregar e validar perfil de origem e destino antes de POST; preservar escopo real.
+7. Readback compara contagens, não hashes/IDs/conteúdo. Duas coleções diferentes do mesmo tamanho podem satisfazer igualdade numérica. O recibo exige escopo mais restrito: contagens confirmadas não significam equivalência integral.
+8. Tipos filtrados e limites de tamanho excluem material: relatório já inclui excludedLocal. Portanto, memória sincronizada não pode ser apresentada como todas as dependências do projeto. Credenciais continuam fora do conteúdo público.
+
+Conclusões por leitura do código; nenhuma chamada a PC/POCO/Band executada nesta sessão.
+
+### Contrato proposto de estados por operação
+| Estado | Evidência mínima | Não equivale a |
+|---|---|---|
+| CONFIGURADO | Campo/configuração existente | Credencial válida |
+| AUTENTICADO | Resposta pertinente à identidade/escopo | Geração ou acesso a todos os recursos |
+| LOCALIZADO | ID e metadados do recurso | Conteúdo baixado |
+| CONTEUDO_OBTIDO | Bytes/exportação recebidos com origem e hash | Texto decodificado integralmente |
+| DECODIFICADO | Extração com páginas/trechos cobertos e lacunas | Conhecimento assimilado |
+| ESTUDADO | Trecho efetivamente analisado, assunto, síntese e limites | Técnica validada |
+| VALIDADO | Critério definido e prova reproduzível pertinente | Validação eterna após mudança da premissa |
+| SINCRONIZADO_NO_ESCOPO | Recibos dos lados, perfil, IDs/versões/hashes equivalentes no conjunto definido | Backup completo de tudo |
+
+Conexão é resultado por operação e instante: authenticatedAt, checkedAt, endpoint/escopo, erro, latência, operationId e attemptId. Sucesso antigo fica como lastSuccessAt; estado atual requer consulta atual. Expiração deve ser específica ao tipo de prova, sem inventar um prazo universal.
+
+### Resolução proposta para recibos
+Acumular resultados de todas as etapas; persistir recibo final depois de pcMemorySync e demais ações, preservando também falhas e tentativas. Separar execução do agendador de integridade de cada rota. Uma etapa opcional desativada é NAO_SOLICITADA; credencial ausente é AGUARDA_CONFIGURACAO; falha é FALHOU; não há promoção global de verde por uma única resposta.
+
+Validação de memória: comparar conjunto de IDs de origem, perfil, revisão e hashes dos registros normalizados. Contagem serve como verificação adicional. Readback divergente produz erro e recibo de possível aplicação parcial; nova tentativa usa identidade estável para não duplicar. Definir primeiro política de conflitos/rollback conforme checkpoint anterior.
+
+### Casos preparados
+- Git responde e Drive falha: Git sucesso, Drive falha, ciclo parcial explícito.
+- Consulta Drive lista 100 arquivos: 100 metadados localizados, zero arquivos estudados nessa consulta.
+- PC snapshot responde, memory-sync falha: PC acessível na consulta; memória não confirmada.
+- Duas coleções distintas com mesma contagem: sincronização rejeitada pela diferença de IDs/hashes.
+- Perfil ativo diferente de anark: bloquear rótulo indevido antes do envio.
+- Resultado pcMemorySync chega após etapa inicial: recibo final persistido contém o resultado verdadeiro.
+- Credencial expira depois de sucesso antigo: manter histórico; mostrar falha atual.
+- Fonte muda após estudo: conservar síntese anterior com versão, marcar reanálise pendente.
+
+### Checkpoint seguinte
+Próximo comando >: contador de estudo/áudio, intervalos entre PC e POCO, lacunas e relógios. Depois, voz e botão do capacete. Situação: auditoria e propostas documentadas; sem implementação, geração de APK ou teste físico.
