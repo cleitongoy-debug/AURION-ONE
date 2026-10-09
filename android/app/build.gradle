@@ -12,7 +12,7 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix '.preview'
+            applicationIdSuffix '.preview.usb'
             versionNameSuffix '-preview'
             manifestPlaceholders = [appLabel: 'AURION ONE · PRÉVIA']
         }
