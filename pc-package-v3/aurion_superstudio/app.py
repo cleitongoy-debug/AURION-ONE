@@ -57,7 +57,7 @@ app.config.update(MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024, JSON_AS_ASCII=False
 
 # Mesmo quando a conexao TCP chega pelo loopback, nunca aceitar Host externo:
 # bloqueia DNS rebinding que poderia expor a home contendo o token de sessao.
-_LOCAL_HOST = re.compile(r"^(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::506[0-9])?$", re.IGNORECASE)
+_LOCAL_HOST = re.compile(r"^(?:localhost|127\.0\.0\.1|\[::1\])(?::506[0-9])?$", re.IGNORECASE)
 
 @app.before_request
 def protect_mutations():
