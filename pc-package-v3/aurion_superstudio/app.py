@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import secrets
+import re
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -54,8 +55,19 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config.update(MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024, JSON_AS_ASCII=False)
 
 
+# Mesmo quando a conexao TCP chega pelo loopback, nunca aceitar Host externo:
+# bloqueia DNS rebinding que poderia expor a home contendo o token de sessao.
+_LOCAL_HOST = re.compile(r"^(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::506[0-9])?$", re.IGNORECASE)
+
 @app.before_request
 def protect_mutations():
+    host = request.host
+    if not _LOCAL_HOST.fullmatch(host):
+        return jsonify(ok=False, error="Host fora do loopback autorizado."), 403
+    # HttpURLConnection do APK nao envia Origin; navegadores de sites externos sim.
+    origin = request.headers.get("Origin")
+    if origin and origin.lower() != "http://" + host.lower():
+        return jsonify(ok=False, error="Origem do navegador nao autorizada."), 403
     protected_mobile = request.path.startswith("/api/mobile/")
     if request.method == "OPTIONS":
         return None
