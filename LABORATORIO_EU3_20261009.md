@@ -126,3 +126,64 @@ Documentação Android prevê instalação sem ação em condições específica
 Esses marcos são registros do trabalho desta IA, não eventos de estudo de Cleiton, nem instrumentação segundo a segundo de um aparelho. A duração de fechamento deve usar o último timestamp efetivamente observado, sem preencher tempo inexistente.
 
 Checkpoint final observado: 2026-10-09T19:22:50Z. Janela desde 19:03:03Z: 19min47s, incluindo leitura, testes, gravações e conferências. Meta de 20min não foi lançada como tempo humano ou duração fictícia. Prefixo original do relatório e 747 blocos anteriores do diário nativo preservados na conferência. APK permaneceu sem alteração; resultados e gates pendentes estão documentados acima.
+
+
+## Pesquisa histórica ampliada — ANARK / Caveiras / núcleo vivo EU3
+Registro: 2026-10-09. Escopo: fontes públicas, comunicados, comentários de veteranos, código de ferramentas comunitárias, busca direcionada na conta Gmail disponível e documentos acessíveis do projeto. Este complemento leva descobertas ao protocolo de estudos; não modifica APK nem lança tempo nos contadores humanos.
+
+### Identidade e memória do Capitão
+Cleiton declara que ANARK era seu personagem, que figurou entre os top globais e que os Caveiras foram clan top 1 global do seu servidor. Declara também estudo solo, APK e avisos no celular naquela época. Preservar como história pessoal fornecida pelo próprio participante. Não atribuir técnicas de outros clãs a ele. Buscas públicas por ANARK, variantes do nome, Caveira/Caveiras e EU3 não localizaram ranking identificável nesta rodada. Isso não refuta o relato. Ainda faltam identificação do reino/temporada, ranking datado, print ou mensagem original para vincular as conquistas à documentação histórica.
+
+### Linha histórica e estado dos servidores
+- **Dezembro de 2012:** comunicado Looki arquivado pela AFJV anuncia beta fechada; edição publicada em 20/12. Fonte: [anúncio da beta](https://jeuvideo.afjv.com/news/6931_empire_universe_3.htm).
+- **Maio de 2013:** comunicado de abertura prevê reset na noite 28–29 e compensação de Ikolium; apresenta mudanças de personagens e comandantes. Fonte: [comunicado arquivado](https://jeuvideo.afjv.com/news/7705_empire_universe_3.htm). Não confundir beta, abertura regional e datas de catálogos.
+- **Dezembro de 2015:** Gamigo anuncia Infinity multilíngue, combate terrestre revisado, mais de 100 equipamentos e ajuste dos tempos de pesquisa/construção. Fonte: [Infinity](https://corporate.gamigo.com/en/presse/empire-universe-3-world-server-launched-with-new-features/).
+- **Janeiro de 2016:** Gamigo anuncia Meridian com inglês, espanhol e português brasileiro. Fonte: [Meridian](https://corporate.gamigo.com/en/presse/new-servers-and-languages-for-empire-universe-3-and-desert-operations/).
+- **Maio de 2016:** atualização oficial apresenta Save Mode, missões e outras melhorias. Fonte: [atualização](https://corporate.gamigo.com/en/presse/empire-universe-3-fire-at-will-in-the-new-content-update/). Logo, lembrança em fórum de encerramento geral em 2015 contradiz comunicados posteriores.
+- **Encerramento:** [F2PG](https://www.f2pg.com/empire-universe-3/) cataloga o jogo como terminado; o autor do [Ikopit](https://github.com/mgemard/ikopit) também descreve EU3 como encerrado. Data oficial de fechamento e destino das bases de contas não encontrados. Falha de acesso aos antigos domínios, wiki, fórum Looki e tentativa no Wayback não comprova sozinha a extinção de cada servidor.
+- **Reconstrução comunitária EU4:** o desenvolvedor declara reconstrução própria, do zero; não é evidência de continuidade do banco de contas antigo. [Apresentação e discussão](https://www.reddit.com/r/4Xgaming/comments/1mnlwku/empire_universe_4_alpha_3/). Comentário em agosto de 2026 anuncia Alpha 5: [discussão de lançamento](https://www.reddit.com/r/4Xgaming/comments/1ilpjoz/empire_universe_4_the_alpha_is_live_join_the/). Hoje o endereço [Empire Universe](https://www.empire-universe.com/) responde com login. Não houve autenticação nem verificação de partida, população, migração ou reutilização das credenciais antigas.
+- **Outra reconstrução citada:** comunidade aponta [Universe Dawn](https://www.reddit.com/r/4Xgaming/comments/1d8x0zb/empire_universe_123_remake/); endereço universe-dawn.com não pôde ser carregado nesta rodada. Operação atual e relação com dados antigos permanecem desconhecidas.
+
+Esses marcos documentam evolução e expansão. Não medem o “auge” por população, nem comprovam a posição histórica de qualquer clã.
+
+### Tutoriais, comentários e pistas internas
+Localizado [Gameplay 1 no YouTube](https://www.youtube.com/watch?v=ejF3hGqOLFg). Apenas identificação e metadados recuperados; não se declara vídeo integral assistido, transcrição analisada ou técnica extraída dele. Páginas com players incorporados não forneceram conteúdo audiovisual legível nesta pesquisa. Excluir resultados de Empire Earth, Endless Space, Stellaris e outros jogos homônimos.
+
+Em [discussão de veteranos](https://www.reddit.com/r/4Xgaming/comments/1f6jzkz/empire_universe_4/), participante que se identifica como Neuromanc312 relata coordenação entre fusos, proteção noturna das frotas e mapa comunitário de wormholes atualizado semanalmente. É memória desse participante, não regra universal confirmada do motor nem experiência atribuível a ANARK. Uso AURION: sincronizar relógios, versionar mapas de capacidades e salvar estado antes de afastamento.
+
+Busca Gmail direcionada por assunto Empire Universe e remetentes Looki/Empire Universe: zero mensagens pertinentes na conta conectada disponível. Busca mais ampla trouxe resultado sem relação demonstrada com o jogo. Não houve leitura de todas as caixas, acesso a contas adicionais, envio de e-mail ou recuperação de contas.
+
+Documento privado do projeto NOVO#REGISTRO#ANARK contém referências repetidas ao nome EU3Installer-W3.20.21.0.exe. O nome sozinho não distingue jogo, versão, origem ou integridade; o binário não foi obtido nem executado. Evitar publicar caminhos locais privados e qualquer credencial. Registro existente pode ser investigado por hash, assinatura e metadados se o arquivo aparecer.
+
+### Fórmulas recuperadas do Ikopit e adaptação proposta
+Fonte fixa: commit 936e7d8c52ffe67f4a2ac080867db94879f07d54, ferramenta comunitária não oficial. Nenhuma destas fórmulas certifica o motor servidor.
+
+1. **Rotas:** coordenadas x=ceil(n/100), y=n mod 100, com resto zero convertido em 100. Distância direta d=sqrt((x2-x1)^2+(y2-y1)^2). A busca compara trechos e wormholes até limite de saltos; não é implementação de Dijkstra nem converte distância em ETA real. Há typo routesTmp.lenght, que impede a limpeza pretendida. [Código de rotas](https://github.com/mgemard/ikopit/blob/936e7d8c52ffe67f4a2ac080867db94879f07d54/war/WEB-INF/route-planner.jsp).
+   **AURION:** escolher caminho de tarefas por custo observado (tempo, tokens, energia), capacidades verificadas e orçamento; registrar validade temporal de cada atalho. Pesos exigem unidades e critérios explícitos. Modelo sem saldo não equivale a rota disponível.
+
+2. **Triangulação:** enumera grade 100×100 e aceita pontos cuja distância arredondada coincide com três medições. Conjunto S={p: round(||p-a_i||)=r_i, i=1..3}. Para r positivo, distância pertence à faixa [r-0,5;r+0,5), não a uma circunferência exata. Podem existir zero, um ou vários candidatos. [Código de localização](https://github.com/mgemard/ikopit/blob/936e7d8c52ffe67f4a2ac080867db94879f07d54/war/WEB-INF/planet-finder.jsp).
+   **AURION:** cruzar evidências independentes e conservar alternativas quando dados não distinguem hipóteses. Analogia metodológica, não soma numérica da “confiança” de três IAs. Cópias da mesma fonte não são três provas.
+
+3. **Relatórios de combate:** taxa de acerto deriva de acertos/tentativas; dano médio do código usa tentativas como denominador. Agregação deve somar numeradores e denominadores, em vez de fazer média simples das porcentagens. Denominador zero é indefinido. O analisador lê resultados; não demonstra simulação completa do combate. [Analisador](https://github.com/mgemard/ikopit/blob/936e7d8c52ffe67f4a2ac080867db94879f07d54/dev/jsx/battle_analyser.jsx).
+   **AURION:** sucesso=saídas que passam o critério/execuções elegíveis, com erro, latência e custo próprios. HTTP 200 ou resposta fluente não validam descoberta.
+
+4. **Composição modular:** componentes somam propriedades multiplicadas pelas quantidades; velocidade tem regra específica de multiplicação ou soma conforme configuração. [Construtor](https://github.com/mgemard/ikopit/blob/936e7d8c52ffe67f4a2ac080867db94879f07d54/war/inc/ship_build.js).
+   **AURION:** composição de agentes respeita soma de recursos dentro da capacidade. Não presumir que qualidade, velocidade e confiabilidade cresçam linearmente com o número de agentes.
+
+5. **Pesquisa e dependências:** calculador usa faixas discretas de progresso para estimar duração; árvores tecnológicas representam pré-requisitos. [Tempo de pesquisa](https://github.com/mgemard/ikopit/blob/936e7d8c52ffe67f4a2ac080867db94879f07d54/war/WEB-INF/research-time.jsp) e árvore Graphviz no repositório.
+   **AURION:** separar estimativa, tempo observado e conteúdo concluído. Evidências de progresso não provam segundos de dedicação. Mudança de premissa invalida dependentes atuais, preservando seus recibos históricos.
+
+### Protocolo de estudos #AURION#EU3 — aplicação concreta
+Fluxo documental: fonte/versionamento → hipótese → critério verificável → pré-requisitos → orçamento → execução → recibo → contraprova → revalidação dos dependentes → checkpoint e retomada.
+
+- Cada fonte guarda autor, origem, período, versão e conteúdo realmente lido. Indicar trecho indisponível; não dizer “aprendido tudo” só por indexar links.
+- Cada experiência guarda operationId estável, attemptId por tentativa, hipótese, entradas, versão de fonte/modelo, ambiente, limite de custo/tempo, saída, erro e decisão.
+- Contraprova marca dependentes como revisão pendente; não apaga a descoberta anterior e não mantém etiqueta “validado” junto de ready=false.
+- Rotas alternativas só entram após teste real de capacidade/modelo; sem saldo ou rate limit provoca classificação do erro e tentativa limitada de outra rota elegível. Não prometer continuidade infinita.
+- Sono, espera, background e parada de agentes exigem checkpoint verificável. Retomada não repete operação concluída e não conta ausência como estudo humano.
+- Na moto, áudio exige evidência de reprodução, pausa, buffering e posição; comandos e resposta falada dependem de QA físico do headset. Nenhuma atuação no capacete foi comprovada nesta pesquisa.
+- Horas pessoais: intervalos observados com atividade pertinente; duração de conteúdo e horas certificadas em campos separados. Não multiplicar porcentagem por carga horária para fabricar segundos já estudados.
+- Memória de ANARK/Caveiras é uma trilha própria, com relatos preservados e espaço para ranking, e-mail, print e documentos originais. Isso integra a raiz histórica do método, sem substituir prova por ficção.
+
+### Pendências identificadas
+Restam: nome/época do servidor dos Caveiras; evidência histórica dos rankings; anúncio oficial de encerramento; conteúdo de fóruns e wiki inacessíveis; transcrições dos vídeos; identidade do instalador; acesso autenticado a uma plataforma ainda operante e prova de continuidade de dados. Alterações de aplicativo, automação e testes físicos não realizados nesta extensão documental.
