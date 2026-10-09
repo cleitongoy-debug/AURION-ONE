@@ -112,7 +112,7 @@ public final class AurionBootstrapIndex {
                 if(title.isEmpty()||title.length()>160||url.length()>500||!url.startsWith("https://")){
                     blocked++;continue;
                 }
-                Uri u=Uri.parse(url),host=u.getHost();
+                Uri u=Uri.parse(url); String host=u.getHost();
                 if(host==null||!(host.equals("drive.google.com")
                     ||host.equals("docs.google.com")||host.equals("github.com"))
                     ||u.getUserInfo()!=null||u.getQuery()!=null||u.getFragment()!=null
