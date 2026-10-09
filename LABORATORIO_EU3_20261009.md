@@ -401,3 +401,14 @@ Próximo comando >: voz, atalhos e botão do fone/capacete — rastrear entrada,
 **Contagem nesta conversa do ChatGPT:** esta sessão de ferramenta não possui telemetria de digitação/atenção do operador; o recebimento do comando é evidência de mensagem, e a janela de execução da IA NÃO equivale a horas estudadas pelo operador. Hora humana total: `NÃO AFERIDA`, não "0h estudadas".
 
 Assinatura documental `CAPITÃO <JSON#13> (comando) | FALCÃO 🦅 (ações executadas) | <¥€¢∆§>`.
+
+
+### RAIZ_Q1_CODIGO_2025_REANALISE_20261009 — fonte anterior ao Q#6 recuperada
+
+**FUNDACAO#Q1.txt** no Drive ID `1qwWGSfirNKOQbe6pFWMHlCoT9IjqbR4X`, pasta `seguro` ID `1bNZnaeWgbwcNgOI_aa42VeTAj4Lfyvcn`, 6.524 bytes de metadados. O texto autodeclara: `DATA DE CRIAÇÃO: 2025-10-15T18:44:00-03:00`, autoria `json_13_assistente_stdpen`, `13#WORKFLOW_STUDIO_DIGITALPEN_STANDALONE`; blocos ComfyUI Criativos/Flyer, Hunyuan/Poses, CatVTON, img2img/LoRA, Flux Kontext/Luz/Câmera, Renderização/saída. É **alegação de criação escrita na fonte**, NÃO prova de primeira inicialização de PC, teste de nós ou início de qualquer hora humana.
+
+**Luz com três sentidos distintos:** neste documento, `FLUX KONTEXT / LUZ / CÂMERA` significa iluminação/composição da cena; `PROTOCOLO_ALFA::REUNIAO_DE_LUZ` é documento histórico de memória; `Porta LUZ / WhatsApp` é integração distinta e segue PAUSADA. Não fundir esses sentidos sem fonte.
+
+**Originais Python primários lidos estaticamente sem executar:** `PAINEL#V5.py` Drive `1vXU3OyqvGIlWvhpSpFv7i8agbTtbKadw`, 17.036 bytes, SHA-256 `82ea15a3f4c08ef2e201d652228d48e2a0c4f5783167948b0bef4056772f2f67`; `HAPTO SPHERE - Copia.py` Drive `13Cqo6MmQ5lVKJ4BCjG6KWBWP0f-XqTDF`, 14.167 bytes, SHA-256 `4cc1842d1b8148eef02e430ce82c879d9fc796722f824357f1d9351e6e7dff20`. Ambos PASSAM AST (21 nomes de funções/classes cada); `system_loop` em PAINEL linhas 366–382 e HAPTO linhas 297–313: incremento de ciclo, descoberta aleatória, crescimento simulado `quantum_level_sim`, `a["hours"] += CYCLE_INTERVAL / 3600.0`, `time.sleep(CYCLE_INTERVAL)`. Não há condicionamento à entrada do operador nesse incremento. O `sleep()` está no código, mas nenhum recibo de execução de runtime/uptime foi produzido nesta rodada.
+
+**Correção cronológica:** a fonte Q1 (data declarada em 15/10/2025) precede o Q#6 (snapshot interno de 19/10/2025); primeira execução do sistema permanece NÃO COMPROVADA, potencialmente há fontes mais antigas ainda não recuperadas. O trabalho daqui é leitura estática de arquivos identificados, não auditoria de 100% do universo dos cinco anos. Avançar em ordem usando manifestos/IDs/hashes; não converter ciclos ou sleeps do simulador em estudos reais.
