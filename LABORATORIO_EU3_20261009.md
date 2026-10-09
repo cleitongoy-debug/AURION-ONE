@@ -375,3 +375,6 @@ Próximo comando >: voz, atalhos e botão do fone/capacete — rastrear entrada,
 **Limites:** importação MANUAL de JSON, sem envio automático ao Drive, sem sync de fila EU3 por PC↔POCO, sem mecanismo de resolução automática de IDs divergentes (conflito é bloqueado para não destruir informações), sem garantia de autenticidade criptográfica do JSON recebido. Nenhuma hora de estudo humano inferida. LUZ/WhatsApp pausado. Após nova assinatura/build será necessária conferência no aparelho, sem desinstalar a instalação principal.
 
 **Próximos P0:** CI reproduzível dos novos testes, exportação→importação com múltiplos perfis em POCO autorizado, integridade de backup completo e contrato de sincronização por cursor/ACK; preservar originais e registrar só com recibos.
+
+
+**Adendo de QA (QA_UI_EU3_55_ASSERTS_20261009):** seletor HTML/JavaScript verificado adicionalmente com DOM/FileReader simulados (sem aparelho físico). A suíte `tools/test_research_eu3.cjs` foi ampliada em `db0740478fd097a8b12941e4e902504bf4641123`. **Resultado: 55 afirmações passaram em harness V8**, inclusive consentimento explícito, prévia sem gravação e backup do estado local; GitHub Actions consultado para `db074047...` não retornou execuções. Continua **NÃO TESTADO**: execução do `node` binário/CI, abertura real do picker no POCO, migração do APK existente e sincronização entre dispositivos.
