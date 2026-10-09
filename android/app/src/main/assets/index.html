@@ -31,7 +31,22 @@
 <section id="resources" class="page"><div class="card"><h1>Modelos · Plugins · Repositórios</h1><p>Baixa recursos de GitHub/Hugging Face. Código não é executado automaticamente.</p><label>Tipo</label><select id="resourceType"><option>LUT</option><option>Workflow ComfyUI</option><option>Modelo</option><option>LoRA</option><option>Node</option><option>Plugin de dados</option><option>Preset</option></select><label>URL HTTPS</label><input id="resourceUrl" placeholder="https://huggingface.co/... ou https://github.com/..."><label>Nome do arquivo</label><input id="resourceName"><label>SHA-256 esperado</label><input id="resourceSha" placeholder="Recomendado"><label>Licença/observação</label><textarea id="resourceLicense"></textarea><button class="primary" onclick="downloadResource()">VALIDAR E BAIXAR</button><div id="resourceLog" class="log">Todo download vira registro de origem.</div></div><div class="card"><h2>DEPENDÊNCIAS TERMUX</h2><label>Pacotes</label><input id="termuxPackages" value="python git curl ffmpeg imagemagick nodejs-lts"><div class="grid"><button onclick="copyDependencyPlan()">COPIAR PLANO</button><button onclick="native('openTermux')">ABRIR TERMUX</button></div><p class="muted">A execução permanece visível e autorizada; o APK não instala pacotes silenciosamente em outro aplicativo.</p></div></section>
 <section id="imagegen" class="page"><div class="card"><h1>Gerar imagem no POCO</h1><p>Geração pela API da Hugging Face quando houver permissão e cota. A imagem é gravada em Fotos/AURION. O editor local funciona sem rede.</p><label>Prompt</label><textarea id="imagePrompt" placeholder="Descreva a imagem"></textarea><label>Modelo Hugging Face</label><input id="imageModel" value="stabilityai/stable-diffusion-3-medium-diffusers"><button class="primary" onclick="generateImage()">GERAR IMAGEM</button><div id="imageLog" class="log">Aguardando prompt. Não é geração offline.</div></div></section><section id="comfy" class="page"><div class="card"><h1>Geração & ComfyUI</h1><label>Prompt</label><textarea id="prompt"></textarea><label>Negativo/limites</label><textarea id="negative"></textarea><label>Workflow API JSON</label><textarea id="workflowJson" placeholder='{"1":{"class_type":"..."}}'></textarea><div class="grid"><button onclick="saveWorkflow()">SALVAR</button><button onclick="testOne('ComfyUI',settings().comfy+'/system_stats')">TESTAR</button><button class="primary" onclick="queueWorkflow()">ENFILEIRAR</button><button onclick="openPanel('imagem')">NÓ VISUAL</button></div><div id="comfyLog" class="log">Concluído somente após resposta da API.</div></div></section>
 <section id="connect" class="page"><div class="card"><h1>Conexões & Nós</h1><label>Painel PC</label><input id="panelUrl"><label>Home Node</label><input id="agentUrl"><label>Token Home Node</label><input id="agentToken" type="password"><label>ComfyUI</label><input id="comfyUrl"><label>Ollama</label><input id="ollamaUrl"><div class="grid"><button class="primary" onclick="saveConnections()">SALVAR</button><button onclick="testAll()">TESTAR TUDO</button><button class="primary" onclick="runPcProbe()">SONDA PC · LEITURA</button><button onclick="openPanel()">ABRIR PAINEL PC</button><button onclick="native('openTailscale')">TAILSCALE</button></div><div id="connectLog" class="log">O celular funciona sem PC; estes nós ampliam CR3, render e modelos grandes.</div><div id="pcProbeLog" class="log">Sonda pronta. Configure endereço privado e token, depois execute.</div></div></section>
-<section id="band" class="page"><div class="card"><h1>POCO & Mi Band</h1><div class="row"><span>Bluetooth</span><b id="btState">—</b></div><div class="row"><span>BLE</span><b id="btPerm">—</b></div><div class="row"><span>Mi Fitness</span><b id="miState">—</b></div><div class="row"><span>Health Connect</span><b id="healthState">—</b></div><div class="grid"><button onclick="native('scanBand')">BUSCAR BLE</button><button onclick="native('notifyBand')">TESTAR NOTIFICAÇÃO</button><button onclick="native('openMiFitness')">MI FITNESS</button><button onclick="native('openSetting','health')">HEALTH CONNECT</button></div><div id="bandLog" class="log">Sem telemetria simulada.</div></div></section>
+<section id="band" class="page"><div class="card"><h1>POCO & Mi Band</h1><div class="row"><span>Bluetooth</span><b id="btState">—</b></div><div class="row"><span>BLE</span><b id="btPerm">—</b></div><div class="row"><span>Mi Fitness</span><b id="miState">—</b></div><div class="row"><span>Health Connect</span><b id="healthState">—</b></div><div class="grid"><button onclick="native('scanBand')">BUSCAR BLE</button><button onclick="native('notifyBand')">TESTAR NOTIFICAÇÃO</button><button onclick="native('openMiFitness')">MI FITNESS</button><button onclick="native('openSetting','health')">HEALTH CONNECT</button></div><div id="bandLog" class="log">Sem telemetria simulada.</div></div>
+<div class="card" id="bandChannelCard"><h2>AURION · CANAL DO PULSO</h2>
+<p>O AURION publica alertas no Android. O Mi Fitness pode espelhar para a Smart Band 9 Pro se você autorizar o AURION em Notificações de aplicativos.</p>
+<div class="row"><span>Canal no POCO</span><b id="bandChannelState">NÃO AFERIDO</b></div>
+<div class="row"><span>Espelhamento no pulso</span><b id="bandWristState">NÃO TESTADO</b></div>
+<div class="grid">
+<button class="primary" onclick="native('bandChannelEnable',true)">ATIVAR CANAL</button>
+<button onclick="native('bandChannelEnable',false)">PAUSAR CANAL</button>
+<button onclick="native('bandChannelTest')">ENVIAR TESTE AO POCO</button>
+<button onclick="bandRefreshStatus()">VERIFICAR STATUS</button>
+<button onclick="bandConfirmReceipt()">CONFIRMEI NO PULSO</button>
+<button onclick="native('openMiFitness')">ABRIR MI FITNESS</button>
+</div>
+<div class="log" id="bandChannelLog">Ao ativar, autorize notificações no Android e selecione AURION ONE · PRÉVIA no Mi Fitness. Enviar ao telefone NÃO comprova entrega no pulso. A confirmação manual é um relato do operador.</div>
+<p class="muted">Alertas automáticos somente para mudanças detectadas nas fontes realmente consultadas pelo verificador existente. Sem login/sync de contas nem garantia de execução exata por hora.</p>
+</div></section>
 <section id="portfolio" class="page">
 <div class="heroGold"><small>DIGITALPEN · PROVAS · CLIENTE</small><h1>Portfólio vivo & Secretário AURION</h1><p>Cases com prova, contatos, estudos aplicados e atendimento ao cliente. Nada vira case público sem sua confirmação.</p><div class="metrics"><div class="metric"><small>CASES</small><b id="portfolioCaseCount">0</b></div><div class="metric"><small>PROVAS</small><b id="portfolioEvidenceCount">0</b></div><div class="metric"><small>ESTUDOS</small><b id="portfolioStudyCount">0</b></div><div class="metric"><small>SYNC</small><b id="portfolioSyncState">LOCAL</b></div></div></div>
 <div class="card"><h2>PERFIL / CONTATOS / REDES</h2><div class="grid"><input id="pfDisplayName" placeholder="Nome / marca"><input id="pfHeadline" placeholder="O que você faz em uma frase"></div><div class="grid"><input id="pfPhone" placeholder="WhatsApp / telefone"><input id="pfEmail" placeholder="E-mail"></div><div class="grid"><input id="pfInstagram" placeholder="Instagram"><input id="pfYoutube" placeholder="YouTube"></div><div class="grid"><input id="pfTiktok" placeholder="TikTok"><input id="pfLinkedin" placeholder="LinkedIn"></div><div class="grid"><input id="pfGithub" placeholder="GitHub"><input id="pfSite" placeholder="Site / portfólio público"></div><textarea id="pfBio" placeholder="Resumo profissional, regiões, idiomas, especialidades..."></textarea><div class="grid"><button class="primary" onclick="portfolioSaveProfile()">SALVAR PERFIL</button><button onclick="portfolioRenderLinks()">ATUALIZAR ATALHOS</button><button onclick="portfolioShare()">COMPARTILHAR</button></div><div id="portfolioLinks" class="grid"></div></div>
@@ -50,5 +65,30 @@
 function memoryAttract(){const e=window.AurionMemoryEngine;if(!e)return;const ref=document.getElementById('memSrcRef').value.trim(),title=document.getElementById('memSrcTitle').value.trim(),body=document.getElementById('memSrcBody').value.trim();const r=e.addSource('manual',title||'Fonte sem título',body,ref);document.getElementById('memoryOpsLog').textContent=!r.ok?'BLOQUEADO: '+r.error:r.duplicate?'Fonte já conhecida.':'Fonte salva LOCALMENTE; Drive ainda não sincronizado.'}
 function memoryStudyNow(){const e=window.AurionMemoryEngine;if(!e)return;const r=e.study();document.getElementById('memoryOpsLog').textContent=!r.ok?'ERRO: '+r.error:'SCAN DOCUMENTAL: '+r.indexed+' fontes indexadas (não horas de estudo); '+r.conflicts+' conflitos; '+r.totalMemories+' registros locais.'}
 function memoryShowMind(){const e=window.AurionMemoryEngine;if(!e)return;const s=e.state();document.getElementById('memoryOpsLog').textContent=JSON.stringify((s.memories||[]).slice(-12),null,2)}
+function bandPaintStatus(raw){
+  let j;
+  try { j=(typeof raw==='string'?JSON.parse(raw):raw)||{}; }
+  catch { document.getElementById('bandChannelLog').textContent='Resposta do Android invalida; não afirmar envio.'; return; }
+  const ready=!!(j.optIn&&j.phoneChannelReady);
+  document.getElementById('bandChannelState').textContent=ready?'ATIVO NO ANDROID':j.optIn?'BLOQUEADO PELO ANDROID':'PAUSADO';
+  document.getElementById('bandWristState').textContent=j.operatorBandReceiptAt?'RECEBIMENTO RELATADO PELO OPERADOR':'NÃO CONFIRMADO';
+  const lines=[
+    'Canal voluntário: '+(j.optIn?'SIM':'NÃO'),
+    'Permissão Android: '+(j.androidPermission?'SIM':'NÃO'),
+    'Notificações Android: '+(j.androidEnabled?'SIM':'NÃO'),
+    'Último envio ao telefone: '+(j.lastPostedAt?new Date(j.lastPostedAt).toLocaleString('pt-BR'):'nenhum'),
+    'Recebimento no pulso: '+(j.operatorBandReceiptAt?'RELATO DO OPERADOR · '+new Date(j.operatorBandReceiptAt).toLocaleString('pt-BR'):'NÃO TESTADO'),
+    'Sync de contas: NÃO COMPROVADO'
+  ];
+  if(j.reason)lines.push('Bloqueio: '+j.reason);
+  if(j.lastError)lines.push('Erro: '+j.lastError);
+  document.getElementById('bandChannelLog').textContent=lines.join('\n');
+}
+window.aurionBandChannelResult=bandPaintStatus;
+function bandRefreshStatus(){let raw=native('bandChannelStatus');if(raw)bandPaintStatus(raw);else document.getElementById('bandChannelLog').textContent='Canal nativo indisponível neste ambiente.'}
+function bandConfirmReceipt(){
+  if(!confirm('A notificação de teste realmente apareceu no seu relógio? Registrar apenas como seu depoimento físico.'))return;
+  const raw=native('bandChannelConfirmReceipt');if(raw)bandPaintStatus(raw);
+}
 function memoryShowBlackBox(){const e=window.AurionMemoryEngine;if(!e)return;const s=e.state();document.getElementById('memoryOpsLog').textContent=JSON.stringify({integridade:e.integrity(),sincronizacao:e.syncStatus(),lastScan:s.lastScan||null,notes:(s.notes||[]).slice(-20),sources:(s.sources||[]).slice(-20)},null,2)}
 </script></body></html>
