@@ -4,6 +4,7 @@ on:
     branches: [fix/one-memoria-offline-integridade-20261009]
     paths:
       - 'android/**'
+      - 'pc-package-v3/**'
       - 'tools/test_aurion_web_memory.cjs'
       - 'tools/test_aurion_assets.cjs'
       - '.github/workflows/aurion-one-integridade.yml'
@@ -11,6 +12,7 @@ on:
     branches: [deliver/poco-v70-profiles]
     paths:
       - 'android/**'
+      - 'pc-package-v3/**'
       - 'tools/test_aurion_web_memory.cjs'
 permissions:
   contents: read
@@ -26,6 +28,16 @@ jobs:
         run: node tools/test_aurion_web_memory.cjs
       - name: Onboarding inline JS and source contract checks
         run: node tools/test_aurion_assets.cjs
+  pc-memory-sync-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Regression tests PC and POCO sync protocol
+        working-directory: pc-package-v3
+        run: python -m unittest discover -s tests -p test_mobile_sync.py -v
   android-debug-build:
     needs: offline-web-tests
     runs-on: ubuntu-latest
