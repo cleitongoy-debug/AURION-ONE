@@ -224,3 +224,48 @@ Na falta de dados históricos, marcar desconhecido/relatado. Receber prints e ce
 
 ### Checkpoint para o próximo >
 Próximo estudo documental: contrato de restauração completa e invalidação transitiva, com casos de falha/reversão; depois recibos de conexão, contador e voz. Preservar LUZ pausada. Ao chegar em casa, conexão PC↔POCO e voz só passam a comprovadas após evidência dos dispositivos. Fontes encontradas e conclusões anteriores permanecem; repetir verificação apenas diante de alteração, falha ou lacuna nova.
+
+
+## Pauta 2 — checkpoint: restauração e contraprova transitiva
+Data: 2026-10-09. Retomada solicitada por > às 17:12:33 America/Sao_Paulo. Estudo/auditoria documental; nenhum código de produção ou APK alterado. Nenhum tempo humano lançado.
+
+### Novas falhas identificadas
+Fontes atuais conferidas na branch: [AurionStore.java](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/java/one/aurion/app/AurionStore.java), blob e2164c0ad4975c35617586fbd4a6a25788c9342d; [research_eu3.js](https://github.com/cleitongoy-debug/AURION-ONE/blob/feature/laboratorio-eu3-20261009/android/app/src/main/assets/research_eu3.js), blob 3679012e859a2709d73d80fd3c0ee5ef0ead01b8.
+
+**Dependente ativo continua contando após contraprova.** Teste sintético no módulo auditado: validar A→B→C, iniciar D dependente de C em t=100, reprovar A e executar tick em t=1100. Resultado: A EXPERIMENTAL; B/C VALIDADO com ready=false; D EM_ESTUDO com ready=false, milliseconds=1000 e active ainda presente. Portanto, bloqueio calculado não pausa a sessão ativa nem corrige os rótulos. Ao reabrir o motor, active=null e os dois recibos de A permanecem. A reprodução é de lógica JavaScript, não teste no aparelho.
+
+**Perfil aninhado não é conferido junto dos registros.** importAll aceita root.memory.records, mas sourceProfile vem de root.profile. Exemplo sintético {memory:{profile:"outro",records:[...]}} não tem perfil na raiz e não aciona a rejeição por diferença. Confirmado pelo fluxo do código e pela extração do campo no exemplo; nenhuma restauração real SQLite foi executada.
+
+**Identidade por conteúdo perde distinção temporal.** recordFingerprint usa type/title/body/meta, omitindo createdAt/updatedAt e identificador de origem. Duas ocorrências com conteúdo igual em datas diferentes podem ser tratadas como duplicatas. O import também cria novos IDs locais; não preserva automaticamente a identidade exportada. Ausência de timestamps recebe o horário atual, que precisa ser marcado como horário de importação, não inventado como acontecimento histórico.
+
+### Contrato de restauração proposto
+1. Identificar o envelope primeiro: direto ou memory aninhado. Perfil, formato, contagem e registros devem ser lidos do mesmo envelope. Perfil ausente/desconhecido exige classificação de legado; não inferir silenciosamente perfil atual.
+2. Validar antes de gravar: estrutura, versão, perfil, IDs, tipos, timestamps conhecidos, números finitos não negativos, integridade e dependências. Ciclo/referência desconhecida bloqueia importação EU3; manter arquivo de origem para diagnóstico.
+3. Preparar snapshot e staging dos domínios: memória nativa, interface, dedicação, memória documental e pesquisas EU3. Credenciais não entram como texto em backup; disponibilidade/necessidade de reconfiguração recebe campo próprio.
+4. Não chamar transação SQLite de transação global: SQLite e localStorage são destinos distintos. Propor geração de snapshot com journal de recuperação; todos os domínios validam antes de promover a geração, com rollback após interrupção.
+5. Identidade: chave de origem/perfil/ID estável; repetição da mesma exportação é idempotente. Ocorrências iguais de dias diferentes são conservadas. Mesmo ID com versões divergentes exige regra explícita e recibo de conflito, não substituição oculta.
+6. Datas desconhecidas continuam desconhecidas; importedAt separado de occurredAt. Não fabricar horas estudadas para preencher campos.
+7. Retomar sempre pausado até atividade confirmada. Importação não inicia cronômetro, ação remota ou experiência automaticamente.
+8. Recibo final inclui operationId, perfil, versões, domínios, recebidos/importados/duplicatas/conflitos, hashes e resultado de cada etapa. Só declarar restaurado após readback coerente de todos os domínios incluídos.
+
+### Contrato de invalidação proposto
+Contraprova registra novo recibo em A; calcula conjunto de dependentes transitivos com detecção de ciclos; pausa sessão ativa afetada no mesmo evento; marca dependentes REVISAO_PENDENTE e guarda causa/revisão de origem. Provas históricas, assuntos e tempos legítimos anteriores permanecem.
+
+Depois de invalidar A, reaprovar A não reaprova B/C/D automaticamente. Cada dependente precisa de nova avaliação contra a versão atual de suas premissas. O seletor de pré-requisitos precisa excluir rótulos antigos que não estejam prontos. A pausa automática deve registrar motivo sem cobrar tempo posterior à invalidação. Trecho anterior até o evento só conta se observado, pertinente e dentro do limite de heartbeat.
+
+### Casos de aceitação preparados, ainda sem implementação
+| Caso | Resultado exigido |
+|---|---|
+| Perfil direto diferente e perfil memory aninhado diferente | Ambos rejeitados sem mutação |
+| JSON inválido, versão desconhecida, ciclo ou referência inexistente | Falha explícita; estado anterior íntegro |
+| Mesma exportação aplicada duas vezes | Segunda execução não duplica; recibos das duas tentativas |
+| Mesmo texto em duas datas | Duas ocorrências preservadas |
+| Mesmo ID e conteúdo divergente | Conflito rastreável; nenhuma perda silenciosa |
+| Falha após gravar um domínio / reboot durante promoção | Recuperação para geração consistente, sem metade do backup |
+| A→B→C→D com D ativo e contraprova de A | Dependentes em revisão e sessão de D pausada; zero tempo posterior |
+| Reaprovação de A | B/C/D continuam pendentes até revalidação |
+| Exportar/restaurar EU3 | Fontes, IDs, dependências, tempos e recibos equivalentes; nenhuma sessão ativa |
+| Exportação acima de 500 memórias | Contagem integral no backup, sem confundir limite da listagem |
+
+### Próximo ponto de retomada
+Recibos por conexão e aprendizado real: identificar o resultado final de Drive/Git/PC/API, separar metadados de conteúdo lido e impedir status verde geral de ocultar falha parcial. Depois, contador e voz do capacete. LUZ permanece pausada. Situação atual: novas falhas reproduzidas ou verificadas por leitura, contratos escritos; correções não implementadas.
