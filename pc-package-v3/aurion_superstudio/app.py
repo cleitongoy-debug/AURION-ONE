@@ -73,6 +73,8 @@ def mobile_cors(response):
 
 @app.get("/")
 def index():
+    if request.remote_addr not in {"127.0.0.1","::1"}:
+        return jsonify(ok=False,error="Interface com token disponivel somente localmente."), 403
     return render_template("index.html", token=TOKEN, version=__version__, base_root=str(BASE_ROOT))
 
 
@@ -496,7 +498,7 @@ def too_large(_):
 
 
 def run() -> None:
-    app.run(host=os.environ.get("AURION_BIND_HOST", "0.0.0.0"), port=int(os.environ.get("AURION_STUDIO_PORT", "5060")), debug=False, threaded=True)
+    app.run(host=os.environ.get("AURION_BIND_HOST", "127.0.0.1"), port=int(os.environ.get("AURION_STUDIO_PORT", "5060")), debug=False, threaded=True)
 
 
 if __name__ == "__main__":
