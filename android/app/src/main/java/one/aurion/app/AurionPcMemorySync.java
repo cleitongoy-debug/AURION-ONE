@@ -37,11 +37,18 @@ public final class AurionPcMemorySync {
              .put("lastSuccessAt",p.getLong("lastSuccessAt",0))
              .put("lastAttemptAt",p.getLong("lastAttemptAt",0))
              .put("lastReport",new JSONObject(p.getString("lastReport","{}")))
-             .put("transport","USB_ADB_REVERSE_LOOPBACK_5060")
+             .put("transport","USB_ADB_REVERSE_LOOPBACK_5060_5069")
+             .put("configuredEndpoint",configuredEndpoint(c))
              .put("pcReachableNow","NAO_TESTADO")
              .put("googleDriveSynced",false);
         }catch(Exception ignored){}
         return x;
+    }
+    private static String configuredEndpoint(Context c){
+        String url=c.getSharedPreferences("aurion_nodes",Context.MODE_PRIVATE)
+             .getString("pcStudio","").replaceAll("/+$","");
+        return url.matches("http://(127\\.0\\.0\\.1|localhost):506[0-9]")
+             ? url : "";
     }
     public static void setEnabled(Context c,boolean enabled){
         state(c).edit().putBoolean("enabled",enabled).apply();
