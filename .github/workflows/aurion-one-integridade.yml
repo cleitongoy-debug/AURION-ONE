@@ -71,6 +71,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Strict private-PC address allowlist regression (standalone Java)
+        run: |
+          mkdir -p build/hostcheck
+          javac -d build/hostcheck app/src/main/java/one/aurion/app/AurionPrivateHosts.java app/src/test/java/one/aurion/app/AurionPrivateHostsTest.java
+          java -cp build/hostcheck one.aurion.app.AurionPrivateHostsTest
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools'
