@@ -45,3 +45,20 @@
 @media(min-width:670px){.gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.gallery-hero{padding:25px!important}}
 @media(min-width:1000px){.gallery-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:330px){.gallery-grid{grid-template-columns:1fr}}
+
+/* Visual gallery: compact above-fold header and non-obstructive assistant. */
+#library .gallery-hero{padding:14px;margin:4px 0 10px}
+#library .gallery-hero h1{font-size:25px;margin:5px 0}
+#library .gallery-hero p{font-size:12px;line-height:1.35;margin:5px 0 9px}
+#library .gallery-hero .gallery-measures span{padding:5px 8px;font-size:10px}
+#library .gallery-tools{margin:8px 0}
+#library .gallery-list-head{margin:8px 0 2px}
+#library .gallery-grid{margin:6px 0 12px}
+#library .gallery-note{font-size:11px}
+@supports selector(body:has(#library.active)){
+ body:has(#library.active) #guideOrb,
+ body:has(#portfolio.active) #guideOrb{width:44px;height:44px;font-size:20px;opacity:.68;right:8px;bottom:calc(var(--aurion-nav-height,92px) + 8px)}
+ body:has(#library.active) #guideOrb span,
+ body:has(#portfolio.active) #guideOrb span{font-size:6px}
+ body:has(#guidePanel:not([hidden])) #guideOrb{opacity:1}
+}
