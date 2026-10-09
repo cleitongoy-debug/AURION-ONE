@@ -96,26 +96,127 @@ final class AurionStore extends SQLiteOpenHelper {
         finally { profileId = previous; }
     }
 
+    // Backup completo DO PERFIL ATUAL. A listagem de tela ainda tem limite de 500,
+    // mas exportacao nunca pode usar esse limite (risco de perda silenciosa).
     synchronized JSONObject exportAll() {
         JSONObject out = new JSONObject();
-        try { out.put("format", "aurion-memory-v4"); out.put("exportedAt", System.currentTimeMillis()); out.put("records", list("all", "", 5000)); out.put("accounts", accountStatus()); }
-        catch (Exception ignored) { }
+        try {
+            JSONArray records = new JSONArray();
+            SQLiteDatabase db = getReadableDatabase();
+            try (Cursor c = db.query("records", null, "profile_id=?",
+                    new String[]{profileId}, null, null, "id ASC")) {
+                while (c.moveToNext()) {
+                    JSONObject row = new JSONObject();
+                    row.put("id", c.getLong(c.getColumnIndexOrThrow("id")));
+                    row.put("type", c.getString(c.getColumnIndexOrThrow("type")));
+                    row.put("title", c.getString(c.getColumnIndexOrThrow("title")));
+                    row.put("body", c.getString(c.getColumnIndexOrThrow("body")));
+                    row.put("meta", c.getString(c.getColumnIndexOrThrow("meta")));
+                    row.put("createdAt", c.getLong(c.getColumnIndexOrThrow("created_at")));
+                    row.put("updatedAt", c.getLong(c.getColumnIndexOrThrow("updated_at")));
+                    records.put(row);
+                }
+            }
+            out.put("ok", true);
+            out.put("format", "aurion-memory-v4");
+            out.put("exportedAt", System.currentTimeMillis());
+            out.put("recordCount", records.length());
+            out.put("profile", profileId);
+            out.put("records", records);
+            // Somente booleanos de configuracao; NUNCA exportar credenciais.
+            out.put("accounts", accountStatus());
+        } catch (Exception e) {
+            // Falha explicita: proibido entregar JSON vazio parecendo backup valido.
+            return errorJson("backup_falhou: " + e.getClass().getSimpleName());
+        }
         return out;
     }
 
-    synchronized JSONObject importAll(String raw) {
-        JSONObject result = new JSONObject(); int imported = 0;
-        try {
-            JSONObject root = new JSONObject(raw); JSONArray records = root.optJSONArray("records");
-            if (records == null && root.optJSONObject("memory") != null) records = root.optJSONObject("memory").optJSONArray("records");
-            if (records == null) throw new IllegalArgumentException("Backup sem registros");
-            for (int i = 0; i < records.length(); i++) {
-                JSONObject x = records.optJSONObject(i); if (x == null) continue;
-                add(x.optString("type", "memory"), x.optString("title", "Importado"), x.optString("body", ""), x.optString("meta", "{}")); imported++;
-            }
-            result.put("ok", true); result.put("imported", imported);
-        } catch (Exception e) { try { result.put("ok", false); result.put("error", e.getMessage()); } catch (Exception ignored) { } }
+    private static JSONObject errorJson(String error) {
+        JSONObject result = new JSONObject();
+        try { result.put("ok", false); result.put("error", error); }
+        catch (Exception ignored) { }
         return result;
+    }
+
+    // Restaura atomicamente sem apagar anteriores e sem duplicar ao repetir o mesmo backup.
+    // Backup de outro perfil precisa ser restaurado no perfil correto, nao misturado.
+    synchronized JSONObject importAll(String raw) {
+        JSONArray records;
+        try {
+            JSONObject root = new JSONObject(raw);
+            records = root.optJSONArray("records");
+            if (records == null && root.optJSONObject("memory") != null)
+                records = root.optJSONObject("memory").optJSONArray("records");
+            if (records == null) return errorJson("backup_sem_registros");
+            String sourceProfile = root.optString("profile", "");
+            if (!sourceProfile.isEmpty() && !sourceProfile.equals(profileId))
+                return errorJson("perfil_de_backup_diferente");
+        } catch (Exception e) {
+            return errorJson("backup_json_invalido");
+        }
+        SQLiteDatabase db = getWritableDatabase();
+        int imported = 0, skipped = 0;
+        try {
+            java.util.HashSet<String> known = new java.util.HashSet<>();
+            try (Cursor c = db.query("records", new String[]{"type", "title", "body", "meta"},
+                    "profile_id=?", new String[]{profileId}, null, null, null)) {
+                while (c.moveToNext())
+                    known.add(recordFingerprint(c.getString(0), c.getString(1), c.getString(2), c.getString(3)));
+            }
+            db.beginTransaction();
+            try {
+                for (int i = 0; i < records.length(); i++) {
+                    JSONObject x = records.optJSONObject(i);
+                    if (x == null) throw new IllegalArgumentException("registro_nao_objeto");
+                    String type = clean(x.optString("type", "memory"), "memory");
+                    String title = clean(x.optString("title", "Importado"), "Importado");
+                    String body = x.optString("body", "");
+                    String meta = x.optString("meta", "{}");
+                    String fingerprint = recordFingerprint(type, title, body, meta);
+                    if (!known.add(fingerprint)) { skipped++; continue; }
+                    ContentValues v = new ContentValues();
+                    v.put("type", type);
+                    v.put("title", title);
+                    v.put("body", body);
+                    v.put("meta", meta);
+                    v.put("profile_id", profileId);
+                    long now = System.currentTimeMillis();
+                    v.put("created_at", x.optLong("createdAt", now));
+                    v.put("updated_at", x.optLong("updatedAt", now));
+                    db.insertOrThrow("records", null, v);
+                    imported++;
+                }
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
+            }
+        } catch (Exception e) {
+            return errorJson("restauracao_revertida: " + e.getClass().getSimpleName());
+        }
+        JSONObject result = new JSONObject();
+        try {
+            result.put("ok", true);
+            result.put("imported", imported);
+            result.put("skippedDuplicates", skipped);
+            result.put("received", records.length());
+        } catch (Exception ignored) { }
+        return result;
+    }
+
+    private static String recordFingerprint(String type, String title, String body, String meta) throws Exception {
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        for (String value : new String[]{type, title, body, meta}) {
+            byte[] bytes = (value == null ? "" : value).getBytes(StandardCharsets.UTF_8);
+            // Comprimento prefixado evita ambiguidades da concatenacao.
+            digest.update(new byte[]{(byte)(bytes.length >>> 24), (byte)(bytes.length >>> 16),
+                    (byte)(bytes.length >>> 8), (byte)bytes.length});
+            digest.update(bytes);
+        }
+        byte[] out = digest.digest();
+        StringBuilder hex = new StringBuilder();
+        for (byte b : out) hex.append(String.format(java.util.Locale.ROOT, "%02x", b & 0xff));
+        return hex.toString();
     }
 
     synchronized void setSecret(String name, String value) throws Exception {
