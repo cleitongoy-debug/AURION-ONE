@@ -11,7 +11,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-ALLOWED = {"memory", "reference", "conversation", "project", "preset", "evidence", "sync_event", "experiment"}
+ALLOWED = {"memory", "reference", "conversation", "project", "preset", "evidence", "experiment"}
 MAX_RECORDS = 4000
 MAX_BYTES = 3_000_000
 LOCK = threading.RLock()
