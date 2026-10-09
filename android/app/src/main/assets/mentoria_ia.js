@@ -85,7 +85,7 @@ document.addEventListener('input',event=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden)ledger.pause('APP_OCULTO');else ledger.resume();render();});
 root.addEventListener('pagehide',()=>ledger.pause('PAGINA_FECHADA'));
 root.aurionInteraction={
- message:(kind,channel,provider)=>{ledger.message(kind,channel,provider);render();},
+ message:(kind,channel,provider)=>{try{ledger.message(kind,channel,provider);render();return true;}catch(e){const q=document.getElementById('mentoriaPainel');if(q)q.textContent='ERRO no registro (mensagem não bloqueada): '+e.message;return false;}},
  summary:()=>ledger.summary(),
  export:()=>ledger.export()
 };
