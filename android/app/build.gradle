@@ -14,7 +14,7 @@ android {
         debug {
             applicationIdSuffix '.preview.usb'
             versionNameSuffix '-preview'
-            manifestPlaceholders = [appLabel: 'AURION ONE · PRÉVIA']
+            manifestPlaceholders = [appLabel: 'AURION ONE · USB SYNC']
         }
     }
 }
