@@ -1,0 +1,56 @@
+name: AURION ONE - memoria e backup offline (QA)
+on:
+  push:
+    branches: [fix/one-memoria-offline-integridade-20261009]
+    paths:
+      - 'android/**'
+      - 'tools/test_aurion_web_memory.cjs'
+      - '.github/workflows/aurion-one-integridade.yml'
+  pull_request:
+    branches: [deliver/poco-v70-profiles]
+    paths:
+      - 'android/**'
+      - 'tools/test_aurion_web_memory.cjs'
+permissions:
+  contents: read
+jobs:
+  offline-web-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check JS
+        run: |
+          for f in android/app/src/main/assets/*.js; do node --check "$f"; done
+      - name: Memory and sync state synthetic tests
+        run: node tools/test_aurion_web_memory.cjs
+  android-debug-build:
+    needs: offline-web-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile updated APK (not install, not release)
+        run: gradle --no-daemon :app:assembleDebug
+      - name: SHA-256 and size
+        run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AURION-ONE-MEMORIA-P0-TESTE-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/SHA256SUMS.txt
+          retention-days: 14
