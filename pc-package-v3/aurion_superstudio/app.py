@@ -64,10 +64,11 @@ def protect_mutations():
 
 
 @app.after_request
-def mobile_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Aurion-Token"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+def same_origin_only(response):
+    # A interface do PC e local, e a ponte USB usa HttpURLConnection nativo.
+    # CORS permissivo permitiria que sites externos lessem a home com token.
+    response.headers.pop("Access-Control-Allow-Origin", None)
+    response.headers.pop("Access-Control-Allow-Credentials", None)
     return response
 
 
