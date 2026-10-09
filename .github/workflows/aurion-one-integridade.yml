@@ -5,6 +5,7 @@ on:
     paths:
       - 'android/**'
       - 'tools/test_aurion_web_memory.cjs'
+      - 'tools/test_aurion_assets.cjs'
       - '.github/workflows/aurion-one-integridade.yml'
   pull_request:
     branches: [deliver/poco-v70-profiles]
@@ -23,6 +24,8 @@ jobs:
           for f in android/app/src/main/assets/*.js; do node --check "$f"; done
       - name: Memory and sync state synthetic tests
         run: node tools/test_aurion_web_memory.cjs
+      - name: Onboarding inline JS and source contract checks
+        run: node tools/test_aurion_assets.cjs
   android-debug-build:
     needs: offline-web-tests
     runs-on: ubuntu-latest
