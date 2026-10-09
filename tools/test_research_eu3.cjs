@@ -103,3 +103,41 @@ function item(id,deps=[],status='VALIDADO'){
  assert.equal(e.export(),before,'nenhuma alteração de memória em falha de escrita');
 }
 console.log('PASS: EU3 restore import: idempotência, validação, backup, não-sobrescrita, atomicidade e revisão');
+
+
+// CONTRATO DE INTERFACE EU3 — seletor Android WebView simulado, sem aparelho físico.
+{
+ const {s,d}=store();
+ const nodes=new Map();
+ let html='';
+ const n=id=>{
+   if(!nodes.has(id))nodes.set(id,{
+     id,value:'',textContent:'',checked:false,disabled:false,files:[],innerHTML:'',children:[],
+     append(child){this.children.push(child)},replaceChildren(){this.children=[]}
+   });
+   return nodes.get(id);
+ };
+ const document={
+   querySelector:()=>({prepend(p){html=p.innerHTML},classList:{contains:()=>true}}),
+   createElement:tag=>({tag,innerHTML:'',className:'',dataset:{},append(){}}),
+   getElementById:n,addEventListener(){}
+ };
+ const window={addEventListener(){}};
+ function FileReader(){this.readAsText=(file)=>{this.result=file.content;this.onload();};}
+ vm.runInNewContext(src,{window,document,localStorage:s,FileReader,setInterval(){},performance:{now:()=>12345}});
+ const raw=exported([item('arquivo-webview')]);
+ assert.ok(html.includes('id="euImportFile"'));
+ assert.ok(html.includes('id="euImportApply"'));
+ n('euImportFile').files=[{size:raw.length,content:raw}];
+ n('euImportFile').onchange();
+ assert.ok(n('euImportPreview').textContent.includes('1 novos'));
+ assert.equal(n('euImportApply').disabled,false);
+ n('euImportApply').onclick();
+ assert.equal(d.has('aurion_eu3_research_v1'),false,'importação exige concordância explícita');
+ n('euImportApprove').checked=true;
+ n('euImportApply').onclick();
+ assert.equal(JSON.parse(d.get('aurion_eu3_research_v1')).items.length,1);
+ assert.equal(d.has('aurion_eu3_research_v1_pre_restore_v1'),true,'pré-importação preservada');
+ assert.equal(n('euImportApply').disabled,true);
+}
+console.log('PASS: EU3 interface sintética: file chooser, prévia, consentimento e restauração local');
