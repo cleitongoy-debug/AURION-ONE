@@ -86,6 +86,7 @@ public class MainActivity extends Activity {
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
     private static final int PICK_WORKSPACE = 413;
+    private static final int PICK_PRIVATE_CATALOG = 424;
     private static final int PICK_CONVERT_IMAGE = 414;
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
