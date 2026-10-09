@@ -67,15 +67,16 @@
     }finally{db.close();}
   }
   function coverId(key){return profile()+':'+key;}
-  const displayed=[];
+  const displayUrls=new Map();
   async function hydrateCovers(scope){
-    displayed.splice(0).forEach(u=>URL.revokeObjectURL(u));
+    (displayUrls.get(scope)||[]).forEach(u=>URL.revokeObjectURL(u));
+    const urls=[];displayUrls.set(scope,urls);
     const images=Array.from(scope.querySelectorAll('[data-cover]'));
     for(const el of images){
       try{
         const id=coverId(el.dataset.cover),blob=await dbCover(id);
         if(!blob)continue;
-        const u=URL.createObjectURL(blob);displayed.push(u);
+        const u=URL.createObjectURL(blob);urls.push(u);
         const image=document.createElement('img');image.alt='Capa escolhida pelo operador';image.loading='lazy';image.src=u;
         if(el.isConnected){el.querySelector('.symbol')?.remove();el.prepend(image);}
       }catch(e){/* sem capa: o marcador visual continua e o app não trava */ }
