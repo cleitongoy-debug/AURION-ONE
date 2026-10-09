@@ -8,11 +8,14 @@ function engine(storage){
  const save=()=>storage.setItem(KEY,JSON.stringify(state));
  const get=id=>state.items.find(x=>x.id===id);
  const ready=(x,seen=new Set())=>!!x&&!seen.has(x.id)&&x.dependencies.every(id=>{const dep=get(id);return dep&&dep.status==='VALIDADO'&&ready(dep,new Set([...seen,x.id]));});
+ // A failed or revised prerequisite invalidates prior validation, not its receipts.
+ function reconcile(){let changed=false;for(const x of state.items){if(x.status==='VALIDADO'&&!ready(x)){x.status='REVISAO_PENDENTE';changed=true;}}return changed;}
+ if(reconcile())save();
  function add(title,source,dependencies=[]){if(!title.trim()||!source.trim())throw Error('Informe título e fonte.');if(dependencies.some(id=>!get(id)))throw Error('Pré-requisito desconhecido.');const x={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),title:title.slice(0,200),source:source.slice(0,2000),dependencies:[...new Set(dependencies)],status:'CANDIDATO',milliseconds:0,receipts:[]};state.items.push(x);save();return x;}
  function tick(now,visible=true){if(active&&visible){const delta=now-last;if(delta>0&&delta<=5000)get(active).milliseconds+=delta;}last=now;save();}
  function pause(now){tick(now);active=null;save();}
  function start(id,now){const x=get(id);if(!x||!ready(x)||x.status==='VALIDADO')throw Error('Pesquisa bloqueada pelos pré-requisitos ou já validada.');pause(now);active=id;last=now;x.status='EM_ESTUDO';save();}
- function proof(id,range,result,passed){const x=get(id);if(!x||!ready(x)||!range.trim()||!result.trim())throw Error('Informe trecho lido e resultado reproduzível; confira pré-requisitos.');if(active===id)active=null;x.receipts.push({at:new Date().toISOString(),range:range.slice(0,500),result:result.slice(0,4000),passed:!!passed});x.status=passed?'VALIDADO':'EXPERIMENTAL';save();}
+ function proof(id,range,result,passed){const x=get(id);if(!x||!ready(x)||!range.trim()||!result.trim())throw Error('Informe trecho lido e resultado reproduzível; confira pré-requisitos.');if(active===id)active=null;x.receipts.push({at:new Date().toISOString(),range:range.slice(0,500),result:result.slice(0,4000),passed:!!passed});x.status=passed?'VALIDADO':'EXPERIMENTAL';reconcile();save();}
  return {add,start,pause,tick,proof,ready,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
 }
 root.AurionResearchEngine=engine;
