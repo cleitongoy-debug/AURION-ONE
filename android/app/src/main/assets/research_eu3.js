@@ -122,7 +122,7 @@ function engine(storage){
    const p=planRestore(text);
    if(p.encoded===JSON.stringify(state))return {added:0,unchanged:p.unchanged,review:0,total:p.total};
    // Preserve the original local content before making any change. Storage failures abort the import.
-   if(storage.getItem(BACKUP_KEY)===null)storage.setItem(BACKUP_KEY,JSON.stringify(state));
+   if(storage.getItem(BACKUP_KEY)==null)storage.setItem(BACKUP_KEY,JSON.stringify(state));
    storage.setItem(KEY,p.encoded);
    state=p.proposed;active=null;last=0;
    return {added:p.added,unchanged:p.unchanged,review:p.review,total:p.total};
