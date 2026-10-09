@@ -155,11 +155,13 @@ public final class AurionBootstrapIndex {
             ArrayDeque<String> paths=new ArrayDeque<>();
             todo.add(root);paths.add("");
             Set<String> seen=new HashSet<>();
-            int visitedFolders=0;
-            while(!todo.isEmpty()&&processed<MAX_FILES&&visitedFolders<50) {
+            int visitedFolders=0,enumerated=0;
+            int startOffset=p.getInt("scan_cursor",0);
+            while(!todo.isEmpty()&&processed<MAX_FILES&&visitedFolders<250) {
                 DocumentFile dir=todo.removeFirst();String prefix=paths.removeFirst();
                 visitedFolders++;
                 DocumentFile[] children=dir.listFiles();
+                java.util.Arrays.sort(children,(left,right) -> String.valueOf(left.getName()).compareToIgnoreCase(String.valueOf(right.getName())));
                 for(DocumentFile file:children) {
                     if(processed>=MAX_FILES){remaining++;continue;}
                     String filename=file.getName();
@@ -171,6 +173,8 @@ public final class AurionBootstrapIndex {
                         } else skipped++;
                         continue;
                     }
+                    enumerated++;
+                    if(enumerated<=startOffset)continue;
                     processed++;
                     String mime=file.getType()==null?"indeterminado":file.getType();
                     long bytes=file.length(), modified=file.lastModified();
@@ -190,9 +194,12 @@ public final class AurionBootstrapIndex {
                     changed++;
                 }
             }
-            JSONObject result=result(remaining>0||!todo.isEmpty()?"AMOSTRA_LIMITADA":"CONCLUIDO",
-                "Metadados; scan recorrente limitado, NAO inventario completo",processed,changed,skipped,remaining+todo.size());
-            p.edit().putLong("last_scan_at",now).putString("last_scan_result",result.toString()).apply();
+            boolean partial=remaining>0||!todo.isEmpty()||visitedFolders>=250;
+            JSONObject result=result(partial?"AMOSTRA_LIMITADA":"CONCLUIDO",
+                "Metadados; scan incremental por caminho, nao leitura do documento",processed,changed,skipped,remaining+todo.size());
+            p.edit().putLong("last_scan_at",now)
+                .putInt("scan_cursor",partial?startOffset+processed:0)
+                .putString("last_scan_result",result.toString()).apply();
             if(changed>0)store.add("sync_event","Catalogo local: "+changed+" alteracoes",
                 result.toString(),new JSONObject().put("source","SAF").put("scope","METADADOS").toString());
             return result;
