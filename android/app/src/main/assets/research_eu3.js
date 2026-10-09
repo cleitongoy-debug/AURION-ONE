@@ -1,0 +1,29 @@
+/* Original research workflow inspired by EU3; no game assets. */
+(function(root){'use strict';
+const KEY='aurion_eu3_research_v1';
+function engine(storage){
+ let state;try{state=JSON.parse(storage.getItem(KEY));}catch(e){}
+ if(!state||state.version!==1||!Array.isArray(state.items))state={version:1,items:[]};
+ let active=null,last=0;
+ const save=()=>storage.setItem(KEY,JSON.stringify(state));
+ const get=id=>state.items.find(x=>x.id===id);
+ const ready=x=>x.dependencies.every(id=>get(id)&&get(id).status==='VALIDADO');
+ function add(title,source,dependencies=[]){if(!title.trim()||!source.trim())throw Error('Informe título e fonte.');if(dependencies.some(id=>!get(id)))throw Error('Pré-requisito desconhecido.');const x={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),title:title.slice(0,200),source:source.slice(0,2000),dependencies:[...new Set(dependencies)],status:'CANDIDATO',milliseconds:0,receipts:[]};state.items.push(x);save();return x;}
+ function tick(now,visible=true){if(active&&visible){const delta=now-last;if(delta>0&&delta<=5000)get(active).milliseconds+=delta;}last=now;save();}
+ function pause(now){tick(now);active=null;save();}
+ function start(id,now){const x=get(id);if(!x||!ready(x)||x.status==='VALIDADO')throw Error('Pesquisa bloqueada pelos pré-requisitos ou já validada.');pause(now);active=id;last=now;x.status='EM_ESTUDO';save();}
+ function proof(id,range,result,passed){const x=get(id);if(!x||!ready(x)||!range.trim()||!result.trim())throw Error('Informe trecho lido e resultado reproduzível; confira pré-requisitos.');if(active===id)active=null;x.receipts.push({at:new Date().toISOString(),range:range.slice(0,500),result:result.slice(0,4000),passed:!!passed});x.status=passed?'VALIDADO':'EXPERIMENTAL';save();}
+ return {add,start,pause,tick,proof,ready,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
+}
+root.AurionResearchEngine=engine;
+if(typeof document==='undefined')return;
+const e=engine(localStorage),host=document.querySelector('#lab');if(!host)return;
+const panel=document.createElement('div');panel.className='card';panel.innerHTML='<h2>🧪 Pesquisa · método EU3</h2><p>Fonte → estudo → experimento → prova → desbloqueio. Tempo registrado nesta sessão, sem transformar resposta de IA em validação. Os registros sobrevivem ao fechamento; exporte para backup.</p><label>Título</label><input id="euTitle"><label>Fonte: ID, caminho, linhas ou print</label><input id="euSource"><label>Pré-requisito validado</label><select id="euDependency"><option value="">Nenhum</option></select><button id="euAdd">ENFILEIRAR PESQUISA</button><div id="euItems"></div><label>Trecho efetivamente lido</label><input id="euRange" placeholder="Arquivo e linhas / página / região do print"><label>Resultado e procedimento reproduzível</label><textarea id="euResult"></textarea><label><input type="checkbox" id="euPassed"> Conferi a prova e o critério foi atendido</label><button id="euProof">REGISTRAR PROVA DA PESQUISA SELECIONADA</button><button id="euPause">PAUSAR</button><button id="euExport">EXPORTAR JSON</button><p id="euStatus" aria-live="polite"></p><p>Fontes do acervo: laboratório 1Zh2uT-__vlHAXkz36Ia-_-jXkoRUYcZUsJcF6oc2DSc; índice 1-oLBlBtPzsvCExOuLvKDZDkW6pnStOAxU2C44ruWcyM. Acesso ao Drive exige conexão; cadastrar uma fonte não significa lê-la.</p>';host.prepend(panel);
+const q=id=>document.getElementById(id);let selected=null;
+function render(){q('euItems').replaceChildren();q('euDependency').innerHTML='<option value="">Nenhum</option>';for(const x of e.items()){const b=document.createElement('button');b.textContent=x.title+' · '+x.status+' · '+Math.floor(x.milliseconds/1000)+'s'+(e.ready(x)?'':' · BLOQUEADA');b.onclick=()=>{selected=x.id;act(()=>e.start(x.id,performance.now()));};q('euItems').append(b);if(x.status==='VALIDADO'){const o=document.createElement('option');o.value=x.id;o.textContent=x.title;q('euDependency').append(o);}}}
+function act(fn){try{fn();q('euStatus').textContent='Registro salvo localmente.';render();}catch(err){q('euStatus').textContent=err.message;}}
+q('euAdd').onclick=()=>act(()=>e.add(q('euTitle').value,q('euSource').value,q('euDependency').value?[q('euDependency').value]:[]));
+q('euPause').onclick=()=>act(()=>e.pause(performance.now()));q('euProof').onclick=()=>act(()=>e.proof(selected,q('euRange').value,q('euResult').value,q('euPassed').checked));
+q('euExport').onclick=()=>{e.pause(performance.now());const blob=new Blob([e.export()],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='AURION_PESQUISAS_EU3.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)e.pause(performance.now());});window.addEventListener('pagehide',()=>e.pause(performance.now()));setInterval(()=>{if(!document.hidden){e.tick(performance.now());render();}},1000);render();
+})(typeof window==='undefined'?globalThis:window);
