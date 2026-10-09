@@ -42,6 +42,17 @@ class MobileSyncEndpointTests(unittest.TestCase):
         self.assertFalse(current["syncRequested"])
         self.assertEqual(current["phoneMirroredRecords"],1)
 
+    def test_external_origin_never_receives_token_cors_access(self):
+        malicious={"Origin":"https://outside.example"}
+        home=self.client.get("/",headers=malicious)
+        self.assertEqual(home.status_code,200)
+        self.assertNotIn("Access-Control-Allow-Origin",home.headers)
+        probe=self.client.options("/api/mobile/memory-sync",headers={
+            **malicious,"Access-Control-Request-Method":"POST",
+            "Access-Control-Request-Headers":"X-Aurion-Token"})
+        self.assertNotIn("Access-Control-Allow-Origin",probe.headers)
+        self.assertNotIn("Access-Control-Allow-Credentials",home.headers)
+
     def test_bad_profile_no_write(self):
         before=self.client.get("/api/mobile/memory-sync",headers=self.headers).json["phoneMirroredRecords"]
         invalid=self.payload();invalid["profile"]="outro"
