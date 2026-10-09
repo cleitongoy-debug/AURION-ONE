@@ -108,3 +108,19 @@ Conferência adicional do index.html/aurion6.js/aurion64.js no mesmo head audita
 Proposta de correção futura da voz: um único dispatcher final, que respeite permissões e opt-ins, interprete atalhos, registre o comando e encaminhe resposta falada sem atribuições que se sobrescrevem. Critérios: ditado chega ao dispatcher; atalho abre destino permitido; pergunta gera a resposta esperada; erro é falado/registrado; botão com app em background é testado fisicamente. Não ativar gastos, ações ou envio externo apenas porque o reconhecimento ouviu uma frase.
 
 Regressões originais do test_research_eu3.cjs também foram reproduzidas sobre o módulo extraído do APK: dependências, campos de prova, timer limitado, persistência, sessão pausada ao reabrir e dependência desconhecida passaram. A contraprova adicional sobre esse mesmo módulo reproduziu B.status=VALIDADO com B.ready=false.
+
+### Atualização permanente: o que o código atual realmente oferece
+MainActivity.java auditado: checkForUpdate interrompe quando o nome do pacote contém .preview e informa uma versão literal 7.0.0-preview; a prévia EU3 é 7.0.2-preview. O cabeçalho HTML ainda diz V7.0.1 FIX. Esses rótulos precisam ser derivados da versão instalada, para evitar recibos inconsistentes.
+No pacote principal, a instalação oferecida confere URL limitada ao canal publicado, SHA256, packageName, versionCode e certificado do APK, e abre a tela de instalação Android com ACTION_VIEW. Isso é oferta de atualização conferida, não instalação silenciosa nem reboot automático comprovado. O trecho usa GET_SIGNING_CERTIFICATES/signingInfo, disponíveis a partir de API28, enquanto minSdk é26; o tratamento dessa diferença também exige revisão antes de afirmar suporte a todas as versões mínimas. Não houve teste de atualização nesta rodada.
+
+Documentação Android prevê instalação sem ação em condições específicas de PackageInstaller.SessionParams (API31+), incluindo configuração explícita, requisitos de versão/ownership ou autoatualização e permissão declarada. Ainda exige tratar STATUS_PENDING_USER_ACTION. A abordagem atual ACTION_VIEW não implementa esse contrato. Proposta: canal assinado estável, migração de dados testada, callbacks de instalação/erro e confirmação quando o Android exigir; diferenciar reinício do app de reboot do telefone. Fonte primária: https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams
+
+### Marcos observados da rodada (UTC)
+- 19:03:03: início registrado.
+- 19:12:40: readback confirmou a primeira anotação do diário e o relatório Git.
+- 19:13:34: contraprova de lacuna no contador de dedicação.
+- 19:15:13: ZIP/CRC/APK e diferença de newline examinados; depois conferência exata de bytes e 20 hashes.
+- 19:17:12: commit e59727e91a8c3382b26aa58e8b08ed255ca3c2f8 registrado.
+- 19:18:15–19:18:30: encadeamento de voz e laboratório A/B legado conferidos.
+- 19:19:34: início da conferência das regras Android para atualização.
+Esses marcos são registros do trabalho desta IA, não eventos de estudo de Cleiton, nem instrumentação segundo a segundo de um aparelho. A duração de fechamento deve usar o último timestamp efetivamente observado, sem preencher tempo inexistente.
