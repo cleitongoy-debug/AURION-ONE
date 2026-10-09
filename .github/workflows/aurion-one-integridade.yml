@@ -7,6 +7,7 @@ on:
       - 'pc-package-v3/**'
       - 'tools/test_aurion_web_memory.cjs'
       - 'tools/test_aurion_assets.cjs'
+      - 'tools/test_archive_gallery.cjs'
       - '.github/workflows/aurion-one-integridade.yml'
   pull_request:
     branches: [deliver/poco-v70-profiles]
@@ -28,6 +29,8 @@ jobs:
         run: node tools/test_aurion_web_memory.cjs
       - name: Onboarding inline JS and source contract checks
         run: node tools/test_aurion_assets.cjs
+      - name: Biblioteca, capas e depoimentos (sintetico)
+        run: node tools/test_archive_gallery.cjs
   pc-memory-sync-tests:
     runs-on: ubuntu-latest
     steps:
