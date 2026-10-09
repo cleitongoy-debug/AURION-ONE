@@ -1317,7 +1317,7 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public void pocoPcSyncNow(String base, String token) {
             if (!profiles.owner()) return;
-            if (base == null || !base.trim().matches("http://(127\\.0\\.0\\.1|localhost):5060")) {
+            if (base == null || !base.trim().matches("http://(127\\.0\\.0\\.1|localhost):506[0-9]")) {
                 emit("aurionPocoPcSyncResult", "{\"ok\":false,\"error\":\"Use http://127.0.0.1:5060 com ADB reverse\"}");
                 return;
             }
