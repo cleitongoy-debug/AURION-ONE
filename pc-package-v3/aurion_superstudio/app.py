@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import secrets
+import re
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from . import __version__
 from .creative3d import BLENDER_EXE, C4D_EXE, blender_status, c4d_status, ensure_3d_workspace, launch, open_path, start_blender_render
 from .services import develop_cr3, inventory_base, process_image, run_ffmpeg, safe_name, service_status, sha256, unique_path
 from .store import Store
+from . import mobile_sync
 
 MODULE_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PANEL = Path(r"C:\Users\ADM_PESS\Desktop\painelseguro#1 - Copia")
@@ -53,8 +55,19 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config.update(MAX_CONTENT_LENGTH=2 * 1024 * 1024 * 1024, JSON_AS_ASCII=False)
 
 
+# Mesmo quando a conexao TCP chega pelo loopback, nunca aceitar Host externo:
+# bloqueia DNS rebinding que poderia expor a home contendo o token de sessao.
+_LOCAL_HOST = re.compile(r"^(?:localhost|127\.0\.0\.1|\[::1\])(?::506[0-9])?$", re.IGNORECASE)
+
 @app.before_request
 def protect_mutations():
+    host = request.host
+    if not _LOCAL_HOST.fullmatch(host):
+        return jsonify(ok=False, error="Host fora do loopback autorizado."), 403
+    # HttpURLConnection do APK nao envia Origin; navegadores de sites externos sim.
+    origin = request.headers.get("Origin")
+    if origin and origin.lower() != "http://" + host.lower():
+        return jsonify(ok=False, error="Origem do navegador nao autorizada."), 403
     protected_mobile = request.path.startswith("/api/mobile/")
     if request.method == "OPTIONS":
         return None
@@ -63,15 +76,18 @@ def protect_mutations():
 
 
 @app.after_request
-def mobile_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Aurion-Token"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+def same_origin_only(response):
+    # A interface do PC e local, e a ponte USB usa HttpURLConnection nativo.
+    # CORS permissivo permitiria que sites externos lessem a home com token.
+    response.headers.pop("Access-Control-Allow-Origin", None)
+    response.headers.pop("Access-Control-Allow-Credentials", None)
     return response
 
 
 @app.get("/")
 def index():
+    if request.remote_addr not in {"127.0.0.1","::1"}:
+        return jsonify(ok=False,error="Interface com token disponivel somente localmente."), 403
     return render_template("index.html", token=TOKEN, version=__version__, base_root=str(BASE_ROOT))
 
 
@@ -171,6 +187,44 @@ def mobile_snapshot():
         code_manifest=_bounded_manifest(BASE_ROOT, 180),
         records=len(STORE.list("", limit=500)),
     )
+
+
+# Sincronizacao SOMENTE via loopback/USB. Porta 5060 do Super Studio;
+# nao existe acesso remoto implicito, nem dependencia do V14 original.
+SYNC_DB = DATA_ROOT / "mobile_sync" / "mirror.sqlite3"
+SYNC_INTENT = DATA_ROOT / "mobile_sync" / "requested.flag"
+
+
+@app.route("/api/mobile/memory-sync", methods=["GET", "POST"])
+def mobile_memory_sync():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify(ok=False, error="SYNC requer loopback/USB; LAN bloqueada."), 403
+    if request.method == "GET":
+        status = mobile_sync.state(SYNC_DB)
+        status["syncRequested"] = SYNC_INTENT.exists()
+        status["pcPort"] = int(os.environ.get("AURION_STUDIO_PORT", "5060"))
+        return jsonify(status)
+    if not mobile_sync.post_size_ok(request.content_length):
+        return jsonify(ok=False, error="Payload ausente ou acima de 3MB."), 413
+    try:
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("JSON invalido")
+        outcome = mobile_sync.exchange(SYNC_DB, data, STORE.database)
+        SYNC_INTENT.unlink(missing_ok=True)
+        return jsonify(outcome)
+    except (ValueError, TypeError) as exc:
+        return jsonify(ok=False, error=str(exc)), 400
+
+
+@app.post("/api/mobile/memory-sync/request")
+def request_memory_sync():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify(ok=False, error="Operacao local apenas."), 403
+    SYNC_INTENT.parent.mkdir(parents=True, exist_ok=True)
+    SYNC_INTENT.write_text(datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    return jsonify(ok=True, requested=True,
+                   message="Pedido local registrado; o POCO fara sync ao conectar e conferir o pedido.")
 
 
 @app.route("/api/mobile/dedication", methods=["GET", "POST"])
@@ -457,7 +511,7 @@ def too_large(_):
 
 
 def run() -> None:
-    app.run(host=os.environ.get("AURION_BIND_HOST", "0.0.0.0"), port=int(os.environ.get("AURION_STUDIO_PORT", "5060")), debug=False, threaded=True)
+    app.run(host=os.environ.get("AURION_BIND_HOST", "127.0.0.1"), port=int(os.environ.get("AURION_STUDIO_PORT", "5060")), debug=False, threaded=True)
 
 
 if __name__ == "__main__":

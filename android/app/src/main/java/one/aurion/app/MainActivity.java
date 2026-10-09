@@ -86,6 +86,7 @@ public class MainActivity extends Activity {
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
     private static final int PICK_WORKSPACE = 413;
+    private static final int PICK_PRIVATE_CATALOG = 424;
     private static final int PICK_CONVERT_IMAGE = 414;
     private static final int CAPTURE_PHOTO = 415;
     private static final int PICK_TRIM_MEDIA = 416;
@@ -97,6 +98,7 @@ public class MainActivity extends Activity {
     private static final int PICK_CLIENT_PHOTOS = 421;
     private static final int PICK_CERTIFICATE = 422;
     private static final int REQUEST_NOTIFICATIONS = 423;
+    private boolean bandPermissionEnablePending = false;
     private TextToSpeech speech;
     private MediaSession headsetSession;
     private WebView web;
@@ -150,7 +152,9 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        s.setAllowFileAccessFromFileURLs(false);
+        s.setAllowUniversalAccessFromFileURLs(false);
         s.setUserAgentString(s.getUserAgentString() + " AURION-ONE-Poco/6.8");
         web.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
         web.setWebChromeClient(new WebChromeClient() {
@@ -163,9 +167,9 @@ public class MainActivity extends Activity {
         });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView v, String url, Bitmap favicon) {
-                if (url != null && url.startsWith("file:///android_asset/")) {
+                if (isTrustedAppDocument(url)) {
                     v.addJavascriptInterface(new ProfileBridge(), "AurionProfiles");
-                    if (url.startsWith("file:///android_asset/index.html") && profiles.signedIn())
+                    if (url.equals("file:///android_asset/index.html") && profiles.signedIn())
                         v.addJavascriptInterface(profiles.owner() ? bridge : memberBridge, "AurionAndroid");
                     else v.removeJavascriptInterface("AurionAndroid");
                 } else { v.removeJavascriptInterface("AurionAndroid"); v.removeJavascriptInterface("AurionProfiles"); }
@@ -173,10 +177,15 @@ public class MainActivity extends Activity {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                String scheme = uri.getScheme() == null ? "" : uri.getScheme();
-                if ((scheme.equals("http") || scheme.equals("https")) && isAllowedPanelHost(uri.getHost())) return false;
-                if (scheme.equals("file")) return false;
-                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
+                if (!request.isForMainFrame()) return true; // Never allow untrusted iframe navigation.
+                if (isTrustedAppDocument(uri.toString())) return false;
+                String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+                // All remote panels and public links open outside the privileged Android WebView.
+                if (!(scheme.equals("http") || scheme.equals("https") || scheme.equals("mailto") || scheme.equals("tel"))) {
+                    toast("Navegação bloqueada: endereço não autorizado");
+                    return true;
+                }
+                try { startActivity(new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)); }
                 catch (Exception ignored) { toast("Não foi possível abrir o endereço"); }
                 return true;
             }
@@ -195,14 +204,15 @@ public class MainActivity extends Activity {
     @Override protected void onPause() { if (headsetSession != null) headsetSession.setActive(false); super.onPause(); }
     @Override protected void onDestroy() { if (headsetSession != null) headsetSession.release(); if (speech != null) speech.shutdown(); super.onDestroy(); }
 
-    private boolean isAllowedPanelHost(String host) {
-        if (host == null) return false;
-        String h = host.toLowerCase(Locale.ROOT);
-        return h.equals("localhost") || h.equals("127.0.0.1") || h.endsWith(".ts.net") || h.endsWith(".local") ||
-            h.startsWith("10.") || h.startsWith("192.168.") || h.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*") ||
-            h.matches("100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\..*");
+    /** Only the two packaged top-level documents can run within the privileged WebView. */
+    private boolean isTrustedAppDocument(String url) {
+        return "file:///android_asset/profiles.html".equals(url) ||
+               "file:///android_asset/index.html".equals(url);
     }
 
+    private boolean isAllowedPanelHost(String host) {
+        return AurionPrivateHosts.isAllowed(host);
+    }
     private boolean has(String permission) { return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED; }
     private boolean packageInstalled(String pkg) {
         try { getPackageManager().getApplicationInfo(pkg, 0); return true; }
@@ -245,6 +255,8 @@ public class MainActivity extends Activity {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             j.put("batteryUnrestricted", pm != null && pm.isIgnoringBatteryOptimizations(getPackageName()));
             j.put("miFitness", packageInstalled("com.xiaomi.wearable"));
+            j.put("notifyForXiaomi", packageInstalled("com.mc.xiaomi1"));
+            j.put("bandNotificationChannel", AurionBandChannel.status(this));
             j.put("termux", packageInstalled("com.termux"));
             j.put("tailscale", packageInstalled("com.tailscale.ipn"));
             j.put("healthConnect", packageInstalled("com.google.android.apps.healthdata") || Build.VERSION.SDK_INT >= 34);
@@ -1140,7 +1152,7 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdate() {
-        if (getPackageName().endsWith(".preview")) {
+        if (getPackageName().contains(".preview")) {
             updateEvent("current", "Prévia separada: atualizações da instalação principal não se aplicam aqui.", "7.0.0-preview");
             return;
         }
@@ -1278,7 +1290,7 @@ public class MainActivity extends Activity {
             if (result.optBoolean("ok")) store.setProfile(id);
             return result.toString();
         }
-        @JavascriptInterface public void enter() { if (profiles.signedIn()) runOnUiThread(() -> { if (profiles.owner()) { scheduleHourlySync(); handler.postDelayed(MainActivity.this::checkForUpdate, 1800); } web.loadUrl("file:///android_asset/index.html"); }); }
+        @JavascriptInterface public void enter() { if (profiles.signedIn()) runOnUiThread(() -> { if (profiles.owner()) { scheduleHourlySync(); handler.postDelayed(MainActivity.this::checkForUpdate, 1800); } /* addJavascriptInterface must run BEFORE loadUrl so the next document can see AurionAndroid */ web.addJavascriptInterface(profiles.owner() ? bridge : memberBridge, "AurionAndroid"); web.loadUrl("file:///android_asset/index.html"); }); }
         @JavascriptInterface public void logout() {
             profiles.logout(); store.setProfile("anark");
             runOnUiThread(() -> { WorkManager.getInstance(MainActivity.this).cancelUniqueWork("aurion-hourly-sync"); web.removeJavascriptInterface("AurionAndroid"); web.loadUrl("file:///android_asset/profiles.html"); });
@@ -1308,6 +1320,26 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void runHourlySyncNow() { MainActivity.this.runHourlySyncNow(); }
         @JavascriptInterface public void saveNodeSettings(String panel, String agent, String token, String comfy, String ollama) { MainActivity.this.saveNodeSettings(panel, agent, token, comfy, ollama); }
         @JavascriptInterface public void savePcStudio(String base, String token) { MainActivity.this.savePcStudio(base, token); }
+        @JavascriptInterface public String pocoPcSyncStatus() {
+            return AurionPcMemorySync.status(MainActivity.this).toString();
+        }
+        @JavascriptInterface public void pocoPcSyncNow(String base, String token) {
+            if (!profiles.owner()) return;
+            if (base == null || !base.trim().matches("http://(127\\.0\\.0\\.1|localhost):506[0-9]")) {
+                emit("aurionPocoPcSyncResult", "{\"ok\":false,\"error\":\"Use http://127.0.0.1:5060 com ADB reverse\"}");
+                return;
+            }
+            savePcStudio(base.trim(), token);
+            new Thread(() -> emit("aurionPocoPcSyncResult",
+                AurionPcMemorySync.run(MainActivity.this,store,true).toString()),
+                "aurion-usb-sync").start();
+        }
+        @JavascriptInterface public String pocoPcAutoSync(boolean enabled) {
+            if (!profiles.owner()) return "{\"ok\":false}";
+            AurionPcMemorySync.setEnabled(MainActivity.this,enabled);
+            return AurionPcMemorySync.status(MainActivity.this).toString();
+        }
+
         @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
         @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
         @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
@@ -1315,7 +1347,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void listenVoice() { runOnUiThread(() -> { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR"); startActivityForResult(intent, VOICE_INPUT); } catch (Exception e) { toast("Ditado não disponível neste aparelho"); } }); }
         @JavascriptInterface public String getDiagnostics() { return diagnostics().toString(); }
         @JavascriptInterface public void refreshDiagnostics() { emit("aurionDiagnostics", diagnostics().toString()); }
-        @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); if (!isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException(); web.loadUrl(raw); } catch (Exception e) { toast("Use IP local ou endereço Tailscale do PC"); } }); }
+        @JavascriptInterface public void openPanel(String raw) { runOnUiThread(() -> { try {
+            Uri u = Uri.parse(raw);
+            String scheme = u.getScheme() == null ? "" : u.getScheme().toLowerCase(Locale.ROOT);
+            if (!(scheme.equals("http") || scheme.equals("https")) || !isAllowedPanelHost(u.getHost())) throw new IllegalArgumentException();
+            startActivity(new Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE));
+        } catch (Exception e) { toast("Use endereço HTTP(S) privado do PC ou Tailscale"); } }); }
         @JavascriptInterface public void testPanel(String raw) { MainActivity.this.testPanel(raw); }
         @JavascriptInterface public void probePcStack(String base, String token, String comfy, String ollama) { MainActivity.this.probePcStack(base, token, comfy, ollama); }
         @JavascriptInterface public void syncDedication(String base, String json) { MainActivity.this.syncDedication(base, json); }
@@ -1390,7 +1427,38 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void openExternal(String raw) { runOnUiThread(() -> { try { Uri u = Uri.parse(raw); String s = u.getScheme(); if (!("http".equals(s) || "https".equals(s) || "mailto".equals(s) || "tel".equals(s))) throw new IllegalArgumentException(); startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("Endereço externo inválido"); } }); }
         @JavascriptInterface public void scanBand() { runOnUiThread(MainActivity.this::requestBluetoothOrScan); }
         @JavascriptInterface public void notifyBand() { runOnUiThread(() -> BandNotificationTest.requestOrSend(MainActivity.this)); }
+        @JavascriptInterface public String bandChannelStatus() {
+            return AurionBandChannel.status(MainActivity.this).toString();
+        }
+        @JavascriptInterface public void bandChannelEnable(boolean enabled) {
+            runOnUiThread(() -> {
+                if (enabled && !AurionBandChannel.hasPermission(MainActivity.this)
+                    && Build.VERSION.SDK_INT >= 33) {
+                    bandPermissionEnablePending = true;
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            AurionBandChannel.REQUEST_PERMISSION);
+                    return;
+                }
+                emit("aurionBandChannelResult", AurionBandChannel.setEnabled(MainActivity.this, enabled).toString());
+            });
+        }
+        @JavascriptInterface public void bandChannelTest() {
+            runOnUiThread(() -> emit("aurionBandChannelResult",
+                    AurionBandChannel.sendManualTest(MainActivity.this).toString()));
+        }
+        @JavascriptInterface public String bandChannelConfirmReceipt() {
+            return AurionBandChannel.confirmOperatorReceipt(MainActivity.this).toString();
+        }
         @JavascriptInterface public void openMiFitness() { openPackage("com.xiaomi.wearable", "https://play.google.com/store/apps/details?id=com.xiaomi.wearable"); }
+        @JavascriptInterface public void openNotifyPro() {
+            runOnUiThread(() -> {
+                try {
+                    Intent launch = getPackageManager().getLaunchIntentForPackage("com.mc.xiaomi1");
+                    if (launch != null) startActivity(launch);
+                    else toast("Notify Pro não identificado no POCO. Nada será instalado automaticamente.");
+                } catch (Exception e) { toast("Não foi possível abrir Notify Pro."); }
+            });
+        }
         @JavascriptInterface public void openTermux() { openPackage("com.termux", "https://github.com/termux/termux-app"); }
         @JavascriptInterface public void openTailscale() { openPackage("com.tailscale.ipn", "https://play.google.com/store/apps/details?id=com.tailscale.ipn"); }
         @JavascriptInterface public void openSetting(String key) { MainActivity.this.openSetting(key); }
@@ -1431,9 +1499,18 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_WORKSPACE && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
-            try { getContentResolver().takePersistableUriPermission(uri, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)); } catch (Exception ignored) {}
-            getSharedPreferences("aurion_workspace", MODE_PRIVATE).edit().putString("tree", uri.toString()).apply();
-            emit("aurionWorkspaceResult", uri.toString());
+            boolean retained = false;
+            try {
+                getContentResolver().takePersistableUriPermission(uri,
+                    data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+                retained = true;
+            } catch (Exception ignored) {}
+            if (retained) {
+                getSharedPreferences("aurion_workspace", MODE_PRIVATE).edit().putString("tree", uri.toString()).apply();
+                emit("aurionWorkspaceResult", uri.toString());
+                new Thread(() -> emit("aurionBootstrapScanResult",
+                    AurionBootstrapIndex.scanWorkspace(this,store,true).toString())).start();
+            } else emit("aurionBootstrapScanResult", "{\"status\":\"BLOQUEADO\",\"reason\":\"Permissao_de_leitura_nao_persistida\"}");
         }
         if (request == PICK_CONVERT_IMAGE && result == RESULT_OK && data != null && data.getData() != null) convertImage(data.getData());
         if (request == CAPTURE_PHOTO) {
@@ -1443,6 +1520,26 @@ public class MainActivity extends Activity {
         }
         if (request == PICK_TRIM_MEDIA && result == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData(); new Thread(() -> emit("aurionTrimResult", MediaTools.trim(this, uri, pendingTrimKind, pendingTrimStart, pendingTrimEnd).toString())).start();
+        }
+        if (request == PICK_PRIVATE_CATALOG && result == RESULT_OK && data != null && data.getData() != null) {
+            Uri catalogUri = data.getData();
+            new Thread(() -> {
+                JSONObject reply = new JSONObject();
+                try (InputStream in = getContentResolver().openInputStream(catalogUri)) {
+                    if (in == null) throw new IllegalArgumentException("catalogo_indisponivel");
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    byte[] buffer = new byte[4096];
+                    int n;
+                    while ((n = in.read(buffer)) != -1) {
+                        if (out.size() + n > 70000) throw new IllegalArgumentException("catalogo_excede_70KB");
+                        out.write(buffer, 0, n);
+                    }
+                    reply = AurionBootstrapIndex.importPrivateCatalog(this,store,out.toString("UTF-8"));
+                } catch (Exception e) {
+                    try { reply.put("ok",false).put("error",e.getClass().getSimpleName()); } catch (Exception ignored) {}
+                }
+                emit("aurionBootstrapCatalogResult",reply.toString());
+            }).start();
         }
         if (request == PICK_KEYS_IMPORT && result == RESULT_OK && data != null && data.getData() != null) {
             Uri chosen = data.getData(); new Thread(() -> {
@@ -1486,6 +1583,14 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
         BandNotificationTest.onPermissionResult(this, code, results);
+        if (code == AurionBandChannel.REQUEST_PERMISSION) {
+            boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+            if (bandPermissionEnablePending) {
+                bandPermissionEnablePending = false;
+                emit("aurionBandChannelResult",
+                     AurionBandChannel.setEnabled(this, granted).toString());
+            }
+        }
         if (code == REQUEST_BLUETOOTH) { boolean ok = true; for (int r : results) ok &= r == PackageManager.PERMISSION_GRANTED; if (ok) startBleScan(); else emit("aurionBandResult", "{\"status\":\"blocked\",\"message\":\"Permissão Bluetooth negada\"}"); }
     }
     @Override public void onBackPressed() {

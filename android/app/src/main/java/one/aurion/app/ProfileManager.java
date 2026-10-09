@@ -2,6 +2,9 @@ package one.aurion.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import androidx.work.WorkManager;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.ExistingWorkPolicy;
 import android.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,11 +22,21 @@ final class ProfileManager {
     private static final String DAVI = "home,project,photo,video,agent,memory";
     private static final String SPECTRA = "home,portfolio";
     private final SharedPreferences prefs;
+    private final Context appContext;
     private volatile String active = "";
     private int failed = 0;
     private long blockedUntil = 0;
 
-    ProfileManager(Context context) { prefs = context.getSharedPreferences("aurion_profiles_v7", Context.MODE_PRIVATE); }
+    ProfileManager(Context context) {
+        appContext=context.getApplicationContext();
+        prefs = appContext.getSharedPreferences("aurion_profiles_v7", Context.MODE_PRIVATE);
+    }
+    private void resumeOwnerIndex(){
+        if(!owner())return;
+        WorkManager.getInstance(appContext).enqueueUniqueWork("aurion-start-index",
+            ExistingWorkPolicy.KEEP,
+            new OneTimeWorkRequest.Builder(AurionStartupWorker.class).build());
+    }
     String active() { return active; }
     boolean signedIn() { return !active.isEmpty(); }
     boolean owner() { return "anark".equals(active); }
@@ -54,6 +67,7 @@ final class ProfileManager {
                     .putString("tabs_" + id, id.equals("anark") ? ALL : DS)
                     .putBoolean("bootstrapped", true).putString("legacy_owner", id).commit();
             active = id;
+            resumeOwnerIndex();
             return ok();
         } catch (Exception e) { return error(e); }
     }
@@ -66,7 +80,7 @@ final class ProfileManager {
                 if (++failed >= 5) { blockedUntil = System.currentTimeMillis() + 60000; failed = 0; }
                 throw new IllegalArgumentException("Perfil ou código inválido");
             }
-            failed = 0; active = id; return ok();
+            failed = 0; active = id; resumeOwnerIndex(); return ok();
         } catch (Exception e) { return error(e); }
     }
     synchronized JSONObject provision(String id, String pin, String tabs) {

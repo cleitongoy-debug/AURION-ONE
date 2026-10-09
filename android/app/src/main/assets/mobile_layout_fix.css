@@ -1,0 +1,27 @@
+:root{--aurion-nav-height:92px}
+main{padding-bottom:calc(var(--aurion-nav-height) + 28px + env(safe-area-inset-bottom,0px))}
+#guideOrb{bottom:calc(var(--aurion-nav-height) + 12px);width:56px;height:56px;right:12px}
+#guidePanel{position:fixed;left:8px;right:8px;bottom:calc(var(--aurion-nav-height) + 8px);top:auto;max-height:min(72dvh,680px);overflow-y:auto;overscroll-behavior:contain;z-index:60;display:flex;flex-direction:column;gap:10px}
+#guidePanel[hidden]{display:none!important}
+#guidePanel .guideHead{flex:0 0 auto}
+#guideReply{flex:1 1 auto;min-height:100px;max-height:48dvh;overflow-y:auto;overflow-wrap:anywhere;white-space:pre-wrap;font-size:15px;line-height:1.55}
+#guidePanel .grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;flex:0 0 auto}
+#guidePanel input{min-width:0;font-size:16px}
+#guidePanel .grid button{width:auto;min-width:72px}
+#guidePanel>.guideHead button{width:44px;min-width:44px}
+@media(max-height:550px){#guidePanel{bottom:8px;max-height:calc(100dvh - 16px)}#guideOrb{bottom:8px}}
+
+/* Keep floating assistant readable and editable on mobile keyboard. */
+#guidePanel #guideQuestion{display:block;min-height:76px;max-height:150px;resize:vertical;line-height:1.5;overflow-y:auto;flex:1 1 auto;font-size:16px}
+#guidePanel .guideHead{gap:10px}
+#guidePanel .guideHead>div{min-width:0}
+#guidePanel .guideHead h2{overflow-wrap:anywhere}
+#guidePanel .guideReply{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-height:min(42dvh,340px);min-height:100px}
+body.aurion-guide-keyboard .tabs{display:none!important}
+body.aurion-guide-keyboard #guideOrb{display:none!important}
+body.aurion-guide-keyboard #guidePanel{top:8px;bottom:8px;max-height:calc(var(--aurion-visible-height,75dvh) - 16px);overflow-y:auto}
+#quickSyncCard .muted{font-size:12px}
+#quickSyncStatus{max-height:none;min-height:62px}
+.tabs button{scroll-margin-inline:10px}
+button,input,textarea,select{touch-action:manipulation}
+@media(max-width:380px){#guidePanel{padding:12px}#guidePanel .grid{grid-template-columns:minmax(0,1fr) 84px}}

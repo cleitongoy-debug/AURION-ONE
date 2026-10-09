@@ -1,0 +1,111 @@
+name: AURION ONE - memoria e backup offline (QA)
+on:
+  push:
+    branches: [fix/one-memoria-offline-integridade-20261009]
+    paths:
+      - 'android/**'
+      - 'pc-package-v3/**'
+      - 'tools/test_aurion_web_memory.cjs'
+      - 'tools/test_aurion_assets.cjs'
+      - 'tools/test_archive_gallery.cjs'
+      - 'tools/test_aurion_webview_bridge.cjs'
+      - 'tools/test_mobile_quick_sync.cjs'
+      - '.github/workflows/aurion-one-integridade.yml'
+  pull_request:
+    branches: [deliver/poco-v70-profiles]
+    paths:
+      - 'android/**'
+      - 'pc-package-v3/**'
+      - 'tools/test_aurion_web_memory.cjs'
+permissions:
+  contents: read
+jobs:
+  offline-web-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check JS
+        run: |
+          for f in android/app/src/main/assets/*.js; do node --check "$f"; done
+      - name: Memory and sync state synthetic tests
+        run: node tools/test_aurion_web_memory.cjs
+      - name: Quick USB sync saved-port and safety tests
+        run: node tools/test_mobile_quick_sync.cjs
+      - name: Onboarding inline JS and source contract checks
+        run: node tools/test_aurion_assets.cjs
+      - name: Biblioteca, capas e depoimentos (sintetico)
+        run: node tools/test_archive_gallery.cjs
+      - name: WebView origin and native bridge source contract
+        run: node tools/test_aurion_webview_bridge.cjs
+  pc-memory-sync-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PC test dependencies
+        run: pip install -r pc-package-v3/requirements.txt
+      - name: Check PC dashboard JavaScript syntax
+        run: node --check pc-package-v3/aurion_superstudio/static/studio.js
+      - name: Check PC and POCO PowerShell preflight syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path pc-package-v3/AURION_PREVOO_PC_POCO.ps1),
+            [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.ToString() }
+            exit 1
+          }
+      - name: Regression tests PC and POCO sync protocol
+        working-directory: pc-package-v3
+        run: python -m unittest discover -s tests -p 'test_*sync*.py' -v
+      - name: Export PC sync kit (no binaries, no secrets)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AURION-PC-POCO-SYNC-KIT
+          path: |
+            pc-package-v3/
+            !pc-package-v3/**/__pycache__/**
+            !pc-package-v3/**/.venv/**
+            !pc-package-v3/**/logs/**
+          retention-days: 14
+  android-debug-build:
+    needs: offline-web-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Strict private-PC address allowlist regression (standalone Java)
+        run: |
+          mkdir -p build/hostcheck
+          javac -d build/hostcheck app/src/main/java/one/aurion/app/AurionPrivateHosts.java app/src/test/java/one/aurion/app/AurionPrivateHostsTest.java
+          java -cp build/hostcheck one.aurion.app.AurionPrivateHostsTest
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile updated APK (not install, not release)
+        run: gradle --no-daemon :app:assembleDebug
+      - name: SHA-256 and size
+        run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AURION-ONE-MEMORIA-P0-TESTE-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/SHA256SUMS.txt
+          retention-days: 14

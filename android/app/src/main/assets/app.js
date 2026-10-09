@@ -6,7 +6,7 @@ function data(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{ret
 function save(d){localStorage.setItem(KEY,JSON.stringify(d));renderAll()}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function native(name,...args){try{return AurionAndroid[name](...args)}catch(e){$('diagLog').textContent='Ponte Android indisponível: '+e.message}}
-function go(id){if(!AURION_ALLOWED(id))return;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo(0,0);if(id==='memory')renderMemories();if(id==='accounts')refreshAccounts();if(['band','diag'].includes(id))refreshDiag()}
+function go(id){if(!AURION_ALLOWED(id))return;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo(0,0);if(id==='memory'){renderMemories();if(typeof bootstrapRenderLinks==='function')bootstrapRenderLinks();}if(id==='accounts')refreshAccounts();if(['band','diag'].includes(id))refreshDiag();if(id==='band'&&typeof bandRefreshStatus==='function')bandRefreshStatus()}
 
 function saveProject(){let d=data();d.project={name:$('projectName').value.trim(),client:$('clientName').value.trim(),brief:$('brief').value,deadline:$('deadline').value};d.stages=d.stages||{};d.stages.Projeto=true;save(d);native('memoryAdd','project',d.project.name||'Projeto',JSON.stringify(d.project),'{}')}
 function setStage(name,value){let d=data();d.stages=d.stages||{};d.stages[name]=value;save(d)}
@@ -41,7 +41,23 @@ function renderMemories(){let list=getMemories('all',$('memorySearch').value,100
 function deleteMemory(id){if(confirm('Excluir esta memória local?')){native('memoryDelete',id);renderMemories()}}
 function exportMemory(){native('exportBackup',native('memoryExport'))}
 window.aurionMemoryResult=raw=>{$('memoryLog').textContent=JSON.stringify(JSON.parse(raw),null,2);renderMemories()};
-function memoryContext(q){let facts=getMemories('factory','',8),more=q?getMemories('reference',q,3):[];return facts.concat(more).map(x=>`[${x.type}] ${x.title}: ${x.body}`).join('\n').slice(0,12000)}
+function memoryContext(q){
+  const terms=[...new Set(String(q||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().match(/[a-z0-9#_-]{3,}/g)||[])];
+  if(!terms.length)return '';
+  const sources=[...getMemories('memory','',120),...getMemories('reference','',250),
+      ...getMemories('factory','',20)];
+  const scored=sources.map(x=>{
+    const text=(String(x.title||'')+' '+String(x.body||'')).normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    return{x,score:terms.reduce((n,t)=>n+(text.includes(t)?1:0),0)};
+  }).filter(z=>z.score>0).sort((a,b)=>b.score-a.score).slice(0,7);
+  // Somente fontes relacionadas. Textos historicos sao referencias, nao consciencia treinada.
+  return scored.map(({x})=>{
+    let meta={};try{meta=JSON.parse(x.meta||'{}')}catch{}
+    return '['+(meta.evidence||'REGISTRO_LOCAL')+'] '+x.title+': '+String(x.body||'').slice(0,800)+
+        ' (tipo '+x.type+'; origem '+(meta.source||meta.origin||'local')+')';
+  }).join('\n').slice(0,6500);
+}
 function saveConversation(){let t=$('agentText').value.trim();if(!t)return;native('memoryAdd','conversation','Operador · '+new Date().toLocaleString('pt-BR'),t,'{}');$('agentLog').textContent='Mensagem salva sem envio.';$('agentText').value=''}
 function sendAgent(){let t=$('agentText').value.trim();if(!t){$('agentLog').textContent='Digite uma mensagem.';return}let p=$('aiProvider').value,m=$('aiModel').value.trim(),mem=memoryContext($('memoryQuery').value||t);window.aurionPendingQuestion=t;native('memoryAdd','conversation','Operador',t,JSON.stringify({provider:p,model:m}));$('agentLog').textContent='Enviando com '+(mem?'memória selecionada':'sem memória')+'...';if(p==='offline'){let answer=offlineAnswer(t);$('agentLog').textContent='AURION OFFLINE\n\n'+answer;native('memoryAdd','conversation','Resposta AURION offline',answer,'{}')}else if(p==='local'){let s=settings();native('sendAgent',s.agent,s.token,(mem?'CONTEXTO:\n'+mem+'\n\n':'')+t)}else native('runCloudAi',p,m,t,mem)}
 window.aurionAiResult=raw=>{let x=JSON.parse(raw),body=x.result?.body||x.result?.error||JSON.stringify(x.result);try{let j=JSON.parse(body);body=j.output?.map?.(o=>o.content?.map?.(c=>c.text||'').join('')).join('')||j.candidates?.[0]?.content?.parts?.map?.(v=>v.text||'').join('')||j.choices?.[0]?.message?.content||body}catch{}$('agentLog').textContent=x.result?.ok?body:'Falha da rota '+x.label+': '+body;native('memoryAdd','conversation','Resposta '+x.label,body,JSON.stringify({provider:x.label,http:x.result?.http||0}));if(pendingLab){labResults[pendingLab]={route:x.label,body};$('labOut'+pendingLab).textContent=body;pendingLab=''}};

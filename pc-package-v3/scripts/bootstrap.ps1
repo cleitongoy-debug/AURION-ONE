@@ -30,7 +30,7 @@ try {
   & $Venv -m compileall -q (Join-Path $Root "aurion_superstudio") (Join-Path $Root "AURION_PREVOO.py")
   if ($LASTEXITCODE -ne 0) { throw "A validação dos arquivos falhou (código $LASTEXITCODE)." }
   $env:AURION_PANEL_ROOT = $Root
-  $env:AURION_BIND_HOST = "0.0.0.0"
+  $env:AURION_BIND_HOST = "127.0.0.1"
   Say "[AURION] Scan, aquecimento e abertura do painel..."
   & $Venv AURION_PREVOO.py 2>&1 | Tee-Object -FilePath $Log -Append
   exit $LASTEXITCODE
