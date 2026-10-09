@@ -357,3 +357,21 @@ Casos de aceitação preparados: salto para frente/para trás no relógio; gap d
 
 ### Checkpoint seguinte
 Próximo comando >: voz, atalhos e botão do fone/capacete — rastrear entrada, despacho, ação e resposta falada; preparar critérios de interrupção e tela apagada. LUZ pausada. Esta etapa deixa novos achados e resoluções documentados, não implementados.
+
+
+## AURION_EU3_IMPORT_RESTAURACAO_20261009 — restauração local de pesquisas por JSON
+
+**Origem:** revisão do `android/app/src/main/assets/research_eu3.js` e testes `tools/test_research_eu3.cjs`. A versão da prévia **já compilada anteriormente** não incorpora automaticamente estes commits; nenhum novo APK foi gerado ou instalado nesta rodada.
+
+**Problema:** a fila EU3 tinha exportação JSON, porém não possuía importação pelo usuário, impedindo restaurar provas a partir do arquivo exportado. Esta lacuna não comprova falha de backup nativo ou de outros módulos.
+
+**Alterações nesta branch DRAFT (não mesclada):**
+- `97bd6507388e5e7dae968a5b61727f5346042fa9`: leitura manual de JSON v1 com validação estrita, limites de tamanho/quantidade, prévia sem escrita, confirmação explícita, mesclagem idempotente por ID, rejeição atômica de conflitos, ciclos e dependências ausentes, cópia local do estado anterior antes da mesclagem, preservação de recibos, reclassificação de validações sem pré-requisitos válidos.
+- `41b82088fe2589d0cc134397a71112ade724b074`: testes persistentes acrescentados à suíte de regressão.
+- `199ad171e70682c5c0fc99e61b89e6866d67e0d5`: correção adicional da checagem de ausência de chave em armazenamento compatível com null/undefined (flagra-se e preserva-se o backup anterior).
+
+**Prova executada:** 21 checks isolados de pré-commit mais 47 afirmações da suíte CJS executadas em *harness JavaScript V8 compatível*, com correção do problema detectado na primeira execução. **Não confundir essa execução com Node binário, GitHub Actions, emulador Android ou POCO físico.** Verificação estática do `MainActivity.java`: WebChromeClient implementa `onShowFileChooser` e `onActivityResult` devolve os arquivos selecionados; experiência de usuário e permissões reais continuam NÃO TESTADAS.
+
+**Limites:** importação MANUAL de JSON, sem envio automático ao Drive, sem sync de fila EU3 por PC↔POCO, sem mecanismo de resolução automática de IDs divergentes (conflito é bloqueado para não destruir informações), sem garantia de autenticidade criptográfica do JSON recebido. Nenhuma hora de estudo humano inferida. LUZ/WhatsApp pausado. Após nova assinatura/build será necessária conferência no aparelho, sem desinstalar a instalação principal.
+
+**Próximos P0:** CI reproduzível dos novos testes, exportação→importação com múltiplos perfis em POCO autorizado, integridade de backup completo e contrato de sincronização por cursor/ACK; preservar originais e registrar só com recibos.
