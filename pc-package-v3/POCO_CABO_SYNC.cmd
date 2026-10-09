@@ -19,12 +19,10 @@ if errorlevel 1 (
   pause
   exit /b 3
 )
-echo [2/3] Ligando porta de SYNC do Super Studio...
-"%ADB%" -d reverse tcp:5060 tcp:5060
-if errorlevel 1 (
-  echo [ERRO] ADB reverse 5060 falhou.
-  pause
-  exit /b 4
+echo [2/3] Ligando portas privadas 5060-5069 do Super Studio...
+for /L %%P in (5060,1,5069) do (
+  "%ADB%" -d reverse tcp:%%P tcp:%%P
+  if errorlevel 1 echo [AVISO] Reverse %%P indisponivel.
 )
 echo [3/3] Ligando porta do painel V14 sem iniciar o painel...
 "%ADB%" -d reverse tcp:5058 tcp:5058
@@ -35,7 +33,7 @@ echo TUNEIS ATIVOS:
 echo.
 echo Abra PC Super Studio na porta 5060 (se estiver iniciado).
 echo No AURION do POCO: CONEXOES ^> SYNC POCO ^<^> PC
-echo URL: http://127.0.0.1:5060
+echo URL inicial: http://127.0.0.1:5060 (se Super Studio usar 5061-5069, ajuste URL)
 echo Cole o token exibido LOCALMENTE no painel PC. Nao mande o token pelo chat.
 echo Toque em SYNC POCO ^<^> PC - AGORA e confira recibos em ambos.
 echo.
