@@ -483,3 +483,14 @@ Código na prévia da PR #42: commit fce9b469b4220d8631b6e2abd1f369bd71a70d58. O
 QA local Node real: suíte EU3 existente (dependências, invalidação, importação, DOM sintético, métricas) passou; teste novo tools/test_research_cycles.cjs, 18 asserts passou (limiar de 20min, exclusão de lacuna 60s, invisibilidade, fração final, reload pausado, importação sem duplicação, export). Sintaxe passou. Workflow atualizado para rodar teste novo. Não declarar CI desta mudança aprovado sem recibo; não houve build/instalação/QA físico desta alteração. Ferramenta de tarefas ChatGPT limita-se a uma execução por hora; não foi criado agendamento fictício de 20min. Não equivale a um processo ativo no PC do Capitão.
 
 Catálogo Drive: snapshot 3.622 IDs de imagens, 1.136 hashes únicos; todos os bytes baixados. OCR automático de todos os hashes completado após corrigir única falha PNG por conversão RGB. 204 hashes com inspeção visual em pranchas, cobrindo 390 originais por equivalência SHA256. OCR ainda sem revisão textual integral, catálogo parcial e LoRA não treinado. Fichas atualizadas: https://drive.google.com/file/d/1tBpLQQCrrwtTiLBZCdvUx8H6ciFfbQqO/view ; pasta https://drive.google.com/drive/folders/1l8yVJtdSaTeakRZVGxUBu5VvHbkHB_G5 . Não publicar transcrições privadas no Git. Permanecem pendentes 932 hashes para inspeção visual e organização de todas as cópias individuais; inventário não é descrição completa.
+
+
+## LEI_FALCAO_RECONCILIADA_20261010
+
+Continuidade documental conferida em 2026-10-10 UTC. Os símbolos > e >> solicitam continuação; < solicita revisão. Não funcionam como autenticação. Foram lidos os registros da Lei do Falcão, o mapa neural e os quatro documentos indicados pelos anexos .gdoc.
+
+O snapshot do monitor contém 238 entradas: 235 imagens JPEG já presentes no inventário por ID e 3 vídeos MP4. Nenhuma imagem nova foi somada a partir desse monitor. O catálogo conhecido permanece em 3.628 originais e 1.142 conteúdos distintos por SHA-256. Após o lote U205–U224, há 230 conteúdos com inspeção visual registrada, cobrindo 442 IDs originais; restam 912 conteúdos sem descrição visual. OCR automático não significa transcrição integral revisada. Nenhum LoRA treinado.
+
+As seis telas do jogo possuem fichas individuais e relatório conferidos no Drive. Elas fundamentam recursos, capacidade, componentes, filas e chat ao lado das operações. Arte de arquitetura e métricas ilustradas não são telemetria. Nenhuma hora retroativa de estudo foi adicionada.
+
+O workflow de evidência associado ao commit 33152f3f2a71545082001aa45c06194dbbef2dce foi conferido: run 38007533528 concluído com sucesso. Isso não comprova APK compilado/instalado nem teste físico no POCO. Próximo lote de descrições: U225.
