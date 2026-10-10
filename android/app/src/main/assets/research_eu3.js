@@ -5,6 +5,35 @@ function engine(storage){
  let state;try{state=JSON.parse(storage.getItem(KEY));}catch(e){}
  if(!state||state.version!==1||!Array.isArray(state.items))state={version:1,items:[]};
  let active=null,last=0;
+ const CYCLE_KEY=KEY+'_cycles_v1',CYCLE_MS=20*60*1000;
+ let cycles;
+ try{cycles=JSON.parse(storage.getItem(CYCLE_KEY));}catch(err){}
+ if(!cycles||cycles.version!==1||!Number.isSafeInteger(cycles.observedMs)||cycles.observedMs<0||!Array.isArray(cycles.reports)){
+   cycles={version:1,observedMs:0,reports:[],baseline:null};
+ }
+ function advanceCycle(delta){
+   const m=metrics();
+   if(!cycles.baseline)cycles.baseline={total:m.total,documented:m.documented,review:m.byStatus.REVISAO_PENDENTE};
+   const before=Math.floor(cycles.observedMs/CYCLE_MS);
+   cycles.observedMs+=delta;
+   const after=Math.floor(cycles.observedMs/CYCLE_MS);
+   if(after>before){
+     const old=cycles.baseline;
+     cycles.reports.push({cycle:after,at:new Date().toISOString(),observedMs:cycles.observedMs,
+       total:m.total,documented:m.documented,review:m.byStatus.REVISAO_PENDENTE,
+       change:{total:m.total-old.total,documented:m.documented-old.documented,review:m.byStatus.REVISAO_PENDENTE-old.review},
+       scope:'Tempo observado do laboratório local; recibos declarados. Não representa estudo humano aferido nem pesquisa automática.'});
+     cycles.baseline={total:m.total,documented:m.documented,review:m.byStatus.REVISAO_PENDENTE};
+   }
+   storage.setItem(CYCLE_KEY,JSON.stringify(cycles));
+ }
+ function cycleStatus(){
+   const progressMs=cycles.observedMs%CYCLE_MS;
+   return {intervalMs:CYCLE_MS,observedMs:cycles.observedMs,progressMs,
+     remainingMs:CYCLE_MS-progressMs,completed:Math.floor(cycles.observedMs/CYCLE_MS),
+     active:active!==null,reports:JSON.parse(JSON.stringify(cycles.reports))};
+ }
+ function exportCycles(){return JSON.stringify({version:1,category:'LAB_LOCAL_OBSERVADO',...cycleStatus()},null,2);}
  const save=()=>storage.setItem(KEY,JSON.stringify(state));
  const get=id=>state.items.find(x=>x.id===id);
  const ready=(x,seen=new Set())=>!!x&&!seen.has(x.id)&&x.dependencies.every(id=>{const dep=get(id);return dep&&dep.status==='VALIDADO'&&ready(dep,new Set([...seen,x.id]));});
@@ -37,10 +66,10 @@ function engine(storage){
    if(changed)save();
  }
  function add(title,source,dependencies=[]){if(!title.trim()||!source.trim())throw Error('Informe título e fonte.');if(dependencies.some(id=>!get(id)))throw Error('Pré-requisito desconhecido.');const x={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),title:title.slice(0,200),source:source.slice(0,2000),dependencies:[...new Set(dependencies)],status:'CANDIDATO',milliseconds:0,receipts:[]};state.items.push(x);save();return x;}
- function tick(now,visible=true){if(active&&visible){const delta=now-last;if(delta>0&&delta<=5000)get(active).milliseconds+=delta;}last=now;save();}
+ function tick(now,visible=true){if(active&&visible){const delta=now-last;if(delta>0&&delta<=5000){get(active).milliseconds+=delta;advanceCycle(delta);}}last=now;save();}
  function pause(now){tick(now);active=null;save();}
  function start(id,now){const x=get(id);if(!x||!ready(x)||x.status==='VALIDADO')throw Error('Pesquisa bloqueada pelos pré-requisitos ou já validada.');pause(now);active=id;last=now;x.status='EM_ESTUDO';save();}
- function proof(id,range,result,passed){const x=get(id);if(!x||!ready(x)||!range.trim()||!result.trim())throw Error('Informe trecho lido e resultado reproduzível; confira pré-requisitos.');if(active===id)active=null;x.receipts.push({at:new Date().toISOString(),range:range.slice(0,500),result:result.slice(0,4000),passed:!!passed});x.status=passed?'VALIDADO':'EXPERIMENTAL';if(passed)delete x.review_reason;else markDescendantsForReview(id);save();}
+ function proof(id,range,result,passed,now){const x=get(id);if(!x||!ready(x)||!range.trim()||!result.trim())throw Error('Informe trecho lido e resultado reproduzível; confira pré-requisitos.');if(active===id){if(Number.isFinite(now))tick(now);active=null;}x.receipts.push({at:new Date().toISOString(),range:range.slice(0,500),result:result.slice(0,4000),passed:!!passed});x.status=passed?'VALIDADO':'EXPERIMENTAL';if(passed)delete x.review_reason;else markDescendantsForReview(id);save();}
 
  // Offline JSON import. Strict validation prevents truncated/corrupt files from changing the local queue.
  const MAX_JSON_CHARS=2000000,BACKUP_KEY=KEY+'_pre_restore_v1';
@@ -160,21 +189,24 @@ function engine(storage){
  }
 
  reconcilePersistedValidation();
- return {add,start,pause,tick,proof,ready,metrics,previewRestore,restore,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
+ return {add,start,pause,tick,proof,ready,metrics,cycleStatus,exportCycles,previewRestore,restore,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
 }
 root.AurionResearchEngine=engine;
 if(typeof document==='undefined')return;
 const e=engine(localStorage),host=document.querySelector('#lab');if(!host)return;
-const panel=document.createElement('div');panel.className='card';panel.innerHTML='<h2>🧪 Pesquisa · método EU3</h2><p>Fonte → estudo → experimento → prova → desbloqueio. Tempo registrado nesta sessão, sem transformar resposta de IA em validação. Os registros sobrevivem ao fechamento; exporte para backup.</p><label>Título</label><input id="euTitle"><label>Fonte: ID, caminho, linhas ou print</label><input id="euSource"><label>Pré-requisito validado</label><select id="euDependency"><option value="">Nenhum</option></select><button id="euAdd">ENFILEIRAR PESQUISA</button><div id="euCoverage" role="status" aria-live="polite">Cobertura documental: sem pesquisas cadastradas.</div><div id="euItems"></div><label>Trecho efetivamente lido</label><input id="euRange" placeholder="Arquivo e linhas / página / região do print"><label>Resultado e procedimento reproduzível</label><textarea id="euResult"></textarea><label><input type="checkbox" id="euPassed"> Conferi a prova e o critério foi atendido</label><button id="euProof">REGISTRAR PROVA DA PESQUISA SELECIONADA</button><button id="euPause">PAUSAR</button><button id="euExport">EXPORTAR JSON</button><p><strong>Importação manual:</strong> selecione uma exportação EU3 deste perfil ou de outro dispositivo. Conflitos de ID interrompem a operação sem sobrescrever provas.</p><input id="euImportFile" type="file" accept=".json,application/json"><p id="euImportPreview" aria-live="polite">Nenhum backup escolhido.</p><label><input type="checkbox" id="euImportApprove"> Conferi a origem e autorizo mesclar os registros sem sobrescrever os existentes.</label><button id="euImportApply" disabled>CONFIRMAR IMPORTAÇÃO</button><p id="euStatus" aria-live="polite"></p><p>Acervo localizado: <a href="https://docs.google.com/document/d/1Zh2uT-__vlHAXkz36Ia-_-jXkoRUYcZUsJcF6oc2DSc" target="_blank" rel="noopener">Laboratório de fusão</a> · <a href="https://docs.google.com/document/d/1-oLBlBtPzsvCExOuLvKDZDkW6pnStOAxU2C44ruWcyM" target="_blank" rel="noopener">Índice dos estudos</a> · <a href="https://drive.google.com/drive/folders/1480epyBbO9QGf7y1Nk9Vy1nWIQaPbZy3" target="_blank" rel="noopener">Biblioteca de conhecimento</a>. Acesso ao Drive exige conexão; cadastrar uma fonte não significa lê-la.</p>';host.prepend(panel);
+const panel=document.createElement('div');panel.className='card';panel.innerHTML='<h2>🧪 Pesquisa · método EU3</h2><p>Fonte → estudo → experimento → prova → desbloqueio. Tempo registrado nesta sessão, sem transformar resposta de IA em validação. Os registros sobrevivem ao fechamento; exporte para backup.</p><label>Título</label><input id="euTitle"><label>Fonte: ID, caminho, linhas ou print</label><input id="euSource"><label>Pré-requisito validado</label><select id="euDependency"><option value="">Nenhum</option></select><button id="euAdd">ENFILEIRAR PESQUISA</button><div id="euCoverage" role="status" aria-live="polite">Cobertura documental: sem pesquisas cadastradas.</div><div id="euCycleClock" role="timer"></div><p id="euCycleReport" aria-live="polite"></p><button id="euCyclesExport">EXPORTAR CICLOS OBSERVADOS</button><div id="euItems"></div><label>Trecho efetivamente lido</label><input id="euRange" placeholder="Arquivo e linhas / página / região do print"><label>Resultado e procedimento reproduzível</label><textarea id="euResult"></textarea><label><input type="checkbox" id="euPassed"> Conferi a prova e o critério foi atendido</label><button id="euProof">REGISTRAR PROVA DA PESQUISA SELECIONADA</button><button id="euPause">PAUSAR</button><button id="euExport">EXPORTAR JSON</button><p><strong>Importação manual:</strong> selecione uma exportação EU3 deste perfil ou de outro dispositivo. Conflitos de ID interrompem a operação sem sobrescrever provas.</p><input id="euImportFile" type="file" accept=".json,application/json"><p id="euImportPreview" aria-live="polite">Nenhum backup escolhido.</p><label><input type="checkbox" id="euImportApprove"> Conferi a origem e autorizo mesclar os registros sem sobrescrever os existentes.</label><button id="euImportApply" disabled>CONFIRMAR IMPORTAÇÃO</button><p id="euStatus" aria-live="polite"></p><p>Acervo localizado: <a href="https://docs.google.com/document/d/1Zh2uT-__vlHAXkz36Ia-_-jXkoRUYcZUsJcF6oc2DSc" target="_blank" rel="noopener">Laboratório de fusão</a> · <a href="https://docs.google.com/document/d/1-oLBlBtPzsvCExOuLvKDZDkW6pnStOAxU2C44ruWcyM" target="_blank" rel="noopener">Índice dos estudos</a> · <a href="https://drive.google.com/drive/folders/1480epyBbO9QGf7y1Nk9Vy1nWIQaPbZy3" target="_blank" rel="noopener">Biblioteca de conhecimento</a>. Acesso ao Drive exige conexão; cadastrar uma fonte não significa lê-la.</p>';host.prepend(panel);
 const q=id=>document.getElementById(id);let selected=null;
 function label(x){return (selected===x.id?'▶ ':'')+x.title+' · '+x.status+' · '+Math.floor(x.milliseconds/1000)+'s'+(e.ready(x)?'':' · BLOQUEADA');}
-function render(){const m=e.metrics(),coverage=m.percent===null?'N/D':m.percent.toFixed(2)+'%';
+function renderClock(){const c=e.cycleStatus(),sec=Math.floor(c.progressMs/1000),remaining=Math.ceil(c.remainingMs/1000);q('euCycleClock').textContent='Ciclo de 20 min: '+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+' · faltam '+Math.floor(remaining/60)+'m '+remaining%60+'s · '+c.completed+' ciclos · '+(c.active?'em observação':'pausado');const r=c.reports[c.reports.length-1];q('euCycleReport').textContent=r?'Último resumo '+r.at+': '+r.documented+'/'+r.total+' pesquisas documentadas, '+r.review+' em revisão; variação de documentadas '+r.change.documented+'. Tempo do Lab, sem inferir aprendizado humano.':'O primeiro resumo será registrado após 20 minutos observados com uma pesquisa ativa. Pausas e intervalos não observados ficam fora.';}
+function render(){renderClock();const m=e.metrics(),coverage=m.percent===null?'N/D':m.percent.toFixed(2)+'%';
  q('euCoverage').textContent='Cobertura documental: '+coverage+' · '+m.documented+'/'+m.total+' pesquisas com último recibo aprovado e pré-requisitos documentados · '+m.byStatus.REVISAO_PENDENTE+' em revisão · '+m.missingProof+' validadas sem recibo suficiente. NÃO representa aprendizado humano nem leitura automática de arquivos.';
  const dependency=q('euDependency').value;q('euItems').replaceChildren();q('euDependency').innerHTML='<option value="">Nenhum</option>';for(const x of e.items()){const b=document.createElement('button');b.dataset.researchId=x.id;b.textContent=label(x);b.onclick=()=>{selected=x.id;q('euStatus').textContent='Selecionada: '+x.title;if(x.status!=='VALIDADO')act(()=>e.start(x.id,performance.now()));};q('euItems').append(b);if(x.status==='VALIDADO'){const o=document.createElement('option');o.value=x.id;o.textContent=x.title;q('euDependency').append(o);}}q('euDependency').value=dependency;}
 function act(fn){try{fn();q('euStatus').textContent='Registro salvo localmente.';render();}catch(err){q('euStatus').textContent=err.message;}}
 q('euAdd').onclick=()=>act(()=>e.add(q('euTitle').value,q('euSource').value,q('euDependency').value?[q('euDependency').value]:[]));
-q('euPause').onclick=()=>act(()=>e.pause(performance.now()));q('euProof').onclick=()=>act(()=>e.proof(selected,q('euRange').value,q('euResult').value,q('euPassed').checked));
+q('euPause').onclick=()=>act(()=>e.pause(performance.now()));q('euProof').onclick=()=>act(()=>e.proof(selected,q('euRange').value,q('euResult').value,q('euPassed').checked,performance.now()));
 q('euExport').onclick=()=>{e.pause(performance.now());if(typeof native==='function'&&typeof AurionAndroid!=='undefined'&&AurionAndroid.exportBackup){native('exportBackup',e.export());return;}const blob=new Blob([e.export()],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='AURION_PESQUISAS_EU3.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+
+q('euCyclesExport').onclick=()=>{const text=e.exportCycles();if(typeof native==='function'&&typeof AurionAndroid!=='undefined'&&AurionAndroid.exportBackup){native('exportBackup',text);return;}const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='AURION_CICLOS_OBSERVADOS.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 
 let pendingBackup=null;
 q('euImportFile').onchange=()=>{
@@ -205,5 +237,6 @@ q('euImportApply').onclick=()=>{
    selected=null;render();
  }catch(err){q('euImportPreview').textContent='Importação cancelada: '+err.message;}
 };
-document.addEventListener('visibilitychange',()=>{if(document.hidden)e.pause(performance.now());});window.addEventListener('pagehide',()=>e.pause(performance.now()));setInterval(()=>{if(!document.hidden&&host.classList.contains('active')){e.tick(performance.now());const items=e.items();q('euItems').querySelectorAll('button').forEach(b=>{const x=items.find(v=>v.id===b.dataset.researchId);if(x)b.textContent=label(x);});}else if(e.active())e.pause(performance.now());},1000);render();
+document.addEventListener('visibilitychange',()=>{if(document.hidden)e.pause(performance.now());});window.addEventListener('pagehide',()=>e.pause(performance.now()));setInterval(()=>{if(!document.hidden&&host.classList.contains('active')){e.tick(performance.now());const items=e.items();q('euItems').querySelectorAll('button').forEach(b=>{const x=items.find(v=>v.id===b.dataset.researchId);if(x)b.textContent=label(x);});}else if(e.active())e.pause(performance.now());renderClock();},1000);render();
 })(typeof window==='undefined'?globalThis:window);
+
