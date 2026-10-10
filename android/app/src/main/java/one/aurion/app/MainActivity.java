@@ -1522,7 +1522,7 @@ public class MainActivity extends Activity {
                 startActivityForResult(i, CREATE_BACKUP);
             });
         }
-        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 7.0.0\nPerfis locais, dados separados e permissões do titular.").setPositiveButton("OK", null).show()); }
+        @JavascriptInterface public void appInfo() { runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this).setTitle("AURION ONE Super Studio").setMessage("Versão 7.2.0\nEU3 Fábrica, fila de estudos, C4D e serviços. Perfis locais e dados preservados.").setPositiveButton("OK", null).show()); }
     }
 
     private static final class JSONObjectResult {

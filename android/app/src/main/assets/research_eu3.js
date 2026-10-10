@@ -3,7 +3,9 @@
 const KEY='aurion_eu3_research_v1';
 function engine(storage){
  let state;try{state=JSON.parse(storage.getItem(KEY));}catch(e){}
- if(!state||state.version!==1||!Array.isArray(state.items))state={version:1,items:[]};
+ if(!state||![1,2].includes(state.version)||!Array.isArray(state.items))state={version:2,items:[]};
+ state.version=2;
+ state.items.forEach((x,i)=>{x.estimatedMinutes=Number.isFinite(x.estimatedMinutes)?Math.max(1,Math.round(x.estimatedMinutes)):20;x.priority=['URGENTE','ALTA','NORMAL','BAIXA'].includes(x.priority)?x.priority:'NORMAL';x.queueOrder=Number.isFinite(x.queueOrder)?x.queueOrder:i+1;x.category=String(x.category||'GERAL').slice(0,40);x.archived=!!x.archived;});
  let active=null,last=0;
  const CYCLE_KEY=KEY+'_cycles_v1',CYCLE_MS=20*60*1000;
  let cycles;
@@ -65,7 +67,11 @@ function engine(storage){
    }
    if(changed)save();
  }
- function add(title,source,dependencies=[]){if(!title.trim()||!source.trim())throw Error('Informe título e fonte.');if(dependencies.some(id=>!get(id)))throw Error('Pré-requisito desconhecido.');const x={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),title:title.slice(0,200),source:source.slice(0,2000),dependencies:[...new Set(dependencies)],status:'CANDIDATO',milliseconds:0,receipts:[]};state.items.push(x);save();return x;}
+ function add(title,source,dependencies=[],options={}){if(!title.trim()||!source.trim())throw Error('Informe título e fonte.');if(dependencies.some(id=>!get(id)))throw Error('Pré-requisito desconhecido.');const x={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),title:title.slice(0,200),source:source.slice(0,2000),dependencies:[...new Set(dependencies)],status:'CANDIDATO',milliseconds:0,receipts:[],estimatedMinutes:Math.max(1,Math.min(10080,Math.round(Number(options.estimatedMinutes)||20))),priority:['URGENTE','ALTA','NORMAL','BAIXA'].includes(options.priority)?options.priority:'NORMAL',queueOrder:Math.max(0,...state.items.map(y=>Number(y.queueOrder)||0))+1,category:String(options.category||'GERAL').slice(0,40),archived:false};state.items.push(x);save();return x;}
+ function updatePlan(id,patch){const x=get(id);if(!x)throw Error('Pesquisa não encontrada.');if(patch.estimatedMinutes!==undefined)x.estimatedMinutes=Math.max(1,Math.min(10080,Math.round(Number(patch.estimatedMinutes)||20)));if(patch.priority!==undefined){if(!['URGENTE','ALTA','NORMAL','BAIXA'].includes(patch.priority))throw Error('Prioridade inválida.');x.priority=patch.priority;}if(patch.category!==undefined)x.category=String(patch.category||'GERAL').slice(0,40);save();return x;}
+ function move(id,direction){const visible=state.items.filter(x=>!x.archived&&x.status!=='VALIDADO').sort((a,b)=>a.queueOrder-b.queueOrder),i=visible.findIndex(x=>x.id===id),j=i+Math.sign(direction);if(i<0||j<0||j>=visible.length)return;const a=visible[i].queueOrder;visible[i].queueOrder=visible[j].queueOrder;visible[j].queueOrder=a;save();}
+ function archive(id){const x=get(id);if(!x)throw Error('Pesquisa não encontrada.');if(active===id)active=null;x.archived=true;save();}
+ function queue(){const weight={URGENTE:0,ALTA:1,NORMAL:2,BAIXA:3};return state.items.filter(x=>!x.archived&&x.status!=='VALIDADO').sort((a,b)=>(weight[a.priority]-weight[b.priority])||(a.queueOrder-b.queueOrder));}
  function tick(now,visible=true){if(active&&visible){const delta=now-last;if(delta>0&&delta<=5000){get(active).milliseconds+=delta;advanceCycle(delta);}}last=now;save();}
  function pause(now){tick(now);active=null;save();}
  function start(id,now){const x=get(id);if(!x||!ready(x)||x.status==='VALIDADO')throw Error('Pesquisa bloqueada pelos pré-requisitos ou já validada.');pause(now);active=id;last=now;x.status='EM_ESTUDO';save();}
@@ -77,7 +83,7 @@ function engine(storage){
  function allowedKeys(v,keys,label){for(const key of Object.keys(v))if(!keys.includes(key))throw Error(label+': campo desconhecido '+key+'.');}
  function normalizeItem(raw){
    const v=asObject(raw,'Pesquisa');
-   allowedKeys(v,['id','title','source','dependencies','status','milliseconds','receipts','review_reason'],'Pesquisa');
+   allowedKeys(v,['id','title','source','dependencies','status','milliseconds','receipts','review_reason','estimatedMinutes','priority','queueOrder','category','archived'],'Pesquisa');
    if(typeof v.id!=='string'||!v.id||v.id.length>128)throw Error('ID de pesquisa inválido.');
    if(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)throw Error('Título de pesquisa inválido.');
    if(typeof v.source!=='string'||!v.source.trim()||v.source.length>2000)throw Error('Fonte de pesquisa inválida.');
@@ -96,7 +102,7 @@ function engine(storage){
      if(typeof p.passed!=='boolean')throw Error('Validação da prova inválida.');
      return {at:p.at,range:p.range,result:p.result,passed:p.passed};
    });
-   const x={id:v.id,title:v.title,source:v.source,dependencies:[...v.dependencies],status:v.status,milliseconds:v.milliseconds,receipts};
+   const x={id:v.id,title:v.title,source:v.source,dependencies:[...v.dependencies],status:v.status,milliseconds:v.milliseconds,receipts,estimatedMinutes:Math.max(1,Math.min(10080,Math.round(Number(v.estimatedMinutes)||20))),priority:['URGENTE','ALTA','NORMAL','BAIXA'].includes(v.priority)?v.priority:'NORMAL',queueOrder:Number.isFinite(v.queueOrder)?v.queueOrder:0,category:String(v.category||'GERAL').slice(0,40),archived:!!v.archived};
    if(v.review_reason!==undefined){
      if(typeof v.review_reason!=='string'||v.review_reason.length>100)throw Error('Motivo de revisão inválido.');
      x.review_reason=v.review_reason;
@@ -107,7 +113,7 @@ function engine(storage){
    if(typeof text!=='string'||text.length>MAX_JSON_CHARS)throw Error('JSON ausente ou maior que 2 milhões de caracteres.');
    let raw;try{raw=JSON.parse(text);}catch(e){throw Error('JSON inválido ou incompleto.');}
    asObject(raw,'Backup');allowedKeys(raw,['version','items'],'Backup');
-   if(raw.version!==1||!Array.isArray(raw.items)||raw.items.length>2000)throw Error('Versão ou quantidade de pesquisas incompatível.');
+   if(![1,2].includes(raw.version)||!Array.isArray(raw.items)||raw.items.length>2000)throw Error('Versão ou quantidade de pesquisas incompatível.');
    const received=raw.items.map(normalizeItem);
    const incomingIds=new Set();
    for(const x of received){if(incomingIds.has(x.id))throw Error('IDs repetidos dentro do backup.');incomingIds.add(x.id);}
@@ -139,7 +145,7 @@ function engine(storage){
    for(const x of merged)if(x.status==='VALIDADO'&&!depsValidated(x)){
      x.status='REVISAO_PENDENTE';x.review_reason='PRE_REQUISITO_INCONSISTENTE';review++;
    }
-   const proposed={version:1,items:merged};
+   const proposed={version:2,items:merged};
    const encoded=JSON.stringify(proposed);
    if(encoded.length>MAX_JSON_CHARS)throw Error('Biblioteca resultante ultrapassa limite seguro.');
    return {added,unchanged,review,total:merged.length,encoded,proposed};
@@ -189,7 +195,7 @@ function engine(storage){
  }
 
  reconcilePersistedValidation();
- return {add,start,pause,tick,proof,ready,metrics,cycleStatus,exportCycles,previewRestore,restore,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
+ return {add,start,pause,tick,proof,ready,metrics,cycleStatus,exportCycles,previewRestore,restore,updatePlan,move,archive,queue,items:()=>JSON.parse(JSON.stringify(state.items)),export:()=>JSON.stringify(state,null,2),active:()=>active};
 }
 root.AurionResearchEngine=engine;
 if(typeof document==='undefined')return;

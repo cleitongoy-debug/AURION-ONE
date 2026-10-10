@@ -9,3 +9,24 @@ body.eu3-active{background:var(--eu-bg);color:var(--eu-text);padding:0;font-fami
 /* Isolate legacy full-width form rules from the command console. */
 #eu3 h1{color:#dce9ef}#eu3 .eu-top{min-height:0}#eu3 .eu-chat-route select{width:0}#eu3 .eu-chat form textarea{width:0}#eu3 .eu-chat form button{width:auto}#eu3 .eu-panel-head button{width:auto}#eu3 .eu-update{width:auto}#eu3 .eu-bottom button{width:auto}#eu3 .eu-box{width:100%}#eu3 .eu-state{overflow-wrap:anywhere}#eu3 .eu-rail{position:sticky;top:64px;height:calc(100vh - 64px);align-self:start}.eu-return{width:auto;max-width:calc(100vw - 20px)}
 @media(max-width:760px){#eu3 .eu-rail{top:58px;height:calc(100vh - 58px)}#eu3 .eu-state small{display:block;margin-left:0;margin-top:4px}#eu3 .eu-breadcrumb span{min-width:0}#eu3 .eu-update{margin-left:0}#eu3 .eu-top{overflow:hidden}.eu-dialog-close{min-height:36px}}
+
+/* EU3 7.2 — fila mensurável, fábrica, C4D e serviços. */
+#eu3 .eu-rail{gap:5px;padding:8px 6px;overflow-y:auto}
+#eu3 .eu-rail button{height:49px;font-size:19px!important}
+#eu3 .eu-rail button small{font-size:6px!important;margin-top:2px}
+.eu-queue-summary{display:grid;grid-template-columns:2fr 2fr 1fr;gap:6px;padding:10px 12px 0}
+.eu-queue-summary span{border:1px solid #29495c;background:#071722;padding:8px;min-width:0}
+.eu-queue-summary small{display:block;color:#5da8bd;font-size:7px!important}
+.eu-queue-summary b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;margin-top:4px}
+.eu-queue-item.active{border-color:var(--eu-cyan);box-shadow:0 0 12px #75e8e533}
+.eu-order{font-size:7px;color:var(--eu-cyan);margin-bottom:5px}
+.eu-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.eu-group-title{margin:18px 0 8px;color:var(--eu-cyan);font-size:10px;letter-spacing:.14em}
+.eu-group-title:first-child{margin-top:0}
+.eu-hero-note{border-left:3px solid var(--eu-cyan);padding:12px;background:#0b202c;margin-bottom:12px}
+.eu-hero-note p{margin-top:6px!important}
+.eu-warning{border:1px solid #6e5630;background:#291f11;padding:10px;margin-top:12px!important;color:#e2c483!important}
+.eu-service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.eu-service{border:1px solid #315065;background:#081824;padding:11px}
+.eu-service b{display:block}.eu-service span{display:inline-block;color:var(--eu-cyan);font-size:8px;margin:5px 0}.eu-service small{display:block;color:#91aab8}
+@media(max-width:760px){.eu-queue-summary{grid-template-columns:1fr}.eu-form-grid,.eu-service-grid{grid-template-columns:1fr}#eu3 .eu-rail{gap:3px}#eu3 .eu-rail button{height:43px;font-size:17px!important}}

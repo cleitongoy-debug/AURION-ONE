@@ -53,14 +53,14 @@ jobs:
         run: gradle --no-daemon :app:assembleRelease
       - name: Name APK and checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk
-          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-ONE-POCO-v7.2.0-TESTE.apk
+          sha256sum app/build/outputs/apk/debug/AURION-ONE-POCO-v7.2.0-TESTE.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Publish debug test package (not compatible with installed release)
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-POCO-v7.0.0-TESTE
+          name: AURION-ONE-POCO-v7.2.0-TESTE
           path: |
-            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v7.0.0-TESTE.apk
+            android/app/build/outputs/apk/debug/AURION-ONE-POCO-v7.2.0-TESTE.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
@@ -68,7 +68,7 @@ jobs:
       - name: Publish unsigned release candidate (requires original private key)
         uses: actions/upload-artifact@v4
         with:
-          name: AURION-ONE-POCO-v7.0.0-ASSINAR-LOCALMENTE
+          name: AURION-ONE-POCO-v7.2.0-ASSINAR-LOCALMENTE
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14

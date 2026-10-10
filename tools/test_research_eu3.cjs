@@ -181,3 +181,22 @@ console.log('PASS: EU3 interface sintética: file chooser, prévia, consentiment
  assert.equal(e.metrics().humanLearningPercent,null);
 }
 console.log('PASS: EU3 cobertura documental mensurável, queda com reprovação, N/D, sem porcentagem humana');
+
+// CONTRATO DA FILA 7.2 — prioridade, previsão, ordem, migração e arquivo preservado.
+{
+ const {d,s}=store();
+ d.set('aurion_eu3_research_v1',JSON.stringify({version:1,items:[
+   {id:'old',title:'Legado',source:'arquivo',dependencies:[],status:'CANDIDATO',milliseconds:0,receipts:[]}
+ ]}));
+ const e=open(s),legacy=e.items()[0];
+ assert.equal(legacy.estimatedMinutes,20);assert.equal(legacy.priority,'NORMAL');assert.equal(legacy.category,'GERAL');
+ const low=e.add('Baixa','fonte',[],{estimatedMinutes:90,priority:'BAIXA',category:'C4D'});
+ const urgent=e.add('Urgente','fonte',[],{estimatedMinutes:15,priority:'URGENTE',category:'ESTUDO'});
+ assert.equal(e.queue()[0].id,urgent.id,'urgente vai ao topo');
+ assert.equal(e.items().find(x=>x.id===low.id).estimatedMinutes,90);
+ e.updatePlan(low.id,{estimatedMinutes:45,priority:'ALTA',category:'RENDER'});
+ assert.equal(e.items().find(x=>x.id===low.id).category,'RENDER');
+ e.archive(urgent.id);assert.equal(e.queue().some(x=>x.id===urgent.id),false);assert.equal(e.items().find(x=>x.id===urgent.id).archived,true);
+ assert.equal(JSON.parse(e.export()).version,2);
+}
+console.log('PASS: EU3 fila 7.2 com migração, prioridade, estimativa e arquivamento preservado');
