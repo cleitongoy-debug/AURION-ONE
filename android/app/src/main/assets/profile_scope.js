@@ -1,12 +1,14 @@
 'use strict';
-// All legacy WebView keys remain in place for ANARK. New profiles receive distinct keys.
+// Legacy WebView keys belong to the profile confirmed by the native bootstrap; other profiles receive distinct keys.
 const AURION_PROFILE = JSON.parse(AurionProfiles.status());
 const AURION_ID = AURION_PROFILE.active;
 const AURION_TABS = new Set(AURION_PROFILE.people.find(p=>p.id===AURION_ID)?.tabs.split(',')||[]);
 const AURION_ALLOWED = id => id==='profiles'||AURION_ID==='anark'||AURION_TABS.has(id);
 (function(){
  const get=Storage.prototype.getItem,set=Storage.prototype.setItem,remove=Storage.prototype.removeItem;
- const key=k=>AURION_ID==='anark'?String(k):'aurionProfile:'+AURION_ID+':'+String(k);
+ const legacyOwner=AURION_PROFILE.legacy_owner;
+ if(!['anark','ds','davi','spectra'].includes(legacyOwner))throw Error('Titular dos dados antigos não identificado; armazenamento suspenso.');
+ const key=k=>AURION_ID===legacyOwner?String(k):'aurionProfile:'+AURION_ID+':'+String(k);
  Storage.prototype.getItem=function(k){return get.call(this,key(k))};
  Storage.prototype.setItem=function(k,v){return set.call(this,key(k),v)};
  Storage.prototype.removeItem=function(k){return remove.call(this,key(k))};

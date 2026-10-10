@@ -1,0 +1,51 @@
+name: AURION EU3 laboratory evidence tests
+on:
+  push:
+    branches:
+      - feature/laboratorio-eu3-20261009
+    paths:
+      - 'android/app/src/main/assets/profile_scope.js'
+      - 'android/app/src/main/assets/mentoria_ia.js'
+      - 'android/app/src/main/assets/dedication.js'
+      - 'android/app/src/main/assets/research_eu3.js'
+      - 'android/app/src/main/java/one/aurion/app/ProfileManager.java'
+      - 'tools/test_profile_scope_legacy_owner.cjs'
+      - 'tools/test_mentoria_ia.cjs'
+      - 'tools/test_dedication_heartbeat.cjs'
+      - 'tools/test_research_eu3.cjs'
+      - 'tools/test_research_cycles.cjs'
+      - '.github/workflows/aurion-eu3-lab-qa.yml'
+  pull_request:
+    branches:
+      - fix/one-memoria-offline-integridade-20261009
+    paths:
+      - 'android/app/src/main/assets/**'
+      - 'android/app/src/main/java/one/aurion/app/ProfileManager.java'
+      - 'tools/test_*eu3.cjs'
+      - 'tools/test_mentoria_ia.cjs'
+      - 'tools/test_dedication_heartbeat.cjs'
+      - 'tools/test_profile_scope_legacy_owner.cjs'
+permissions:
+  contents: read
+jobs:
+  synthetic-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify assets syntax
+        run: |
+          node --check android/app/src/main/assets/profile_scope.js
+          node --check android/app/src/main/assets/research_eu3.js
+          node --check android/app/src/main/assets/mentoria_ia.js
+          node --check android/app/src/main/assets/dedication.js
+      - name: Prove independent research, mentoring, sleep and profile history
+        run: |
+          node tools/test_research_eu3.cjs
+          node tools/test_research_cycles.cjs
+          node tools/test_mentoria_ia.cjs
+          node tools/test_dedication_heartbeat.cjs
+          node tools/test_profile_scope_legacy_owner.cjs
