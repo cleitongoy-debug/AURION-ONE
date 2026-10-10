@@ -19,3 +19,11 @@ venv/
 *.db-shm
 *.egg-info/
 mobile/*.bak-*
+
+# Local Android build output and signing material
+android/.gradle/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore
+*.idsig

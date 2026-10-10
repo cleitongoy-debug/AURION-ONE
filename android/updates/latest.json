@@ -1,7 +1,9 @@
 {
-  "versionCode": 65,
-  "versionName": "6.5.0",
-  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/feat/poco-autonomo-v6-20260928/android/updates/AURION-ONE-POCO-v6.5.0.apk",
-  "sha256": "df5996a672eac54830831eed57590350f368597411d9e31336fd63cfe128de29",
-  "notes": "Dedicação POCO + PC; cursos, sessões, certificados e provas com fonte."
+  "versionCode": 73,
+  "versionName": "7.1.0",
+  "apkUrl": "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/AURION_EU3_MAESTRO_7_1_0.apk",
+  "sha256": "d2de6094340607d91336c1548d209d24dd030b81c105ebe5ad718f6c67ddefdd",
+  "packageName": "one.aurion.poco.v6",
+  "signerSha256": "51dd52d9f49e39e2c045f81fb3b70f2a1dd59807d40edba71cd2ae7ea25c9d43",
+  "notes": "Painel EU3: árvore, provas, agentes, memória e chat. Atualizador real e importação de APK local. Memória e chaves da instalação preservadas."
 }
