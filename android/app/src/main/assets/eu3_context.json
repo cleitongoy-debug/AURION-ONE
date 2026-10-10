@@ -1,0 +1,186 @@
+{
+  "schema": "aurion-eu3-context-1",
+  "updatedAt": "2026-10-10",
+  "operator": "Cleiton · ANARK · 130578",
+  "source": {
+    "title": "AURION_MENTE.md",
+    "url": "https://drive.google.com/file/d/1L1wPk1O2DYGZM0aMJjzqCxIkWQ4DB0pV/view",
+    "readAt": "2026-10-10",
+    "text": "# AURION EU3 — contexto do laboratório\n\nEsta é a base operacional: Capitão/ANARK, FALCÃO/Maestro, pesquisas, agentes e tomadas. As pautas são documentais; um nome no painel não comprova conexão nem execução.\n\nAzul: conhecimento ou hipótese ainda sem prova. Verde: fonte e recibo conferidos. Vermelho: erro, divergência ou revisão.\n\nA árvore mantém fontes, dependências, recibos e tempo observado. Ao reprovar uma pesquisa, os descendentes voltam para revisão e preservam o histórico.\n\nPautas: memória e continuidade; dashboard EU3; atualização do APK; PC/POCO por USB; APIs e pesquisadores; passagem entre agentes; T8i/RAW e entrega; C4D/plugin; Band, voz e notificações.\n\nMotores: consulta à memória local disponível; modelos remotos, Google e PC dependem de configuração e resposta real. Agentes externos começam OFF.\n\nMemória privada: snapshots e arquivos importados pertencem ao perfil e ficam no aparelho. O atualizador confere versão, SHA-256, pacote e assinatura antes de abrir o instalador Android.\n\nContexto documental é continuidade de registros; não representa consciência ou transferência de uma instância do ChatGPT.\n"
+  },
+  "rule": "AQUI SE VIVE, SE PROVA E SE CONTA. NÃO SE INVENTA.",
+  "references": [
+    {
+      "title": "EU3_REFERENCIA_RESEARCH_SPYCAMS_20261010.jpg",
+      "url": "https://drive.google.com/file/d/1Wco9rQEpgw67UaqMcbYvVKbW_YgXjkkh/view?usp=drivesdk"
+    },
+    {
+      "title": "EU3_ADENDO_PESQUISAS_ARVORE_VISUAL_20261010.md",
+      "url": "https://drive.google.com/file/d/1ZaL1pNxhZdCTDSFXISwk5RytslY22WGE/view?usp=drivesdk"
+    },
+    {
+      "title": "favicon.ico",
+      "url": "https://drive.google.com/file/d/1JEE5b-v3kV9kqeOhIAK6yxXBCZsdVTU3/view?usp=drivesdk"
+    },
+    {
+      "title": "AURION_LEITURA_LABORATORIO_JOGO_20261010.md",
+      "url": "https://drive.google.com/file/d/18u-YBicSDJs5WNVq23zv3muK3yOYXVWL/view?usp=drivesdk"
+    },
+    {
+      "title": "AGENTE__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1qEwGRWz9hLafwui5DYVz484haXrf7hTZ/view?usp=drivesdk"
+    },
+    {
+      "title": "PESQUISAS__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1BcgngqpJZBrGb2RyDftWmAPGXS5HZnt6/view?usp=drivesdk"
+    },
+    {
+      "title": "progress__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1-s6GwpfLAaxBFGUXY2AQo_2Rbze35aP4/view?usp=drivesdk"
+    },
+    {
+      "title": "TIPO__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1jaSSaq_Fv4OxfkI4dE6Rgb2QKUjwJGAJ/view?usp=drivesdk"
+    },
+    {
+      "title": "CHAT_VIVO__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1YjtL9tDlf7M9APnJ2veQmbCXW3sa9YPt/view?usp=drivesdk"
+    },
+    {
+      "title": "PRINCIPAL__DESCRICAO_E_TRANSCRICAO.txt",
+      "url": "https://drive.google.com/file/d/1xDRdtC4v_nBE5K28F7h9hs6AgDPLTIfd/view?usp=drivesdk"
+    },
+    {
+      "title": "CHAT VIVO.jpg",
+      "url": "https://drive.google.com/file/d/1b4eV_va6ecbw3kIICivCNqqdRpbjURNa/view?usp=drivesdk"
+    },
+    {
+      "title": "AGENTE.jpg",
+      "url": "https://drive.google.com/file/d/1dY9XDqSSITjUZKeY6nvWltNT8GTdBROz/view?usp=drivesdk"
+    },
+    {
+      "title": "TIPO.jpg",
+      "url": "https://drive.google.com/file/d/1Ju_AQQ_i3akKNDyc_szQtWXlUDfCzuMr/view?usp=drivesdk"
+    },
+    {
+      "title": "PESQUISAS.jpg",
+      "url": "https://drive.google.com/file/d/1yCntKnd712HrmgFYcFKer7O2UKNpl_4D/view?usp=drivesdk"
+    },
+    {
+      "title": "progress.jpg",
+      "url": "https://drive.google.com/file/d/1FjsDP7wq-dIG6Sd1Oval4iNJXIfAMPoN/view?usp=drivesdk"
+    },
+    {
+      "title": "#PRINCIPAL.jpg",
+      "url": "https://drive.google.com/file/d/1hqv6BuWIRdGuSrlcWIGl3ZlaVFzGaW_u/view?usp=drivesdk"
+    }
+  ],
+  "facts": [
+    {
+      "id": "rule",
+      "title": "Lei do Falcão / continuidade",
+      "body": "Preservar evidências originais, separar texto de execução e fatos de hipóteses. Capitão é autoridade final. Contexto pode ser transportado por documentos; a instância de ChatGPT não é transferida.",
+      "source": "https://drive.google.com/file/d/1L1wPk1O2DYGZM0aMJjzqCxIkWQ4DB0pV/view",
+      "box": "blue"
+    },
+    {
+      "id": "apk",
+      "title": "APK V7 — assinatura conferida",
+      "body": "Arquivo AURION_ONE_POCO_V7_MEMORIA_ASSINADO.apk recuperado nesta sessão. CRC e assinatura APK v2 conferidos, certificado coincide com a linhagem original. Instalação observada somente pelo print do Capitão.",
+      "source": "SHA-256 73da6b5c8ecebfeda597e9cf9f229f857d0804ca07052828655703539a4545c8",
+      "box": "green"
+    },
+    {
+      "id": "eu3",
+      "title": "Referências EU3 lidas",
+      "body": "Seis imagens originais de base, agente, chat, tipos, recursos e progresso foram abertas nesta sessão. A árvore Research adicional orienta o desenho espacial. Métricas do jogo não são horas humanas.",
+      "source": "https://drive.google.com/drive/folders/1hgh4olER5fCgIRcHi6nmsoV93i_6PNxe",
+      "box": "green"
+    },
+    {
+      "id": "update",
+      "title": "Atualização V7 — canal antigo",
+      "body": "Print do POCO relata Canal indisponível. Código consulta manifesto da main; manifesto localizado na branch de laboratório ainda anuncia versionCode65. Atualizador exige pacote, hash e assinatura compatíveis.",
+      "source": "Print 1000346855.jpg / android/updates/latest.json / MainActivity.java",
+      "box": "red"
+    },
+    {
+      "id": "sync",
+      "title": "Sync PC ↔ POCO / USB",
+      "body": "Ponte de memória está em código da PR41. Teste físico atual PC/POCO/Band sem recibo independente. O painel permite configurar e testar a rota, não presume acesso pelo cabo.",
+      "source": "https://github.com/cleitongoy-debug/AURION-ONE/pull/41",
+      "box": "blue"
+    },
+    {
+      "id": "raw",
+      "title": "T8i / edição e entrega",
+      "body": "Prioridades do Capitão: CR3, recuperação tonal, HSL, curvas, máscaras, histograma e exportação em lote. Os módulos existentes ficam disponíveis em Ferramentas para testes, sem declarar aprovação física.",
+      "source": "AURION_MENTE.md / histórico do Capitão",
+      "box": "blue"
+    },
+    {
+      "id": "agents",
+      "title": "ONE / CHINA / ÁGUIA / RATO / KANG",
+      "body": "Pautas e passagens documentais carregadas. Agentes externos não têm recibo de conexão desta sessão; começam OFF. CHINA entregou parecer conceitual, não prova de execução.",
+      "source": "https://drive.google.com/file/d/1L1wPk1O2DYGZM0aMJjzqCxIkWQ4DB0pV/view",
+      "box": "blue"
+    },
+    {
+      "id": "c4d",
+      "title": "Plugin C4D original",
+      "body": "Plugin prompt → objeto/câmera ainda não localizado, segundo o documento canônico. Pistas históricas preservadas; não é falha confirmada do C4D atual.",
+      "source": "https://drive.google.com/file/d/1L1wPk1O2DYGZM0aMJjzqCxIkWQ4DB0pV/view",
+      "box": "red"
+    }
+  ],
+  "agents": [
+    {
+      "id": "falcon",
+      "name": "FALCÃO",
+      "label": "🦅",
+      "role": "Engenharia · evidências · Maestro",
+      "agenda": "Dashboard EU3, memória e atualização. Contexto local carregado; modelo remoto depende da rota selecionada.",
+      "state": "LOCAL"
+    },
+    {
+      "id": "one",
+      "name": "ONE",
+      "label": "◈",
+      "role": "Coordenação · Drive",
+      "agenda": "Receber passagem e conferir a base canônica.",
+      "state": "OFF"
+    },
+    {
+      "id": "china",
+      "name": "CHINA",
+      "label": "◇",
+      "role": "DeepSeek · pareceres",
+      "agenda": "Proposta de migração de schema; aguarda teste e recibo.",
+      "state": "OFF"
+    },
+    {
+      "id": "eagle",
+      "name": "ÁGUIA",
+      "label": "✦",
+      "role": "Gemini · pesquisa",
+      "agenda": "Pesquisar fontes quando autenticado; registrar referências.",
+      "state": "OFF"
+    },
+    {
+      "id": "rat",
+      "name": "RATO",
+      "label": "⬡",
+      "role": "Papel a confirmar",
+      "agenda": "Revisar passagem e registrar capacidade real.",
+      "state": "OFF"
+    },
+    {
+      "id": "kang",
+      "name": "KANG",
+      "label": "⌘",
+      "role": "Papel a confirmar",
+      "agenda": "Revisar passagem e registrar capacidade real.",
+      "state": "OFF"
+    }
+  ]
+}

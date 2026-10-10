@@ -81,7 +81,10 @@ import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity {
     private static final String UPDATE_MANIFEST = "https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/latest.json";
-    private JSONObject availableUpdate;
+    private volatile JSONObject availableUpdate;
+    private File pendingInstallerFile;
+    private static final int PICK_UPDATE_APK = 425;
+    private static final int UPDATE_INSTALL_PERMISSION = 426;
     private static final int PICK_FILE = 410;
     private static final int CREATE_BACKUP = 411;
     private static final int REQUEST_BLUETOOTH = 412;
@@ -1151,78 +1154,122 @@ public class MainActivity extends Activity {
         catch (Exception ignored) { }
     }
 
-    private void checkForUpdate() {
+    private void checkForUpdate() { checkForUpdate(false); }
+
+    private void checkForUpdate(boolean installWhenAvailable) {
         if (getPackageName().contains(".preview")) {
-            updateEvent("current", "Prévia separada: atualizações da instalação principal não se aplicam aqui.", "7.0.0-preview");
+            updateEvent("current", "Prévia separada: atualizações da instalação principal não se aplicam aqui.", "7.1.0-preview");
             return;
         }
+        updateEvent("checking", "Conferindo publicação…", "");
         new Thread(() -> {
             try {
                 JSONObject response = cloudJson("GET", UPDATE_MANIFEST, "", "", null);
-                if (!response.optBoolean("ok")) throw new IllegalStateException("Canal indisponível");
+                if (!response.optBoolean("ok")) throw new IllegalStateException(
+                    response.has("http") ? "Canal HTTP " + response.optInt("http") : response.optString("error", "Falha de rede"));
                 JSONObject m = new JSONObject(response.getString("body"));
-                int current = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), 0);
                 int next = m.getInt("versionCode");
                 String url = m.getString("apkUrl"), hash = m.getString("sha256");
-                if (next <= current) {
-                    String currentName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-                    updateEvent("current", "Versão atual. Nenhuma instalação necessária.", currentName == null ? String.valueOf(current) : currentName);
-                    return;
-                }
                 if (!url.startsWith("https://raw.githubusercontent.com/cleitongoy-debug/AURION-ONE/main/android/updates/")
                     || !url.endsWith(".apk") || !hash.matches("[a-fA-F0-9]{64}"))
                     throw new IllegalArgumentException("Publicação sem URL ou checksum válido");
+                if (next <= installed.versionCode) {
+                    availableUpdate = null;
+                    updateEvent("current", "Versão " + installed.versionName + " atual. Conferência concluída; nenhuma instalação necessária.", installed.versionName);
+                    return;
+                }
                 availableUpdate = m;
                 updateEvent("available", "Versão " + m.optString("versionName") + " disponível: " + m.optString("notes", "Correções e recursos."), m.optString("versionName"));
-            } catch (Exception e) { updateEvent("error", "Não foi possível conferir atualizações: " + e.getMessage(), ""); }
-        }).start();
+                if (installWhenAvailable) installAvailableUpdate();
+            } catch (Exception e) { availableUpdate = null; updateEvent("error", "Não foi possível conferir atualizações: " + e.getMessage() + ". Você pode abrir um APK local.", ""); }
+        }, "aurion-update-check").start();
+    }
+
+    private PackageInfo verifyUpdatePackage(File apk, int expectedVersion) throws Exception {
+        int flags = Build.VERSION.SDK_INT >= 28 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+        PackageInfo archive = getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), flags);
+        PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), flags);
+        if (archive == null || !getPackageName().equals(archive.packageName)
+            || (expectedVersion > 0 && archive.versionCode != expectedVersion) || archive.versionCode <= installed.versionCode)
+            throw new SecurityException("Pacote ou versão incompatível com esta instalação");
+        android.content.pm.Signature[] target = Build.VERSION.SDK_INT >= 28 && archive.signingInfo != null ? archive.signingInfo.getApkContentsSigners() : archive.signatures;
+        android.content.pm.Signature[] current = Build.VERSION.SDK_INT >= 28 && installed.signingInfo != null ? installed.signingInfo.getApkContentsSigners() : installed.signatures;
+        if (target == null || current == null || target.length != 1 || current.length != 1
+            || !MessageDigest.isEqual(target[0].toByteArray(), current[0].toByteArray()))
+            throw new SecurityException("Assinatura diferente da instalação original");
+        return archive;
+    }
+
+    private void launchUpdateInstaller(File apk) {
+        try {
+            PackageInfo archive = verifyUpdatePackage(apk, 0);
+            pendingInstallerFile = apk;
+            if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                updateEvent("permission", "Autorize atualizações deste app; o instalador abrirá ao voltar.", archive.versionName);
+                startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + getPackageName())), UPDATE_INSTALL_PERMISSION);
+                return;
+            }
+            updateEvent("ready", "APK e assinatura conferidos. Confirme a atualização no Android.", archive.versionName);
+            Uri content = FileProvider.getUriForFile(this, getPackageName() + ".updates", apk);
+            startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(content, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Exception e) { updateEvent("error", "Instalação não iniciada: " + e.getMessage(), ""); }
+    }
+
+    private void installLocalUpdate(Uri uri) {
+        updateEvent("downloading", "Lendo APK local e conferindo a assinatura…", "");
+        new Thread(() -> {
+            File temp = new File(new File(getCacheDir(), "updates"), "aurion-local-update.apk");
+            try {
+                temp.getParentFile().mkdirs();
+                try (InputStream in = getContentResolver().openInputStream(uri); FileOutputStream out = new FileOutputStream(temp)) {
+                    if (in == null) throw new IllegalStateException("Arquivo não disponível");
+                    byte[] buffer = new byte[32768]; int n; long count = 0;
+                    while ((n = in.read(buffer)) != -1) {
+                        count += n; if (count > 100L * 1024 * 1024) throw new IllegalStateException("APK excede 100 MB");
+                        out.write(buffer, 0, n);
+                    }
+                }
+                verifyUpdatePackage(temp, 0);
+                runOnUiThread(() -> launchUpdateInstaller(temp));
+            } catch (Exception e) { temp.delete(); updateEvent("error", "APK local recusado: " + e.getMessage(), ""); }
+        }, "aurion-update-local").start();
     }
 
     private void installAvailableUpdate() {
+        if (pendingInstallerFile != null && pendingInstallerFile.exists()) {
+            runOnUiThread(() -> launchUpdateInstaller(pendingInstallerFile)); return;
+        }
         JSONObject m = availableUpdate;
-        if (m == null) { checkForUpdate(); return; }
+        if (m == null) { checkForUpdate(true); return; }
+        updateEvent("downloading", "Baixando APK " + m.optString("versionName") + "…", m.optString("versionName"));
         new Thread(() -> {
             File temp = new File(new File(getCacheDir(), "updates"), "aurion-update.apk");
+            HttpURLConnection connection = null;
             try {
                 temp.getParentFile().mkdirs();
-                URL url = new URL(m.getString("apkUrl"));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(15000); connection.setReadTimeout(60000);
+                connection = (HttpURLConnection) new URL(m.getString("apkUrl")).openConnection();
+                connection.setConnectTimeout(15000); connection.setReadTimeout(60000); connection.setUseCaches(false);
                 connection.setInstanceFollowRedirects(false);
                 if (connection.getResponseCode() != 200) throw new IllegalStateException("Download HTTP " + connection.getResponseCode());
-                MessageDigest sha = MessageDigest.getInstance("SHA-256");
-                long count = 0;
+                MessageDigest sha = MessageDigest.getInstance("SHA-256"); long count = 0;
                 try (InputStream in = connection.getInputStream(); FileOutputStream out = new FileOutputStream(temp)) {
                     byte[] buffer = new byte[32768]; int n;
                     while ((n = in.read(buffer)) != -1) {
                         count += n; if (count > 100L * 1024 * 1024) throw new IllegalStateException("APK excede 100 MB");
                         out.write(buffer, 0, n); sha.update(buffer, 0, n);
                     }
-                } finally { connection.disconnect(); }
+                }
                 StringBuilder digest = new StringBuilder();
                 for (byte b : sha.digest()) digest.append(String.format(Locale.ROOT, "%02x", b & 255));
                 if (!digest.toString().equalsIgnoreCase(m.getString("sha256"))) throw new SecurityException("Checksum do APK diferente da publicação");
-                PackageInfo archive = getPackageManager().getPackageArchiveInfo(temp.getAbsolutePath(), PackageManager.GET_SIGNING_CERTIFICATES);
-                PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
-                if (archive == null || !getPackageName().equals(archive.packageName) || archive.versionCode != m.getInt("versionCode")
-                    || archive.versionCode <= installed.versionCode || archive.signingInfo == null || installed.signingInfo == null
-                    || !MessageDigest.isEqual(archive.signingInfo.getApkContentsSigners()[0].toByteArray(),
-                                              installed.signingInfo.getApkContentsSigners()[0].toByteArray()))
-                    throw new SecurityException("Pacote, versão ou assinatura incompatível");
-                updateEvent("ready", "APK conferido. Confirme a instalação na tela do Android.", m.optString("versionName"));
-                runOnUiThread(() -> {
-                    if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
-                        updateEvent("permission", "Autorize atualizações deste app e toque em INSTALAR novamente.", m.optString("versionName"));
-                        startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
-                        return;
-                    }
-                    Uri content = FileProvider.getUriForFile(this, getPackageName() + ".updates", temp);
-                    Intent intent = new Intent(Intent.ACTION_VIEW).setDataAndType(content, "application/vnd.android.package-archive")
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                });
-            } catch (Exception e) { updateEvent("error", "Atualização não instalada: " + e.getMessage(), ""); }
-        }).start();
+                verifyUpdatePackage(temp, m.getInt("versionCode"));
+                runOnUiThread(() -> launchUpdateInstaller(temp));
+            } catch (Exception e) { temp.delete(); updateEvent("error", "Atualização não instalada: " + e.getMessage(), ""); }
+            finally { if (connection != null) connection.disconnect(); }
+        }, "aurion-update-download").start();
     }
 
     private void generateImage(String prompt, String model) {
@@ -1342,6 +1389,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public void checkForUpdate() { MainActivity.this.checkForUpdate(); }
         @JavascriptInterface public void installAvailableUpdate() { MainActivity.this.installAvailableUpdate(); }
+        @JavascriptInterface public void chooseUpdateApk() { runOnUiThread(() -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/vnd.android.package-archive", "application/octet-stream"}), PICK_UPDATE_APK)); }
         @JavascriptInterface public void generateImage(String prompt, String model) { MainActivity.this.generateImage(prompt, model); }
         @JavascriptInterface public void speakText(String text) { runOnUiThread(() -> { if (speech != null) speech.speak(text == null ? "" : text.substring(0, Math.min(text.length(), 3000)), TextToSpeech.QUEUE_FLUSH, null, "aurion-response"); }); }
         @JavascriptInterface public void listenVoice() { runOnUiThread(() -> { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM).putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR"); startActivityForResult(intent, VOICE_INPUT); } catch (Exception e) { toast("Ditado não disponível neste aparelho"); } }); }
@@ -1485,6 +1533,11 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == PICK_UPDATE_APK && result == RESULT_OK && data != null && data.getData() != null) installLocalUpdate(data.getData());
+        if (request == UPDATE_INSTALL_PERMISSION && pendingInstallerFile != null) {
+            if (getPackageManager().canRequestPackageInstalls()) launchUpdateInstaller(pendingInstallerFile);
+            else updateEvent("permission", "Permissão não concedida. Abra o APK local ou autorize atualizações deste app.", "");
+        }
         if (request == VOICE_INPUT && result == RESULT_OK && data != null) {
             java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             if (heard != null && !heard.isEmpty()) emit("aurionVoiceResult", heard.get(0));
