@@ -26,6 +26,15 @@ try {
   Say "[AURION] Instalando dependências..."
   & $Venv -m pip install --disable-pip-version-check --no-input -r requirements.txt
   if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar dependências (código $LASTEXITCODE)." }
+  if (Test-Path (Join-Path $Root "requirements-t8i.txt")) {
+    Say "[AURION] Instalando suporte Canon T8i / CR3..."
+    & $Venv -m pip install --disable-pip-version-check --no-input -r requirements-t8i.txt
+    if ($LASTEXITCODE -ne 0) {
+      Say "[AVISO] O suporte T8i não instalou no pré-voo. O painel abrirá e a aba T8i poderá repetir a instalação com log próprio."
+    } else {
+      Say "[OK] Suporte T8i / CR3 disponível."
+    }
+  }
   Say "[AURION] Validando os arquivos do programa..."
   & $Venv -m compileall -q (Join-Path $Root "aurion_superstudio") (Join-Path $Root "AURION_PREVOO.py")
   if ($LASTEXITCODE -ne 0) { throw "A validação dos arquivos falhou (código $LASTEXITCODE)." }
