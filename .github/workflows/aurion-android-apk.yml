@@ -1,4 +1,4 @@
-name: AURION MORPH V7 APK
+name: AURION PRODUCAO PREVIEW APK
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 permissions: { contents: read }
 jobs:
-  build-morph-v7:
+  build-producao-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     defaults: { run: { working-directory: android } }
@@ -22,16 +22,20 @@ jobs:
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.9' }
+      - name: Validate production JS
+        run: |
+          node --check app/src/main/assets/production_tools.js
+          grep -q production_tools.js app/src/main/assets/production.html
       - run: gradle --no-daemon :app:assembleDebug
       - name: Nome e checksum
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-MORPH-V7.0.0.apk
-          sha256sum app/build/outputs/apk/debug/AURION-MORPH-V7.0.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AURION-PRODUCAO-PREVIEW-7.3.0.apk
+          sha256sum app/build/outputs/apk/debug/AURION-PRODUCAO-PREVIEW-7.3.0.apk > app/build/outputs/apk/debug/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: AURION-MORPH-V7.0.0
+          name: AURION-PRODUCAO-PREVIEW-7.3.0
           path: |
-            android/app/build/outputs/apk/debug/AURION-MORPH-V7.0.0.apk
+            android/app/build/outputs/apk/debug/AURION-PRODUCAO-PREVIEW-7.3.0.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
