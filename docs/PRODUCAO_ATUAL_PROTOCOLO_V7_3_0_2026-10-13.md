@@ -1,6 +1,6 @@
 # AURION ONE / PRODUÇÃO ATUAL — Protocolo <¥> — 2026-10-13
 
-**Referência oficial:** versão 7.3.0-production-actions-preview, versionCode 75, aplicativo de TESTE **one.aurion.mobile.superstudio**. Branch `feature/producao-atual-personagem-storyboard-20261013`, PR #47 (não mesclada).
+**Referência oficial:** versão 7.3.0-production-actions-preview, versionCode 75, aplicativo de TESTE **one.aurion.mobile.superstudio.preview73**. Branch `feature/producao-atual-personagem-storyboard-20261013`, PR #47 (não mesclada).
 
 ## Evidência verificável
 
@@ -37,9 +37,12 @@
 - **Nenhuma geração autônoma sem PC/modelos**. O módulo ComfyUI existente é fila real, mas os resultados requerem leitura/validação e importação manual no APK.
 - **Nenhum upload automático de imagens para Drive**: URL no APK é atalho/identificador, não OAuth. Seletor SAF Android salva manifesto no dispositivo. `chooseWorkspace` exige escolha do usuário.
 - **Sem instalação testada no POCO X7 nesta sessão**. CI valida sintaxe e APK compilável, mas não substitui teste funcional físico.
-- **Não substitui 7.1.0 `one.aurion.poco.v6`**; package `one.aurion.mobile.superstudio` e assinatura debug. Não atualizar updater da antiga sem mesma package/signing key.
+- **Não substitui 7.1.0 `one.aurion.poco.v6`**; package `one.aurion.mobile.superstudio.preview73` e assinatura debug. Esta build é instalada em paralelo, sem substituir nem apagar o app anterior. Não atualizar updater da antiga sem mesma package/signing key.
 - O repositório pode ter visibilidade pública. Não publicar fotos de clientes, URLs de Drive privadas, tokens ou dados pessoais no GitHub. Clientes e mídias ficam em pastas privadas.
 - Direitos e aprovação das referências do cliente permanecem pendentes até evidência.
 
 ## Continuidade para agentes
 FALCÃO verifica origem/versão e roteia aprovações; ARANHA recolhe evidência e arquivos; RATO verifica integridade/manifests; KANG testa funções Android; CHINA avalia prompts e fluxos. Cada agente escreve o que executou com data/hora, id do arquivo e status `VALIDADO`/`CANDIDATO`/`ERRO`; não inventar progresso. Não duplicar registros; consultar Índice Mestre antes de salvar. Se houver erro de CI, registrar log integral e corrigir na branch, preservando anteriores.
+
+## Nota de distribuição segura
+A build Android 7.3.0 foi isolada como pacote de teste `one.aurion.mobile.superstudio.preview73`: a assinatura debug de GitHub Actions pode mudar entre runners. Nunca orientar desinstalação do APK anterior sem backup verificado. Não configurar atualizador automático sobre `one.aurion.poco.v6` nem sobre a preview v7.2.
