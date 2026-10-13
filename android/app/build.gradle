@@ -3,12 +3,12 @@ android {
     namespace 'one.aurion.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'one.aurion.mobile.superstudio.preview73'
+        applicationId 'one.aurion.mobile.superstudio.diag76'
         minSdk 26
         targetSdk 35
-        versionCode 75
-        versionName '7.3.0-production-actions-preview'
-        manifestPlaceholders = [appLabel: 'AURION PRODUCAO V7.3']
+        versionCode 76
+        versionName '7.5.0-installer-compatibility-test'
+        manifestPlaceholders = [appLabel: 'AURION INSTALACAO 7.5']
     }
 }
 dependencies {
