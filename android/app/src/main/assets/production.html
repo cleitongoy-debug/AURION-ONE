@@ -21,7 +21,7 @@ var STORAGE='aurion_producao_atual_v1';
 var ANGLES=[['FRENTE','0°'],['3/4 DIREITA','45°'],['PERFIL DIREITO','90°'],['TRASEIRA DIREITA','135°'],['COSTAS','180°'],['TRASEIRA ESQUERDA','225°'],['PERFIL ESQUERDO','270°'],['3/4 ESQUERDA','315°']];
 var REF_TYPES=['Rosto / expressão','Corpo inteiro','Perfil','Costas / roupa','Detalhe / acessórios'];
 function $(id){return document.getElementById(id)}
-function blank(){return {schema:1,meta:{job:'',client:'',character:'',id:'',identity:'',style:'',briefing:'',deliveryUrl:'',review:''},refs:{},views:{},shots:[],logs:[],checks:{},updatedAt:new Date().toISOString()}}
+function blank(){return {schema:1,projectKey:'job-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),meta:{job:'',client:'',character:'',id:'',identity:'',style:'',briefing:'',deliveryUrl:'',review:''},refs:{},views:{},shots:[],logs:[],checks:{},updatedAt:new Date().toISOString()}}
 function load(){try{return Object.assign(blank(),JSON.parse(localStorage.getItem(STORAGE)||'{}'))}catch(e){return blank()}}
 var state=load();var DB=null;var IMAGEURLS={};
 function status(s){$('feedback').textContent=s}
@@ -39,7 +39,7 @@ function saveMeta(){save();status('Dados de projeto salvos localmente, '+state.u
 function newProject(){if(!confirm('Exportou o projeto atual? Um novo projeto substitui a sessão de trabalho local.'))return;state=blank();save();restoreMeta();renderAll();status('Novo projeto aberto. Originais antigos não foram apagados do armazenamento de imagens.')}
 function copyFolder(){copy(ROOT)}
 function dbOpen(){return new Promise(function(resolve,reject){if(DB){resolve(DB);return}var r=indexedDB.open('AURION_PRODUCAO_MEDIA',1);r.onupgradeneeded=function(){if(!r.result.objectStoreNames.contains('files'))r.result.createObjectStore('files')};r.onsuccess=function(){DB=r.result;resolve(DB)};r.onerror=function(){reject(r.error)}})}
-function fileKey(kind,i){return (state.meta.id||state.meta.job||'PROJETO')+'::'+kind+'::'+i}
+function fileKey(kind,i){if(!state.projectKey){state.projectKey='job-'+Date.now().toString(36);save()}return state.projectKey+'::'+kind+'::'+i}
 function storeBlob(key,blob){return dbOpen().then(function(db){return new Promise(function(resolve,reject){var t=db.transaction('files','readwrite');t.objectStore('files').put(blob,key);t.oncomplete=resolve;t.onerror=function(){reject(t.error)}})})}
 function readBlob(key){return dbOpen().then(function(db){return new Promise(function(resolve,reject){var r=db.transaction('files','readonly').objectStore('files').get(key);r.onsuccess=function(){resolve(r.result)};r.onerror=function(){reject(r.error)}})})}
 function imagePanel(kind,i,title){var info=(kind==='ref'?state.refs:kind==='view'?state.views:state.shots[i]&&state.shots[i].media)||{};var obj=kind==='ref'?info[i]:kind==='view'?info[i]:info;var id=kind+'-'+i;var cap=(obj&&obj.name)?escapeHtml(obj.name)+' · '+Math.round(obj.size/1024)+' KB':'Nenhuma imagem importada';return '<div class="slot"><b>'+escapeHtml(title)+'</b><div id="preview-'+id+'" class="empty">Aguardando imagem real</div><small>'+cap+'</small><input aria-label="Importar '+escapeHtml(title)+'" type="file" accept="image/*" id="input-'+id+'" onchange="handleFile(\''+kind+'\','+i+',this)">'+(kind==='view'?'<button onclick="copyView('+i+')">COPIAR PROMPT</button>':'')+'</div>'}
