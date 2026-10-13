@@ -80,4 +80,4 @@ function exportShotlist(){var rows=[['numero','titulo','acao','cenario','camera'
 function shareReview(){copy('AURION / '+(state.meta.job||'Projeto')+'\nPersonagem: '+state.meta.character+'\nCliente: '+state.meta.client+'\nReferências: '+Object.keys(state.refs).length+'/5; 360°: '+Object.keys(state.views).length+'/8; cenas aprovadas: '+state.shots.filter(function(s){return s.status==='APROVADO'}).length+'/'+state.shots.length+'\nGaleria: '+state.meta.deliveryUrl+'\nFeedback: '+state.meta.review)}
 function renderAll(){renderRefs();renderViews();renderShots();renderLogs();overview()}
 restoreMeta();renderAll();
-</script></body></html>
+</script><script src="production_tools.js"></script></body></html>
