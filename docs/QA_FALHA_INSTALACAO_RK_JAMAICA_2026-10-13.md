@@ -24,3 +24,20 @@ O operador informou que o APK Cliente 001 V7.4 não instalava no Android. A inst
 - O pacote incorpora assets do Cliente 001 gerados localmente e não contém upload automático do Drive; NÃO publicar os arquivos de imagens no repositório público.
 - Para futuras atualizações in-place, preservar seguramente o keystore da versão selecionada; não expor chave privada em GitHub público. Evitar alteração no APK depois de assiná-lo.
 - Se o Android ainda negar, colher a mensagem completa de instalação ou log ADB (`adb install -r <arquivo.apk>`) antes de outra correção.
+
+## Atualização operacional: SEGUNDA FALHA REPORTADA PELO OPERADOR
+
+O operador voltou a relatar: "Cara tá dando erro pra instalar confere tudo", inclusive APÓS o APK `AURION_RK_JAMAICA_CORRIGIDO_INSTALAR.apk` com correção do alinhamento.
+
+**Não considerar a hipótese de desalinhamento como causa confirmada da falha atual.** Auditoria neste ambiente:
+- Arquivo atual: 57.335.596 bytes, SHA-256 `d3b075c6d992740d6e11c6e1825dbe6cfd2d6950d7a861d3e41e3d3c54a19a74`.
+- Teste ZIP CRC: íntegro; 66 entradas; manifest binário AXML declara package `one.aurion.mobile.superstudio.preview75`, versionCode 75, minSdk 26, targetSdk 35, atividade principal `one.aurion.app.MainActivity` com exported=true.
+- `resources.arsc` não comprimido alinhado em 4 bytes no offset 96748.
+- Assinatura APK Scheme v2: assinatura criptográfica e digest consistentes na implementação de auditoria local, porém **ainda não verificados por apksigner oficial**.
+- Contém `classes.dex`, `classes2.dex`, `classes3.dex`, `assets/production.html`, `assets/production_tools.js`, `assets/client001_bootstrap.js`, `assets/client001_media.js` e 47 entradas no diretório client001.
+- Não há acesso ao smartphone, ao Package Installer nem ao adb neste runtime. Nenhuma instalação física foi realizada. Não distribuir outro arquivo sem diagnóstico específico.
+- Solicitar a mensagem exata/screenshot do Android, ou pelo PC: `adb install -r AURION_RK_JAMAICA_CORRIGIDO_INSTALAR.apk` e capturar `INSTALL_FAILED_*`. Se `adb` não instalado, instalar platform-tools oficiais no PC.
+- Diferenciar `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (assinatura/pacote), `INSTALL_FAILED_INVALID_APK` (pacote), `INSTALL_FAILED_NO_MATCHING_ABIS` (ABI), `INSTALL_FAILED_INSUFFICIENT_STORAGE` (espaço), bloqueio de fonte desconhecida e falha de download incompleto.
+- NÃO recomendar desinstalar os APKs anteriores, limpar dados ou alterar permissões de segurança sem identificar a causa.
+
+O relatório anterior apontou "alinhamento" como causa provável; agora isso é apenas um defeito histórico corrigido, não explicação da falha atual.
