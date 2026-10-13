@@ -5,8 +5,8 @@
 ## Evidência verificável
 
 - Código Android: `android/app/src/main/assets/production.html`, `production_tools.js`, `android/app/build.gradle`.
-- Build GitHub Actions #38442063947: SUCCESS, SHA do commit `8c7b31dab707798503f71c4565a8c74407d4cb47`.
-- Artifact id 11835682688 — `AURION-PRODUCAO-PREVIEW-7.3.0`. APK SHA-256 `47f0621c8111ed04856d531620f911e47cd1754724aaf8b35bbf5f059cf236ad`.
+- Build GitHub Actions #38443556889: SUCCESS, SHA do commit `9c866323507bf43230b29eec917fb8dcb7503755`.
+- Artifact id 11836198808 — `AURION-PRODUCAO-PREVIEW-7.3.0`. APK SHA-256 `db343c259b31543fa288b42694f890acf506689bbaf8ebe454aac4b897d3ba07`.
 - ZIP armazenado na pasta de CONTROLE do Drive do usuário; validar acesso antes de afirmar sincronização de mídias.
 
 ## Ações efetivamente programadas
@@ -46,3 +46,5 @@ FALCÃO verifica origem/versão e roteia aprovações; ARANHA recolhe evidência
 
 ## Nota de distribuição segura
 A build Android 7.3.0 foi isolada como pacote de teste `one.aurion.mobile.superstudio.preview73`: a assinatura debug de GitHub Actions pode mudar entre runners. Nunca orientar desinstalação do APK anterior sem backup verificado. Não configurar atualizador automático sobre `one.aurion.poco.v6` nem sobre a preview v7.2.
+
+**ARTEFATO CANÔNICO:** `AURION_PRODUCAO_V7_3_0_SEGURO_APP_SEPARADO_APK_SHA256.zip` na pasta 00_INDICE_MESTRE_E_CONTROLE do Drive. A primeira compilação v7.3 (mesmo applicationId da preview antiga) está substituída por esta e NÃO deve ser oferecida como padrão; preservá-la como evidência histórica. Referência privada apenas nesta ata de sessão, não incorporar URL privada ao APK/repositório público.
