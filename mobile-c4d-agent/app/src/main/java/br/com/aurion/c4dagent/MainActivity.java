@@ -8,6 +8,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.JavascriptInterface;
 import android.content.SharedPreferences;
+import android.content.Intent;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -62,7 +63,7 @@ public class MainActivity extends Activity {
       if(parts.length!=4)return false;
       int[] a=new int[4];
       for(int i=0;i<4;i++){a[i]=Integer.parseInt(parts[i]);if(a[i]<0||a[i]>255)return false;}
-      return a[0]==10 || a[0]==127 || a[0]==192&&a[1]==168 || a[0]==172&&a[1]>=16&&a[1]<=31;
+      return a[0]==10 || a[0]==127 || a[0]==192&&a[1]==168 || a[0]==172&&a[1]>=16&&a[1]<=31 || a[0]==100&&a[1]>=64&&a[1]<=127;
     }catch(Exception e){return false;}
   }
 
@@ -92,7 +93,7 @@ public class MainActivity extends Activity {
     }
     @JavascriptInterface public void request(String profile,String path,String method,String body,String id){
       if(!profile.matches("aurion|c4d")
-        || !(("aurion".equals(profile)&&path.matches("/api/(prompt|status|inventory)"))
+        || !(("aurion".equals(profile)&&path.matches("/api/(prompt|status|inventory|scan)"))
             ||("c4d".equals(profile)&&path.matches("/(health|api/(status|scripts))")))
         ||!method.matches("GET|POST")||id.length()>60
         ||body==null||body.length()>100000){
@@ -135,6 +136,20 @@ public class MainActivity extends Activity {
         }catch(Exception e){answer(id,err(e.getClass().getSimpleName()+": "+e.getMessage()));}
         finally{if(c!=null)c.disconnect();}
       });
+    }
+
+    @JavascriptInterface public boolean shareText(String title,String content) {
+      if(content==null || content.length()>250000) return false;
+      runOnUiThread(()->{
+        try {
+          Intent share=new Intent(Intent.ACTION_SEND);
+          share.setType("text/plain");
+          share.putExtra(Intent.EXTRA_SUBJECT,title==null?"AURION_TRI":title.substring(0,Math.min(title.length(),100)));
+          share.putExtra(Intent.EXTRA_TEXT,content);
+          startActivity(Intent.createChooser(share,"Salvar/compartilhar no Drive"));
+        } catch(Exception ignored) {}
+      });
+      return true;
     }
     @JavascriptInterface public String save(String name,String code){
       try{
