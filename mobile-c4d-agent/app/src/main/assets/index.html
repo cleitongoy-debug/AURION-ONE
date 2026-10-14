@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AURION Cinema Agent</title>
+<style>
+:root{color-scheme:dark;--bg:#080916;--panel:#121429;--line:#2a2b4c;--text:#f7f3ff;--muted:#aaa8c7;--mag:#e246d5;--cyan:#41c9e9;--purple:#8763f6}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -20%,#33215d 0,transparent 42%),var(--bg);color:var(--text);font:15px system-ui,-apple-system,sans-serif}
+header{padding:28px 20px 18px;background:linear-gradient(105deg,#181334,#0d1831);border-bottom:1px solid var(--line)}
+.logo{font-size:13px;font-weight:900;letter-spacing:3px;color:var(--cyan)}h1{font-size:25px;margin:9px 0 4px;line-height:1.1}header p{color:var(--muted);margin:6px 0;font-size:12px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.pill{border:1px solid #45416e;color:#ccc7eb;border-radius:30px;font-size:11px;padding:5px 10px}
+.pill.online{border-color:#38ceaa;color:#6ceec7}
+main{padding:14px 14px 94px;max-width:800px;margin:auto}
+section{display:none}section.active{display:block}.card{border:1px solid var(--line);background:#121329;border-radius:18px;padding:16px;margin:10px 0;box-shadow:0 10px 22px #0002}
+h2{font-size:16px;margin:0 0 12px}h3{font-size:13px;color:var(--cyan);margin:0 0 8px}p{line-height:1.45;color:var(--muted)}small{color:var(--muted)}
+textarea,input,select{display:block;width:100%;border:1px solid #393759;border-radius:12px;background:#090c1e;color:#f5f3ff;padding:12px;font:14px system-ui;margin:8px 0;outline:none}
+textarea:focus,input:focus{border-color:var(--purple)}textarea#code{font:13px/1.55 ui-monospace,Consolas,monospace;height:330px;tab-size:4}
+textarea#message{min-height:88px;resize:vertical}
+label{display:block;color:#aaa5d5;font-size:12px;margin:13px 0 4px}
+button{border:0;background:linear-gradient(115deg,#794bed,#d83cc8);color:white;font-weight:700;padding:11px 14px;border-radius:11px;margin:4px 3px 4px 0;font-size:13px}
+button.secondary{background:#24253f;border:1px solid #44415d}
+button:active{transform:scale(.98)}
+pre{white-space:pre-wrap;word-break:break-word;color:#d9eafd;background:#080d1b;border:1px solid #333752;border-radius:10px;padding:12px;font-size:12px;max-height:230px;overflow:auto}
+#log{min-height:180px;max-height:47vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.bubble{padding:12px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}.fromMe{background:#2c2150;margin-left:10%}.fromBot{background:#142137;margin-right:8%;border:1px solid #22495e}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:#0c0d1df5;border-top:1px solid #3d2d69;padding:10px 6px max(12px,env(safe-area-inset-bottom));z-index:10;backdrop-filter:blur(18px)}
+nav button{flex:1;background:transparent;font-size:12px;color:var(--muted);margin:0;padding:8px 0}
+nav button.active{color:#fff;background:#302150}
+.row{display:flex;gap:6px;flex-wrap:wrap}.row button{flex:1}
+</style></head>
+<body><header><div class="logo">AURION ONE • LAB 🦅</div><h1>Cinema 4D Agent</h1><p>Chat local · Python · Cinema 4D 2023 · Octane (PC)</p><div class="pills"><span id="pcflag" class="pill">AURION: não testado</span><span id="c4dflag" class="pill">C4D: não testado</span><span class="pill">1.0.0 LAB</span></div></header>
+<main>
+<section id="chat" class="active"><div class="card"><h2>Agente AURION</h2><div id="log"><div class="bubble fromBot">Bem-vindo ao laboratório. Conecte o PC na aba Conexão. O chat usa o Ollama do seu AURION ONE; sem PC, continua disponível o editor offline.</div></div><textarea id="message" placeholder="Peça um script, uma cena, um material ou uma solução C4D…"></textarea><button onclick="sendChat()">Enviar ao agente</button><button class="secondary" onclick="useChatInEditor()">Usar resposta no editor</button></div></section>
+<section id="editor"><div class="card"><h2>Editor Python para Cinema 4D</h2><label>Nome do script</label><input id="scriptName" value="minha_cena"><label>Modelos</label><select id="template" onchange="loadTemplate()"><option value="">Escolha um exemplo...</option><option value="cube">Criar cubo</option><option value="camera">Criar câmera</option><option value="light">Criar luz</option><option value="material">Criar material padrão</option><option value="octane">Diagnóstico Octane no PC</option></select><textarea id="code" spellcheck="false">import c4d
+doc = c4d.documents.GetActiveDocument()
+obj = c4d.BaseObject(c4d.Ocube)
+obj.SetName("AURION_Cubo")
+doc.InsertObject(obj)
+c4d.EventAdd()
+print("Cubo criado pelo AURION")
+</textarea><div class="row"><button onclick="saveScript()">Salvar .py</button><button onclick="queueScript()">Enviar para C4D</button></div><pre id="editorStatus">Scripts remotos ficam pendentes até aprovação no Cinema 4D do PC.</pre></div></section>
+<section id="cinema"><div class="card"><h2>Estação Cinema 4D</h2><p>O Cinema 4D e o Octane rodam no PC. O celular envia comandos e recebe status; não renderiza Octane localmente.</p><button onclick="checkStatus()">Verificar conexões</button><button class="secondary" onclick="checkInventory()">Inventário do PC</button><pre id="status">Aguardando diagnóstico.</pre></div><div class="card"><h2>REA · Engenharia reversa</h2><p>REA é uma ferramenta de análise local para software autorizado. Instale no Windows pelo terminal, não dentro do APK.</p><pre>npx rea-agents setup</pre><small>Use somente em softwares que você tem direito de analisar. Nenhuma licença ou autenticação é contornada.</small></div></section>
+<section id="settings"><div class="card"><h2>Conexão ao AURION ONE</h2><label>Endereço IP do PC (porta 8765)</label><input id="aurionUrl" placeholder="http://192.168.1.2:8765"><label>Token AURION</label><input id="aurionToken" type="password" placeholder="Cole a chave local"><button onclick="saveConnection('aurion')">Salvar conexão</button></div><div class="card"><h2>Conexão ao bridge Cinema 4D</h2><label>Endereço IP do PC (porta 8766)</label><input id="c4dUrl" placeholder="http://192.168.1.2:8766"><label>Token do bridge (mínimo 16 caracteres)</label><input id="c4dToken" type="password" placeholder="Chave do bridge"><button onclick="saveConnection('c4d')">Salvar conexão</button></div><p>Conecte ambos ao mesmo Wi‑Fi privado. No PC, o serviço deve permitir conexões da rede com autenticação; não abra portas na internet. Chaves ficam no armazenamento privado do APK.</p><pre id="configStatus">Nenhuma conexão alterada.</pre></section>
+</main>
+<nav><button data-tab="chat" class="active" onclick="tab('chat')">💬 Chat</button><button data-tab="editor" onclick="tab('editor')">⌘ Código</button><button data-tab="cinema" onclick="tab('cinema')">◈ Cinema</button><button data-tab="settings" onclick="tab('settings')">⚙ Conexão</button></nav>
+<script src="app.js"></script></body></html>
