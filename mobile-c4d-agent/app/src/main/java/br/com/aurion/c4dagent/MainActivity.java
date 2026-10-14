@@ -37,10 +37,10 @@ public class MainActivity extends Activity {
       getPreferences(0).edit().putString(k,v.trim()).apply();return true;
     }
     @JavascriptInterface public String call(String profile,String path,String method,String body){
-      if(!profile.matches("aurion|c4d")||!path.matches("/(health|api/(prompt|status|inventory|scripts))")||!method.matches("GET|POST")) return "{\\"error\\":\\"Rota bloqueada\\"}";
+      if(!profile.matches("aurion|c4d")||!path.matches("/(health|api/(prompt|status|inventory|scripts))")||!method.matches("GET|POST")) return "{\"error\":\"Rota bloqueada\"}";
       String host=get(profile+"_url");
       String token=get(profile+"_token");
-      if(host.isEmpty()||token.isEmpty())return "{\\"error\\":\\"Configure PC e chave\\"}";
+      if(host.isEmpty()||token.isEmpty())return "{\"error\":\"Configure PC e chave\"}";
       HttpURLConnection c=null;
       try{
         c=(HttpURLConnection)new URL(host+path).openConnection();
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
           while((n=i.read(buf))>=0&&a.size()<200000)a.write(buf,0,n);
           return a.toString("UTF-8");
         }
-      }catch(Exception e){return "{\\"error\\":"+JSONObject.quote(e.getClass().getSimpleName()+": "+e.getMessage())+"}";}
+      }catch(Exception e){return "{\"error\":"+JSONObject.quote(e.getClass().getSimpleName()+": "+e.getMessage())+"}";}
       finally{if(c!=null)c.disconnect();}
     }
     @JavascriptInterface public String save(String name,String source){
