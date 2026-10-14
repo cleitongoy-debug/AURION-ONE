@@ -3,11 +3,11 @@ android {
     namespace 'br.com.aurion.c4dagent'
     compileSdk 35
     defaultConfig {
-        applicationId 'br.com.aurion.c4dagent'
+        applicationId 'br.com.aurion.c4dagent.trilab'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0-lab'
+        versionCode 2
+        versionName '1.1.0-tri-lab'
     }
     buildTypes {
         debug { debuggable true }
