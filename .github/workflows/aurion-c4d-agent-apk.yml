@@ -5,6 +5,11 @@ on:
     paths:
       - 'mobile-c4d-agent/**'
       - '.github/workflows/aurion-c4d-agent-apk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile-c4d-agent/**'
+      - '.github/workflows/aurion-c4d-agent-apk.yml'
   workflow_dispatch:
 jobs:
   apk:
