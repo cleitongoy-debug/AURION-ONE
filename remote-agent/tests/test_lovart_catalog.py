@@ -42,6 +42,7 @@ def test_invalid_manifest_never_crashes(tmp_path: Path):
 
 
 def test_lovart_endpoint_requires_token():
+    old_override = app.dependency_overrides.get(get_settings)
     app.dependency_overrides[get_settings] = lambda: Settings(api_token="lovart-test-token")
     try:
         client = TestClient(app)
@@ -50,4 +51,7 @@ def test_lovart_endpoint_requires_token():
         assert res.status_code == 200
         assert res.json()["lovart_api_connected"] is False
     finally:
-        app.dependency_overrides.pop(get_settings, None)
+        if old_override is None:
+            app.dependency_overrides.pop(get_settings, None)
+        else:
+            app.dependency_overrides[get_settings] = old_override
