@@ -1,0 +1,12 @@
+{
+  "description": "EXEMPLO PUBLICO: copie para remote-agent/data/lovart_manifest.json no PC (nao versionar dados de cliente). Sem login/uso de creditos.",
+  "instagram_profile": "https://www.instagram.com/studio.digitalpen/",
+  "assets": [
+    {
+      "title": "Portfólio Studio DigitalPen (perfil público)",
+      "url": "https://www.instagram.com/studio.digitalpen/",
+      "kind": "portfolio",
+      "source": "conta_indicada_pelo_operador"
+    }
+  ]
+}
