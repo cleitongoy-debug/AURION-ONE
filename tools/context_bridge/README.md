@@ -36,3 +36,24 @@ Roteiro seguro do próximo teste, só quando alguém puder fazê-lo parado: prim
 Fontes: `docs/PROTOCOLO_PASSAGEM_DE_TURNO_IA.md` e `docs/PLANO_OPERACIONAL_REMOTO.md`; <https://github.com/cleitongoy-debug/AURION-ONE/issues/39>. O recibo cruzado do ONE existe no Drive, mas não comprova sincronização automática instantânea entre plataformas.
 
 **Estado desta branch:** testes sintéticos preparados; runtime dos PCs, Tailscale, APK, Notify/Band e comunicação por voz **não executados** aqui. Não mesclar/instalar sem revisão do fluxo de privacidade e testes em ambiente isolado.
+
+## Probe local de presença — verificação por evidência
+
+Foi adicionada uma rotina separada, **read-only e sem sincronização automática**, para gerar um recibo real **somente do PC onde foi executada**. Não liga/reinicia serviços, não toca credenciais, não executa comandos em outros dispositivos e não exibe IPs/hostnames de peers.
+
+Quando um agente autorizado no PC puder executar um teste com o operador parado:
+
+    py -3 tools/context_bridge/probe_local.py --output "C:\AURION_PRIVATE\presence.json"
+
+O script executa `tailscale status --json` se a CLI estiver no PATH. O relatório privado contém estado do backend, estado declarado do próprio nó, total de peers listados e total com Online=true segundo a CLI. Se a CLI não estiver no PATH, pode ser indicado `--tailscale-bin` com o caminho local real. Isso **não é prova de serviço HTTP nem de identidade de dispositivo**.
+
+O script testa via GET apenas 127.0.0.1 do mesmo PC:
+- AURION `8765/health`
+- Ollama `11434/api/tags`
+- ComfyUI `8188/system_stats`
+
+Categorias de teste: HTTP_200, AUTH_REQUIRED_REACHABLE, HTTP_REACHABLE_NOT_200 e UNREACHABLE. Não guarda resposta, modelos, endereço IP ou tokens. POCO, fone, Notify/Band e segundo PC continuam NO_DEVICE_ACK_TESTED mesmo se Tailscale tiver peers online.
+
+O JSON local contém event_id, occurred_at_utc, origin e flags delivered_to_drive=false, delivered_to_github=false. Arquivo escrito atomicamente. Não encaminhar o arquivo integral a GitHub público; registrar depois um resumo privado no Drive DIA somente via conexão autorizada com recibo de releitura.
+
+**Este commit não instala/agende o programa no Windows**, nem abre portas Tailscale/roteador, nem confirma sincronização ou notificações na Band. A verificação efetiva de Tailscale precisa execução no PC verdadeiro. Os testes CI são sintéticos.
