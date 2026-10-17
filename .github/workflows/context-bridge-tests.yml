@@ -1,0 +1,29 @@
+name: Context Bridge — offline security tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/context_bridge/**'
+      - '.github/workflows/context-bridge-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    name: Offline indexer tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test indexer without private files
+        run: python -m unittest discover -s tools/context_bridge/tests -v
