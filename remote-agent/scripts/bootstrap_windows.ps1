@@ -29,9 +29,21 @@ if (-not (Test-Path $VenvPython)) {
     & $Python -m venv (Join-Path $AgentRoot ".venv")
 }
 
-Write-Host "[AURION] Sincronizando dependencias..."
+Write-Host "[AURION] Sincronizando dependencias principais..."
 & $VenvPython -m pip install --disable-pip-version-check -q -e "."
 if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar as dependencias do AURION." }
+
+Write-Host "[AURION][T8I] Verificando RAW/CR3 (rawpy, Pillow, numpy, tifffile)..."
+$OldPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& $VenvPython -m pip install --disable-pip-version-check -q -e ".[t8i]"
+$T8iExit = $LASTEXITCODE
+$ErrorActionPreference = $OldPreference
+if ($T8iExit -eq 0) {
+    Write-Host "[AURION][T8I] Dependencias prontas."
+} else {
+    Write-Warning "[AURION][T8I] Dependencias RAW nao instalaram nesta execucao. O nucleo continuara funcionando e a aba T8i mostrara o diagnostico."
+}
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
@@ -98,5 +110,5 @@ Write-Host "[AURION] Escaneando hardware, modelos e programas..."
 & $VenvPython "scripts\scan_system.py"
 
 Write-Host "[AURION] Abrindo portal..."
-Start-Process "http://127.0.0.1:8765/#token=$LocalToken"
+Start-Process "http://127.0.0.1:8765/one#token=$LocalToken"
 & $VenvPython "run.py"
