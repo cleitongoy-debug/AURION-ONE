@@ -15,7 +15,7 @@ class FakeResponse:
 
 class SpiderTests(unittest.TestCase):
     def test_incremental(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)/'aurion_base'; root.mkdir()
             a=root/'AURION_arquivo.py'; a.write_text('abc')
             first,old=s.scan_roots([root],{})
@@ -26,7 +26,7 @@ class SpiderTests(unittest.TestCase):
             newer,_=s.scan_roots([root],old)
             self.assertEqual(newer['changed'],1)
     def test_exclusion_of_secrets_and_system(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)/'aurion_base';root.mkdir()
             (root/'AURION_senha.txt').write_text('private')
             (root/'LOCAL#SERVER.txt').write_text('key')
@@ -34,7 +34,7 @@ class SpiderTests(unittest.TestCase):
             z,_=s.scan_roots([root],{})
             self.assertEqual(z['matched_files'],0)
     def test_reparse_symlink_not_followed(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)/'aurion_base';root.mkdir()
             outside=Path(t)/'secret';outside.mkdir();(outside/'AURION.py').write_text('a')
             try:(root/'link').symlink_to(outside,target_is_directory=True)
@@ -42,7 +42,7 @@ class SpiderTests(unittest.TestCase):
             out,_=s.scan_roots([root],{})
             self.assertEqual(out['matched_files'],0)
     def test_limits_no_removed_counts(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)/'aurion_base';root.mkdir()
             for i in range(10):(root/f'AURION_{i}.py').write_text('a')
             z,_=s.scan_roots([root],{'files':{'fake':{'sig':'1'}}},max_files=2)
@@ -63,7 +63,7 @@ class SpiderTests(unittest.TestCase):
     def test_bounded_allowlist(self):
         with self.assertRaises(ValueError):s.github_json('https://evil.example/api')
     def test_atomic_receipt_and_dedup(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)/'aurion_base';root.mkdir()
             (root/'AURION.py').write_text('hello')
             out=Path(t)/'out'
@@ -74,7 +74,7 @@ class SpiderTests(unittest.TestCase):
             self.assertTrue((out/'RESUMO_ATUAL.json').exists())
             self.assertEqual(len((out/'EVENTOS_SPYDR.jsonl').read_text().splitlines()),2)
     def test_roots_not_full_disk(self):
-        with tempfile.TemporaryDirectory() as t:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
             root=Path(t)
             self.assertTrue(s.safe_root(root))
             self.assertFalse(s.safe_root(Path('/')))
