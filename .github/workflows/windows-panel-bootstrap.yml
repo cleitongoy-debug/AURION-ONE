@@ -1,0 +1,22 @@
+name: AURION Windows panel bootstrap QA
+on:
+  push:
+    branches:
+      - fix/windows-panel-health-before-browser-20261017
+  pull_request:
+    paths:
+      - "remote-agent/scripts/bootstrap_windows.ps1"
+      - "remote-agent/tests/test_bootstrap_windows.ps1"
+      - ".github/workflows/windows-panel-bootstrap.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  powershell-startup:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate syntax, startup order and four health outcomes
+        shell: powershell
+        run: .\remote-agent\tests\test_bootstrap_windows.ps1
