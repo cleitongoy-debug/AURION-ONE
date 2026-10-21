@@ -133,13 +133,15 @@ def scan_roots(roots: list[Path], previous: dict, *, max_files=MAX_FILES, max_fo
             errors += 1
     limited=bool(queue or file_count>=max_files or dir_count>=max_folders or time.monotonic()-start>=max_seconds)
     removed= len(set(before) - set(seen)) if not limited else None
+    # A partial scan cannot establish deletion: retain unseen entries until a complete pass.
+    persisted_files = {**before, **seen} if limited else seen
     summary={"source":"local_metadata_only","scanned_utc":utc_now(),"roots_count":len(valid),
              "folders":dir_count,"files_examined":file_count,"matched_files":len(seen),
              "new":new,"changed":changed,"unchanged":unchanged,"removed_if_complete":removed,
              "errors":errors,"skipped":excluded,"limited":limited,
              "extensions":dict(extensions),"new_filenames_local_only":names,
              "privacy":"no contents, secrets, filesystem roots, device identifiers or tokens transmitted"}
-    return summary, {"files":seen,"utc":summary["scanned_utc"],"limited":limited}
+    return summary, {"files":persisted_files,"utc":summary["scanned_utc"],"limited":limited}
 
 
 def github_json(url: str, opener=None):
@@ -177,7 +179,8 @@ def github_updates(previous: dict, *, fetch=github_json) -> tuple[dict, dict]:
         return {"status":"REACHED","open_pr_count":len(prs),"new_or_changed":entries,
                 "changed_count":len(entries),"source":"GitHub public API; does not prove PC deployment"}, records
     except (OSError,ValueError,KeyError,TypeError,json.JSONDecodeError) as exc:
-        return {"status":"UNREACHABLE","error_type":type(exc).__name__,"changed_count":None,
+        reason = "RESPONSE_TOO_LARGE" if isinstance(exc, ValueError) and "exceeded bound" in str(exc) else ("INVALID_RESPONSE" if isinstance(exc, (ValueError, KeyError, TypeError, json.JSONDecodeError)) else "NETWORK_OR_HTTP")
+        return {"status":"UNREACHABLE","error_type":type(exc).__name__,"reason":reason,"changed_count":None,
                 "source":"GitHub read not verified"}, previous
 
 

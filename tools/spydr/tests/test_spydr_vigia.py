@@ -84,4 +84,20 @@ class SpiderTests(unittest.TestCase):
         out,_=s.github_updates({},fetch=fake)
         self.assertNotIn('sensitive user content',json.dumps(out))
 
+    def test_partial_scan_preserves_previous_entries(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as t:
+            root=Path(t)/'aurion_base';root.mkdir()
+            for i in range(5):(root/f'AURION_{i}.py').write_text('x')
+            first,state=s.scan_roots([root],{})
+            self.assertEqual(first['matched_files'],5)
+            partial,next_state=s.scan_roots([root],state,max_files=2)
+            self.assertTrue(partial['limited'])
+            self.assertEqual(len(next_state['files']),5)
+            self.assertIsNone(partial['removed_if_complete'])
+    def test_github_value_error_has_diagnostic_reason(self):
+        def too_big(_):raise ValueError('GitHub response exceeded bound')
+        result,_=s.github_updates({},fetch=too_big)
+        self.assertEqual(result['reason'],'RESPONSE_TOO_LARGE')
+        self.assertEqual(result['status'],'UNREACHABLE')
+
 if __name__=='__main__':unittest.main()
