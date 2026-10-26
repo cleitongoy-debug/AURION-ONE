@@ -1,0 +1,51 @@
+PROTOCOLO ÁGUIA / JSOM#13 — ORDEM FINAL DE CONTINUIDADE
+Data: 2026-10-26
+Repositório: cleitongoy-debug/AURION-ONE
+Estado: REGISTRADO NO GITHUB; EXECUÇÃO LOCAL/SKIP AINDA NÃO COMPROVADA
+Regra: preservar originais, não sobrescrever, não duplicar, não expor segredos.
+
+1. ESTADO RELATADO PELO OPERADOR (não é telemetria ao vivo desta sessão)
+- Acervo: 30.652 arquivos; 4.760 pastas.
+- Documentos legíveis: 16.313.
+- Texto extraído: 3.221 (19,7%); diferença aritmética: 13.092, não necessariamente todos elegíveis para extração.
+- OCR: 1.297 / 8.535; gateway/modelo de visão relatado como BLOQUEADO.
+- Erro relatado: [AUTONOMOUS_TEXT_EXTRACTOR] Pending query error: invalid sign operator "!".
+- Junção de dias: PENDENTE.
+Os valores acima devem permanecer marcados como RELATADO até leitura autenticada do banco canônico com timestamp, query e recibo.
+
+2. P0 — EXTRATOR
+- Localizar o arquivo e a função que realmente geram o erro; AURION_ONE.py inspecionado anteriormente não continha o motor de extração nem a consulta pendente.
+- Capturar a query/filtro exatos, o backend e a mensagem completa; confirmar a gramática suportada pelo motor de consulta.
+- Corrigir somente o operador/filtro comprovadamente inválido. Não substituir cegamente "!" por "!=" nem presumir que 13.092 registros sejam todos elegíveis.
+- Fazer backup/export somente leitura antes da mudança; teste unitário da query; dry-run com IDs limitados; comparar contagens por estado; checkpoint idempotente; retomar em lote pequeno; registrar antes/depois e logs sem segredos.
+- Não declarar corrigido até query passar e extração produzir registros novos com recibos e sem duplicação.
+
+3. P0 — OCR
+- Quando o estado efetivo do provedor/modelo de visão estiver BLOQUEADO, não enviar requisições de OCR e não fazer retry em loop.
+- Registrar motivo, timestamp e quantidade adiada; continuar outras tarefas sem perder o item.
+- Só liberar OCR após teste explícito de capacidade multimodal bem-sucedido. Não marcar imagens como OCR concluído quando apenas foram puladas.
+- Em worker/loop, não usar um "return" genérico sem verificar o escopo: pode encerrar o worker inteiro. Usar a ação de skip/continue adequada à estrutura real.
+
+4. P1 — CONTADORES
+- Obter contagens do backend canônico, sem hardcode e sem cache antigo. Mostrar fonte, timestamp, estado da consulta e falha de leitura.
+- Exibir 16.313 / 3.221 / 1.297 somente se esses números forem confirmados pela leitura atual; caso contrário mostrar o último valor conhecido como HISTÓRICO/RELATADO e sinalizar dado indisponível.
+- Não confundir total de documentos legíveis com total elegível para extração nem com extrações bem-sucedidas.
+
+5. P1 — TOOLBAR / MATRIZ DE IDENTIDADES
+- Preparar abas "Comandos / Identidades", "ÁGUIA Gemini", "Caixa Preta / Memória Neural", "Os 5 Heróis / Handoff", "Auditoria / QA" e "Agentes / Custos" conforme a arquitetura existente, sem duplicar navegação.
+- Importar a matriz e os handoffs em modo somente leitura inicialmente; registrar origem, caminho, data, hash, licença/permissões e status COMPROVADO / RELATADO / CANDIDATO / BLOQUEADO.
+- Associações documentais ÁGUIA=DS20#13, FALCÃO=LÚMEN LM-01, OS 5 HERÓIS e OS DOIS devem ser preservadas como conteúdo da matriz, não como autenticação técnica ou prova de processos ativos.
+- MORPH só pode ser integrado depois de localizar o dossiê real, conferir duplicatas e preservar a fonte original.
+
+6. SEGURANÇA
+- Credenciais que apareceram em texto claro devem ser revogadas/rotacionadas diretamente nos respectivos provedores pelo titular; esta sessão não tem autorização nem acesso para rotacioná-las.
+- Não registrar tokens, chaves ou valores secretos em issue, commits, logs, handoffs ou screenshots. Mover segredos para variáveis de ambiente/secret manager e verificar logs/histórico.
+- Não remover nem sobrescrever dados para liberar espaço sem inventário e autorização específica.
+
+7. FRONTEIRA DE EXECUÇÃO / HANDOFF
+- Este documento e a issue #57 são instruções e registros GitHub; não alteram automaticamente PC Base 177, Google Drive, banco SKIP, gateway, APK ou serviços locais.
+- Agente local autorizado: identificar ambiente e versão; verificar estado antes da mudança; aplicar uma correção por vez; testar; registrar caminho/commit, backup, contagens antes/depois, log sanitizado e resultado.
+- Parar e reportar BLOCKED se faltar acesso, código fonte, backup, schema ou teste reproduzível. Não simular sync entre GPT, SKIP e PC.
+- Critério de encerramento: alterações reais verificadas no ambiente correto, testes aprovados, contadores reconciliados, OCR bloqueado sem tentativas, nenhuma duplicação/sobrescrita e handoff com evidências.
+
+Assinatura documental: protocolo informado pelo operador <13#05#78>. A chave é apenas um identificador de protocolo; não substitui autenticação, autorização nem segredo operacional.
