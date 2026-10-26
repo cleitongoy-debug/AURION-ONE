@@ -1,0 +1,48 @@
+REGISTRO DE CONTINUIDADE — AURION / SKIP
+Data: 26/10/2026
+Chave documental: <13#05#78>
+Protocolo: < bip > < ¥€¢∆§ > < pip > < r4tπ > < 🦅 >
+
+OBJETIVO
+Organizar a continuidade do AURION ONE / SKIP sem sobrescrever originais, criar cópias desnecessárias ou declarar sincronizações não comprovadas.
+
+ESTADO DA OPERAÇÃO
+- COMPROVADO: o fragmento FAGMENTO#SKIP.txt foi recebido e lido nesta conversa.
+- COMPROVADO: foi criada a pasta documental /AURION_EU3/SKIP_SYNC_SEM_SOBRESCRITA na Biblioteca do ChatGPT.
+- BLOQUEADO: os uploads de arquivos para essa Biblioteca falharam por limite de armazenamento; nenhum arquivo foi sobrescrito.
+- COMPROVADO: este registro está sendo gravado no repositório GitHub cleitongoy-debug/AURION-ONE após busca por nome que não retornou arquivo equivalente.
+- NÃO FEITO/NÃO VERIFICADO: escrita no Google Drive; escrita no banco/API do SKIP; alterações no PC; criação/alteração de pastas locais; build; sincronização entre SKIP, Drive, GitHub ou outros agentes.
+- BLOQUEADO: pesquisa do conector Google Drive indisponível nesta sessão por restrição de acesso ao conector.
+
+REGRAS OBRIGATÓRIAS
+1. Antes de criar pasta/arquivo, pesquisar destino e conteúdo; se existir equivalente, registrar e reutilizar, não duplicar.
+2. Não sobrescrever, mover, renomear nem apagar originais. Trabalhar por cópia/versionamento com nome único e data.
+3. Não considerar cópia no GitHub ou na Biblioteca do ChatGPT como sincronização do Drive ou do SKIP.
+4. Separar estados: COMPROVADO (recibo/log/ID), RELATADO (fragmento/agente afirmou), CANDIDATO (precisa verificar), BLOQUEADO (motivo conhecido).
+5. Todo agente que receber o handoff deve registrar ACK com event_id único, origem, destino, ação, horário, resultado e prova. Sem ACK, não marcar como lido/sincronizado.
+6. Não somar horas, ciclos, arquivos ou progresso sem fonte persistida e deduplicação por ID/hash. Um único motor de extração por vez; checkpoint persistente e idempotente.
+7. Nunca incluir chaves API, tokens ou credenciais em registros. O fragmento-fonte pode conter segredo exposto: não replicá-lo; rotacionar a credencial se for real.
+8. Se destino ou permissão não estiver disponível, registrar BLOQUEADO e continuar somente nas áreas autorizadas.
+
+RESPONSABILIDADES POR AMBIENTE
+- ChatGPT/Biblioteca: organizar os artefatos entregues e preparar handoff; não equivale a acesso ao banco privado do SKIP nem ao PC local.
+- Google Drive: pesquisar a pasta canônica e nomes equivalentes antes de qualquer escrita; neste turno o conector não pôde ser usado.
+- SKIP/PocketBase/API: execução somente pelo agente/ambiente autorizado, após leitura do estado atual e recibo/backup; nenhuma escrita foi feita nesta operação.
+- PC/AURION ONE: inspecionar versão real do código, config, logs e pastas antes de patch; preservar arquivo original e validar testes.
+- GitHub: registrar somente após verificar repositório, branch e caminho; nunca inventar commit/issue.
+- Outros agentes: cada um atua apenas no ambiente e permissões que realmente possui; informar limite e devolver prova/ACK.
+
+PRÓXIMA SEQUÊNCIA SEGURA
+A. No ambiente SKIP autorizado: ler resumo canônico e estado da sincronização; confirmar contadores por consulta ao banco e IDs de checkpoint.
+B. Verificar se o lote pendente de 8 itens existe, recuperar IDs exatos e confirmar que não foi executado; não reconstruir a lista por suposição.
+C. Verificar índice/extrator e falhas; garantir motor único, checkpoint persistente e busca por conteúdo real, sem contadores derivados de nomes/caminhos.
+D. Pesquisar pastas/arquivos equivalentes no destino canônico; criar somente o que falta, dentro da pasta correta, com proveniência.
+E. Executar um lote pequeno, validar recibos/IDs/contagens antes de ampliar.
+F. Entregar relatório com feito, não feito, bloqueios, prova, IDs e próxima ação. Nenhuma conclusão de sync sem recibo do destino.
+
+FONTES
+- FAGMENTO#SKIP.txt, fornecido nesta conversa em 26/10/2026: dossiê e alegações históricas sobre SKIP; números e estados são RELATADOS, não leitura ao vivo.
+- AURION_HANDOFF_MESTRE_CONTINUIDADE_2026-10-25.txt: documento consolidado de contexto e pendências, preparado anteriormente nesta conversa.
+
+REGRA FINAL
+Preservar originais. Uma fonte canônica por tipo de registro. Cópias de segurança identificadas, não duplicatas operacionais. Nada de declarar sincronizado sem prova.
