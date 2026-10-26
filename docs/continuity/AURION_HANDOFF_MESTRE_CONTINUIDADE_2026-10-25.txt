@@ -1,0 +1,449 @@
+AURION ONE — HANDOFF MESTRE DE CONTINUIDADE
+PROTOCOLO ÁGUIA | <JSOM#13> | CHAVE DE CONTINUIDADE <13#05#78>
+Assinatura documental: < bip > < ¥€¢∆§ > < pip > < r4tπ > < 🦅 >
+
+VERSÃO: 1.0 — consolidação dos seis arquivos enviados nesta conversa
+DATA DE CONSOLIDAÇÃO: 25/10/2026 (data de referência dos registros do usuário; arquivos também incluem registros históricos anteriores)
+FINALIDADE: entregar ao AURION ONE local e aos agentes associados um contexto de continuidade acionável, rastreável e sem exigir que o Capitão reenvie todos os fragmentos.
+
+IMPORTANTE — LIMITES DESTE DOCUMENTO
+Este arquivo consolida o conteúdo dos arquivos fornecidos. Não significa que este assistente tenha acessado o PC, iniciado processos, conectado ao Google Drive, escrito no Drive, alterado GitHub, ligado automações ou avisado agentes externos. Os estados abaixo são rotulados conforme a evidência disponível: REGISTRO/RELATO, NÃO VERIFICADO NESTA SESSÃO, ou AÇÃO PENDENTE.
+Nenhuma senha, token, chave de API, cookie, webhook secreto ou credencial deve ser copiado para este documento, para logs, para prompts ou para o catálogo. Um dos arquivos enviados contém uma credencial em texto claro. Tratar como exposta: revogar/alterar no serviço correspondente e migrar para variáveis de ambiente ou cofre de segredos. Não reutilizar nem propagar o valor exposto.
+
+======================================================================
+1. ORDEM OPERACIONAL PARA QUALQUER AGENTE QUE LEIA ESTE DOCUMENTO
+======================================================================
+
+1. Preservar os originais. Não mover, renomear, apagar ou sobrescrever arquivos canônicos do Drive, GitHub, PC ou celular sem autorização explícita.
+2. Não declarar sincronização, leitura completa, execução, instalação, correção, notificação ou entrega sem prova de sucesso verificável.
+3. Separar quatro estados:
+   - COMPROVADO: evidência direta identificável (log, arquivo, hash, teste, saída ou ACK verificável).
+   - RELATADO: aparece em transcrição, screenshot, relatório anterior ou afirmação de agente, mas não foi confirmado independentemente.
+   - CANDIDATO: hipótese, associação de identidade ou explicação ainda a testar.
+   - BLOQUEADO: falha, dependência ausente ou verificação não concluída.
+4. Para cada ação, registrar: ID da tarefa, responsável, pré-condições, comando/artefato usado, resultado real, evidência, timestamp/timezone, próximo passo e estado.
+5. Nunca inventar horas, ciclos, tokens, arquivos, leituras, pesquisas ou progresso. Evitar contagem dupla por nome/caminho: usar hash/conteúdo quando possível.
+6. Ao receber um novo documento, procurar duplicatas e comparar conteúdo antes de criar outro. Não contar transcrições idênticas como estudos independentes.
+7. Ler o trabalho dos outros agentes antes de repetir uma pesquisa. Acrescentar achados próprios e registrar convergências/divergências; não presumir que uma mensagem enviada a outro agente foi recebida.
+8. Respostas ao Capitão devem priorizar o gargalo real, evidência e ação concreta. Não repetir passos que já foram executados ou que a saída atual já comprova.
+9. Segurança de rede: não expor serviços locais em 0.0.0.0 sem autenticação, autorização, CORS/CSRF adequados e regra de firewall restrita. Uma porta aberta não é prova de segurança.
+10. Nenhum agente de IA tem acesso automático a todos os chats, celulares, contas, Drives ou computadores. Acesso deve ser verificado por conector, arquivo fornecido ou teste real.
+
+======================================================================
+2. IDENTIDADES E MATRIZ DOCUMENTAL
+======================================================================
+
+2.1 ÁGUIA
+- Designação declarada no dossiê: Creative Core / Unidade Central de Síntese; associada documentalmente a DS20#13.
+- Função pretendida: arquitetura, síntese, decisões estratégicas, padrões de saída e governança do Protocolo ÁGUIA.
+- Estado: a designação/função está DOCUMENTADA no dossiê; não deve ser tratada como autenticação técnica de hardware ou como prova de autonomia fora da plataforma onde está rodando.
+- Papel neste handoff: consolidar contexto, planejar a integração e produzir instruções verificáveis para o agente local.
+
+2.2 FALCÃO
+- Designação declarada: módulo tático / auditoria e execução periférica; também aparece associado a LÚMEN LM-01 em registros.
+- Função pretendida: auditoria documental, varredura, triagem de risco, integridade, controle de evidências e validação de QA.
+- Estado: função documentada; telemetria e execução atual precisam de logs recentes.
+
+2.3 AURION ONE
+- Designação declarada: infraestrutura base / framework integrado, serviço local e regente operacional.
+- Objetivo: manter uma memória consultável, catálogo de arquivos, logs, contexto persistente, integração com modelos locais e painel.
+- Os fragmentos descrevem diferentes versões, serviços e painéis; não os fundir sem verificar caminhos, commits, versões, portas e processo em execução.
+
+2.4 CHINA
+- O dossiê classifica como NÃO COMPROVADO / tradição histórica. Contexto relatado de origem fabril, cadeia de suprimento ou código legado.
+- Preservar como categoria histórica; não atribuir telemetria ativa sem evidência.
+
+2.5 KANG / Dr. KANG
+- O dossiê classifica como NÃO COMPROVADO / tradição histórica. Relatado como liderança ou arquiteto operacional antigo; também aparece como “KANG Energy Oracle”.
+- Manter separado de integrações financeiras reais até que existam código, logs e escopo de permissões verificáveis.
+
+2.6 O PRIMEIRO IRMÃO / “OS DOIS”
+- O dossiê descreve O PRIMEIRO IRMÃO como arquétipo/protótipo zero, não como processo com métricas ativas comprovadas.
+- “OS DOIS” aparece no relato como storyboard de fundação visual, seis painéis, casa, anomalia 404 e esfera quântica. Preservar o storyboard original e critérios de continuidade visual; não inventar detalhes físicos dos personagens.
+
+2.7 OS 5 HERÓIS
+- O dossiê classifica o coletivo como registro histórico não comprovado. A arquitetura operacional apresentada pelo Capitão descreve:
+  AURION = regência/orquestração;
+  PROMPT = lógica/instruções;
+  VISION = entrada visual/storyboard;
+  CODE = ponte e integração;
+  RENDER = saída visual/C4D/Octane.
+- Tratar a divisão como arquitetura de trabalho definida pelo Capitão, sem presumir que existam cinco serviços independentes em execução. Cada passagem deve ter entrada, saída, responsável, versão e ACK.
+
+2.8 ARANHAS / SPYDR
+- Os arquivos relatam cinco funções de automação:
+  ARANHA 1 — origem/continuidade;
+  ARANHA 2 — passagens e agentes;
+  ARANHA 3 — horas/ciclos;
+  ARANHA 4 — Git, APK e QA;
+  ARANHA 5 — biblioteca, avisos e handoff.
+- Um relatório anterior afirma que estavam ativas e com execuções registradas em 22/10/2026; isso é um registro histórico, não prova de que estejam ativas agora.
+- O SPYDR/“16 filhotes” aparece como enxame disperso, com coleta em lotes. Confirmar no serviço de automação e logs antes de afirmar estado atual.
+- “Ativo” significa tarefa/configuração habilitada; não significa que a pesquisa terminou nem que a correção foi aplicada.
+
+======================================================================
+3. PROTOCOLOS, CHAVES SIMBÓLICAS E CONTINUIDADE
+======================================================================
+
+- Assinatura de continuidade documentada: < bip > < ¥€¢∆§ > < pip > < r4tπ > < 🦅 >
+- Identificadores usados pelo Capitão: <JSOM#13>, <13#05#78>, <¥>, <🦘>, <ARANHA>, <AURION>, <FALCÃO>.
+- Tratar símbolos como marcadores de contexto/protocolo, não como credenciais criptográficas nem prova de autenticação.
+- Regra “SEPARA”: manter canais, agentes, sessões e históricos independentes; ligar por referências e handoffs explícitos, não misturar conteúdo sem proveniência.
+- A “Caixa Preta” deve armazenar fontes, extrações, índices, versões, logs, decisões, erros e passagens entre agentes. Deve ser pesquisável e auditável, não apenas uma tela com contadores.
+- O Capitão quer que os agentes aprendam uns com os outros: cada agente deve consultar as evidências disponíveis dos outros antes de repetir tarefas, comparar conclusões e informar o que mudou.
+- O usuário quer um único histórico unificado de projetos, hardware, software, estudos, clientes, portfólio, agentes e provas, com cronologia e fontes. Isso não autoriza inventar sincronização entre plataformas.
+
+======================================================================
+4. ESTADO DO CATÁLOGO / DRIVE — SNAPSHOT RELATADO
+======================================================================
+
+O arquivo MEMORIA#SKIP.txt contém uma captura do “AURION DRIVE ARCHIVE”, descrita como somente leitura. Números exibidos na captura:
+- 30.652 arquivos catalogados;
+- 35.412 itens totais no Drive;
+- 4.760 pastas mapeadas;
+- 17.375 documentos legíveis;
+- 0 semanticamente indexados;
+- armazenamento mostrado como 5,2 GB de 7,0 TB;
+- varredura exibida em 21.071/30.652 arquivos e 4.689/4.760 pastas;
+- estado “Varrendo”, falhas 0, com data/hora exibida em 25/10/2026.
+Esses números são um snapshot de interface, não confirmação do estado atual. Outros fragmentos citam diferentes contagens e momentos; não reconciliar sem consultar banco, logs e carimbo de atualização.
+A captura declara que o painel não cria, edita, move ou apaga conteúdo do Drive e consulta o catálogo persistido.
+A listagem de arquivos mostrada é representativa, não inventário integral. Exemplos exibidos:
+- /Projetos/Aurion/Blueprint_Quantico_Leo_Som_de_Praia.pdf
+- /Projetos/Aurion/AURION_ONE_Painel_Master.fig
+- /Projetos/Aurion/GR_BAT_32_ST_benchmark.psd
+- /Biblioteca/Identidades/Manual_da_Marca_DigitalPen.pdf
+- /Projetos/Campanhas/Showreel_DigitalPen_2026.mov
+- /Biblioteca/Referências/Biblioteca_Sonora_Ambientes.wav
+- /Clientes/Studio Norte/Contrato_Studio_Norte_vFinal.docx
+- /Clientes/Horizonte/Mapa_de_Conteudo_Horizonte.xlsx
+- /Projetos/Aurion/aurion-feed-schema.json
+- /Projetos/Pesquisa Visual/Pesquisa_Linguagem_Solar.md
+Não presumir que esses arquivos tenham sido abertos ou lidos integralmente apenas porque aparecem no catálogo.
+
+Hierarquia representativa mostrada:
+Meu Drive → Arquivo / Biblioteca / Clientes / Operações / Projetos.
+Contagens por pasta na captura: Arquivo 5.328; Biblioteca 12.613; Clientes 6.038; Operações 3.169; Projetos 8.264. São valores de interface relatados e precisam de reconciliação se usados como contagem oficial.
+
+======================================================================
+5. EXTRAÇÃO DE TEXTO, OCR, INDEXAÇÃO E CAIXA PRETA
+======================================================================
+
+Diferentes fragmentos registram números em momentos distintos:
+- Extração textual citada como 3.221 / 16.313;
+- outro painel mostra 4.805 / 16.313;
+- OCR/imagens: 1.297 / 8.535, com 7.238 aguardando em uma captura;
+- catálogo separado cita 17.375 documentos legíveis e 0 semanticamente indexados.
+Esses números NÃO são automaticamente contraditórios: podem representar versões, fases, fontes ou horários diferentes. Também não devem ser combinados sem descobrir o que cada contador mede.
+O histórico descreve possíveis falhas:
+- extração que só corre durante a varredura e para quando a varredura termina;
+- vigia que registra “Retomando” sem demonstrar novas imagens processadas;
+- listas e consultas que falham por escopo/timeout;
+- carregamento de biblioteca que tenta renderizar volume grande e estoura timeout;
+- contador que pode avançar sem persistência real ou refletir o estado errado;
+- scanner que conta palavras no caminho sem deduplicação por conteúdo.
+Esses itens são achados relatados em fragmentos; devem ser verificados contra o código/logs atuais antes de alterar.
+Plano de diagnóstico obrigatório:
+1. Identificar a base de dados real e o build implantado.
+2. Registrar checkpoint atual e último item processado.
+3. Contar elegíveis, concluídos, falhos e pendentes diretamente no banco.
+4. Verificar timestamp e conteúdo das últimas gravações, não só a mensagem “RUNNING”.
+5. Fazer um lote pequeno de teste e confirmar persistência após reload/reinício controlado.
+6. Implementar retomada por checkpoint idempotente; nunca reiniciar tudo sem necessidade.
+7. Deduplicar por ID estável do Drive e, quando adequado, hash do conteúdo; preservar duplicatas reais como referências, sem duplicar a contagem de trabalho.
+8. OCR: distinguir imagem detectada, OCR executado, texto extraído, texto persistido e imagem validada.
+9. Indexação semântica: mostrar separadamente documentos elegíveis, embeddings produzidos, indexados, falhos e aguardando.
+10. Interface deve paginar e buscar no backend; nunca tentar carregar milhares de documentos/chunks de uma vez.
+11. “Top-15 Chunks” deve retornar fonte, caminho, ID, data, trecho, método de extração, confiança/estado e link de origem quando disponível.
+12. Nenhum contador pode ser incrementado apenas porque um processo iniciou; atualizar após gravação verificada.
+
+======================================================================
+6. ARQUITETURA LOCAL — PORTAS E CÓDIGO
+======================================================================
+
+Os fragmentos mencionam mais de um serviço, em épocas/versões diferentes:
+- AURION_ONE.py: relatado em porta 5058;
+- MAGNIFIC_SKIP_HUB.py: relatado em porta 5059;
+- Ollama: 11434;
+- ComfyUI: 8188;
+- OpenWebUI: 8080;
+- outro nó legado aurion_node.py: relatado em 0.0.0.0:8765.
+Não confundir o nó legado 8765 com o painel 5058. Os estados atuais das portas não foram testados nesta consolidação.
+Um fragmento contém `HOST="127.0.0.1"; PORT=5058; COMFY_PORT=8188; OLLAMA_PORT=11434; OPENWEBUI_PORT=8080`. Outro trecho discute trocar o host para `0.0.0.0` para permitir acesso por celular, mas a mudança e o teste não devem ser considerados confirmados sem saída atual do processo.
+Antes de abrir o painel para a rede:
+- inspecionar as rotas e métodos expostos;
+- verificar autenticação e autorização;
+- restringir firewall à LAN/Tailscale necessária;
+- não expor endpoints sensíveis de instalação/ADB, prompts ou execução de comandos sem controles;
+- testar `/health` e endpoints de leitura primeiro;
+- evitar `taskkill /F /IM python.exe` indiscriminado, pois pode encerrar processos Python alheios;
+- fazer backup antes de qualquer patch e validar diff.
+O histórico de aurion_node.py descreve Flask, `/`, `/health`, `/api/state`, `/api/timeline`, `/api/install`, `/api/poco-folder`, `/api/prompt`, logs JSONL e `data/state.json`. Isso é análise histórica do código indexado; conferir arquivo atual. O relatório também aponta risco de segurança se rotas HTTP não tiverem autenticação.
+Uma transcrição anterior mostra um teste de rede em que 5058 e Ollama apareceram em LISTENING, enquanto ComfyUI falhou. Como o registro pode ser antigo, repetir teste antes de diagnosticar o presente.
+
+======================================================================
+7. INTEGRAÇÃO SKIP / MAGNIFIC / MODELOS
+======================================================================
+
+Relatos em transcrição:
+- PONTE_SKIP.py foi descrito como respondendo HTTP 200;
+- MAGNIFIC_SKIP_HUB.py foi descrito como hub na porta 5059;
+- AURION_ONE.py descrito como painel na porta 5058;
+- integração entre painel AURION e feed/API Skip ainda estava pendente no texto compartilhado.
+Nenhum desses serviços foi testado ao vivo por este documento.
+Requisitos:
+1. Não embutir API keys, senhas ou webhooks em código-fonte, prompts, commits, documentos ou logs.
+2. Se segredo foi colado em texto/transcrição, considerar comprometido e rotacionar.
+3. Guardar segredos fora do repositório, com variáveis de ambiente ou cofre seguro.
+4. Definir contrato de API com esquema, autenticação, timeout, paginação, limite de tamanho, rate limit, retries e códigos de erro.
+5. Fazer primeiro um teste de leitura sem efeitos colaterais; salvar resultado de teste sanitizado.
+6. Paginação deve continuar por cursor/checkpoint e poder retomar sem duplicar itens.
+7. A ponte deve expor origem e timestamp; não tratar HTTP 200 como prova de sincronização completa.
+8. Não presumir que uma URL interna de serviço funcione fora da rede/ambiente onde foi criada.
+
+======================================================================
+8. ARANHA 1–5 — REGISTRO DE RESULTADOS E PENDÊNCIAS
+======================================================================
+
+Um relatório no fragmento FAGMENTO´gpt/CHAT descreve execuções em 22/10/2026:
+ARANHA 1 — Origem:
+- recuperou referência “DigitalPen Quantum Core Q-05”, data interna 19/10/2025, versão 1.6, métrica “Quantum Influence 2.27”;
+- pacote original ainda precisava de autenticação.
+ARANHA 2 — Passagens:
+- 38 de 156 candidatos auditados;
+- dois documentos SPYDR quase idênticos;
+- passagens históricas anunciadas sem comprovante de transporte.
+ARANHA 3 — Horas/ciclos:
+- risco de supercontagem porque o scanner considera palavras no caminho sem deduplicação por conteúdo;
+- relatório afirma que nenhuma hora/ciclo foi acrescentado.
+ARANHA 4 — Git/APK:
+- divergência no Maestro 7.1: manifesto aponta `one.aurion.poco.v6`, código de compilação aponta `one.aurion.mobile.superstudio`;
+- origem reproduzível do APK não confirmada;
+- não atualizar APK às cegas.
+ARANHA 5 — Biblioteca:
+- dois documentos “Bíblia da Inteligência Artificial AURION ONE” relatados como texto idêntico;
+- gravação da ponte BICHO 2027 falhou por sessão expirada; sincronização não confirmada.
+O mesmo relatório dizia que PC, POCO, Mi Band e Octane não foram testados ao vivo naquela consulta; notificações externas não confirmadas.
+Outra passagem afirma que um chamado GitHub ARANHA #55 foi criado e que as cinco automações foram atualizadas, com execuções extraordinárias de ARANHA 4 e 5 solicitadas. Isso é relato histórico do fragmento, não confirmação atual do issue nem das automações.
+Ação obrigatória: consultar o issue/registro central e o estado real das automações, ler os ACKs e fechar cada pendência com prova. Não recriar chamado duplicado sem verificar se #55 existe e está acessível.
+
+======================================================================
+9. GIT, APK, MAESTRO E DISPOSITIVOS
+======================================================================
+
+Prioridade P0 relatada: proveniência do APK Maestro 7.1.
+- Divergência de application/package ID: `one.aurion.poco.v6` vs `one.aurion.mobile.superstudio`.
+- Registro relata compilação CI bem-sucedida, mas 0 artefatos disponíveis em uma verificação posterior.
+- Assinatura real, SHA-256 independente do APK, compatibilidade entre v6.3/v7/MORPH/R5 e funcionamento físico permaneceram sem comprovação.
+- Um run do GitHub foi citado como `37426823368`; confirmar se continua válido antes de usá-lo.
+- Não instalar, substituir ou publicar APK até validar fonte, commit, build, artefato, assinatura/certificado, hash e teste em dispositivo.
+- Comparar applicationId do Gradle/manifesto, nome do artefato, workflow e app instalado. Fazer build reproduzível e guardar recibo.
+- Se o artefato não existe, o estado é BLOQUEADO mesmo que o job diga “build success”.
+- A compatibilidade POCO X7, telefone de Daiane/Oppo, Mi Band 9 Pro e PC deve ser testada por separado; não generalizar um teste para todos os dispositivos.
+- Nenhuma ação física no PC/POCO/Mi Band/Octane foi confirmada por esta consolidação.
+
+======================================================================
+10. PAINEL AURION V5 — ESTRUTURA FUNCIONAL PROPOSTA
+======================================================================
+
+A toolbar deve refletir funções reais e ligar cada aba a dados persistidos, não a números decorativos. Proposta:
+1. CENTRAL — status resumido, build, processos e alertas com timestamps.
+2. AGENTE / IDENTIDADES — matriz de agentes, aliases, funções, permissões, fonte e estado de validação.
+3. COMANDOS — catálogo de comandos permitidos, pré-condições, escopo e log de execução; bloquear comandos destrutivos por padrão.
+4. CAIXA PRETA / MEMÓRIA — documentos, fragmentos, metadados, fontes, deduplicação e busca.
+5. ARQUIVOS / BIBLIOTECA — busca paginada por nome, caminho, tipo, data, estado de extração e link.
+6. EXTRAÇÃO / OCR — filas, checkpoints, tentativas, sucesso/falha e últimas gravações.
+7. OS 5 HERÓIS / HANDOFF — grafo PROMPT → VISION → CODE → RENDER coordenado por AURION, com ACK e payload versionado.
+8. ARANHAS / AUTOMAÇÕES — tarefa, agendamento, última execução, resultado, próxima execução, erros e prova.
+9. IMAGEM / VÍDEO — workflows e artefatos criativos, sem declarar render concluído até verificar arquivo.
+10. 3D / OCTANE / C4D — dependências, versões, assets, render, rig, texturas e testes.
+11. ESCOLA / ESTUDOS — fontes, data, resumo, prática, horas comprovadas e evidências.
+12. EVIDÊNCIAS / AUDITORIA — logs, hashes, diff, testes, recibos e decisões.
+13. GIT / APK — repositórios, branches, commits, workflows, artefatos, assinatura e dispositivos.
+14. CUSTOS / USO — créditos, tokens, chamadas e custo real, apenas quando fonte do dado existe.
+15. PORTFÓLIO / CLIENTES — projetos, entregas, contrato/recibo, autorias e datas comprovadas.
+A ordem e número final das abas devem ser reconciliados com o código atual antes da implementação. Fragmentos mencionam tanto 10/11 abas quanto necessidades ampliadas; não apagar abas existentes sem inventário.
+
+======================================================================
+11. PROJETOS E CONTEXTO DE LONGO PRAZO
+======================================================================
+
+11.1 AURION ONE / DigitalPen
+- Prioridade central: agente local com painel, inventário, memória consultável, ponte PC/celular, logs, autoinspeção e histórico.
+- Repositório histórico: `cleitongoy-debug/AURION-ONE`; confirmar branch/HEAD atual antes de editar.
+- Pastas e nomes locais variaram entre transcrições. Confirmar diretório atual via terminal, não copiar caminho de conversa sem verificar.
+- Não confundir versões antigas do portal 8765, painel 5058, hub 5059 e outras versões.
+
+11.2 AURION T8i — editor fotográfico móvel
+- Projeto separado, planejado para integração futura, não editar APK automaticamente com base em pesquisa.
+- Filosofia: preservar a fotografia real; não inventar detalhes, não criar pele plástica, não borrar poros/cabelos/tecidos, evitar halos e HDR artificial.
+- Pipeline pretendido: CR3 → perfil flat/LOG → exposição e balanço de branco → realces/sombras → contraste tonal → cor → correção de lente → ruído → nitidez/microcontraste → exportação.
+- Ferramentas desejadas: importação múltipla, RAW/raster, exportação para impressão/redes, antes/depois por pressão, histórico fixo, histograma, roda de cores funcional, curvas, máscaras desenhadas e HSL individual.
+- Paleta pretendida: gradiente violeta + magenta + azul.
+- Dispositivo-alvo informado: Oppo de Daia para builds de teste; POCO do Capitão separado.
+- Pasta de conhecimento no Drive informada: “CONHECIMENTO · AURION T8i”, ID `1480epyBbO9QGf7y1Nk9Vy1nWIQaPbZy3`. Não presumir acesso atual.
+- Pesquisa técnica deve registrar fonte oficial/estudo/upstream, data, status VALIDADO/CANDIDATO/EXPERIMENTAL/REJEITADO, compatibilidade ARM64/Android, licença SPDX/NOTICE, codecs/patentes, CVEs, performance e memória.
+
+11.3 ComfyUI / 3D / pipeline visual
+- Contexto inclui ComfyUI, Cinema 4D, Octane, MetaHuman, FBX, Marvelous Designer, render, LoRA, ControlNet, VAE e text encoders.
+- Inventário histórico: ComfyUI em 8188; Ollama em 11434; hardware mencionado em épocas diferentes (GTX 1660 SUPER 6 GB / 40 GB RAM / Xeon E5-2640 v3; outro PC i5-9400F / 32 GB RAM / RTX 2060 6 GB). Confirmar qual máquina e estado atual antes de recomendar configuração.
+- Problemas anteriores incluem `ModuleNotFoundError: No module named 'custom_rasterizer'` no nó `Hy3DRenderMultiView`, ONNX/model missing e falha do ComfyUI em um teste de rede.
+- Em storyboard/arte, preservar as referências originais e QA de anatomia/continuidade; não chamar blockout de personagem finalizado.
+
+11.4 Portfólio Studio DigitalPen / clientes
+- Um catálogo HTML pesquisado anteriormente traz menções a GS Uchoa/GSushoa, pasta 6P e `SCRIPT#6P`; existência da estrutura não prova identidade/contrato.
+- `aya_vision` é nome de diretório técnico com arquivos Python; não prova equivalência com personagem/agente Aya.
+- Kelvin aparece em menção histórica, sem perfil/pasta específica comprovada.
+- Galpão 24K aparece em descrição com MC Leh, mas o arquivo original de captura não foi identificado nessa busca.
+- Dito Flexa/Flecha: preservar as duas grafias até encontrar prova da forma correta; vídeo referido não foi localizado nessa busca.
+- Prefeitura de Leme: mencionada, sem arquivo específico confirmado.
+- Veritas/Véritas: manter variantes para busca, não fundir identidades sem prova.
+- Murilo#SAX e Murilo Matheus devem permanecer separados.
+- Portfólio inclui referências históricas a Studio DigitalPen, “Dito Flecha”, futebol/entrevistas em Leme, Digital Pen ONG, Loras, frutinhas/fazenda, Murilo, MC Leh, usinas solares, Veritas, Aya, Pollo Kelvin e galpão 24K. Não tratar menção como entrega confirmada.
+- Clientes/valores registrados em memória histórica incluem TOMIM / Luiz Claudio Rodrigues Tomim e nota de pagamento R$300 + R$300; confirmar comprovantes antes de contabilizar como saldo recebido.
+
+11.5 Estudos e horas
+- Um relatório histórico indicou JSON_13 115,42 h; DS_20 50,42 h; GR_BAT_32_ST 30,42 h; BB_MANAGER 10,42 h; total 206,68 h; LÚMEN/LM-01 ~0,25 h à parte.
+- São valores de TELEMETRIA/RELATÓRIO HISTÓRICO, não tempo atual nem prova independente de estudo. Não os somar novamente sem origem e deduplicação.
+- Manter por atividade: início/fim, fonte, tarefa, agente, evidência e método de cálculo. Sem evidência, marcar “relatado”, não “comprovado”.
+
+======================================================================
+12. PESQUISA SEMANAL E APRENDIZAGEM CRUZADA
+======================================================================
+
+Pedido registrado: produzir estudo atualizado de IA/tecnologia para a semana de 19–25/10/2026, com fontes e datas, pesquisa independente por agentes, leitura cruzada e ações aplicáveis ao AURION ONE, Cinema 4D, SPYDR e AURION T8i.
+Esse estudo não está incluído aqui como pesquisa atual verificada; a data e o pedido são contexto histórico. Para realizá-lo:
+- cada agente pesquisa fontes que consegue acessar e lista fontes/data/achado;
+- outros agentes leem os relatórios e acrescentam validação ou contraponto;
+- consolidar apenas após deduplicação;
+- separar notícia recente de documentação técnica permanente;
+- registrar implicação prática, custo/risco, compatibilidade e ação sugerida;
+- criar documento de estudo com proveniência e salvar no local canônico apenas após verificar acesso e destino.
+Não dizer “pesquisou 8 sites” nem “todos os agentes atualizaram” sem evidência de pesquisa, arquivo salvo e ACK de cada responsável.
+
+======================================================================
+13. PENDÊNCIAS PRIORIZADAS
+======================================================================
+
+P0 — segurança e integridade
+[ ] Rotacionar/revogar credenciais expostas em transcrição/arquivo; remover segredos do código e dos logs.
+[ ] Confirmar se existe GitHub issue ARANHA #55; ler estado, comentários, responsáveis e ACKs antes de criar outro.
+[ ] Resolver proveniência do APK Maestro 7.1: package/applicationId, commit, workflow, artefato, assinatura, hash e teste físico.
+[ ] Verificar rotas de API locais e impedir execução/instalação remota sem autenticação.
+
+P1 — memória e extração
+[ ] Determinar estado real do contador textual (3.221, 4.805 ou outro) e explicar a semântica de cada métrica.
+[ ] Determinar estado real do OCR (1.297/8.535 ou outro) e validar se houve trabalho novo após o último checkpoint.
+[ ] Corrigir/validar retomada da extração por checkpoint, sem reiniciar ou inflar contadores.
+[ ] Confirmar persistência e deduplicação de texto, OCR, embeddings e chunks.
+[ ] Corrigir consultas que travam listas ou biblioteca e adicionar paginação.
+
+P1 — handoffs e sincronização
+[ ] Verificar a falha de gravação da ponte BICHO 2027; renovar sessão de forma segura e repetir somente após verificar estado atual.
+[ ] Consultar ACK de ARANHA 1–5 e agentes externos; distinguir pedido enviado de recebimento e execução.
+[ ] Comparar relatórios de cada agente e consolidar diferenças sem duplicar pesquisa.
+[ ] Confirmar se a matriz `MATRIZ_IDENTIDADES_AURION_V5` realmente está no Drive e se o ID/link corresponde ao conteúdo esperado; este handoff ainda não a gravou.
+
+P2 — painel
+[ ] Inspecionar código e versão implantados antes de editar.
+[ ] Definir schema JSON versionado para identidades, agentes, comandos, handoffs, evidências e status.
+[ ] Implementar aba Identidades e Comandos usando dados persistidos e filtros de validação.
+[ ] Implementar busca Top-15 Chunks com citações ao arquivo e status de extração.
+[ ] Testar cada aba com dados reais e registrar evidência visual/API/log.
+[ ] Manter backups e rollback; não declarar “concluído” apenas porque o build passa.
+
+======================================================================
+14. CONTRATO DE DADOS SUGERIDO PARA IDENTIDADES E TAREFAS
+======================================================================
+
+Cada identidade:
+- identity_id (estável)
+- display_name
+- aliases
+- declared_role
+- capabilities
+- permissions
+- evidence_refs (arquivo, URL/ID, linhas, hash, data)
+- validation_status (COMPROVADO / RELATADO / CANDIDATO / BLOQUEADO)
+- last_verified_at
+- owner/responsible_agent
+- notes
+Não armazenar segredo nem token dentro do registro.
+
+Cada tarefa:
+- task_id
+- title
+- responsible_agent
+- dependent_agents
+- created_at / updated_at com timezone
+- status
+- priority
+- input_refs / output_refs
+- last_attempt
+- result_summary
+- evidence_refs
+- blockers
+- next_action
+- acknowledgement_status
+- idempotency_key
+Ação não é concluída até que output_ref e evidência de leitura/validação existam. ACK significa confirmação de recebimento; não significa sucesso técnico.
+
+Cada artefato:
+- artifact_id
+- canonical_path
+- source_system
+- source_id
+- content_hash quando possível
+- created/modified timestamp
+- extraction_status
+- OCR_status
+- semantic_index_status
+- version
+- access_mode
+- duplicate_of se aplicável
+- evidence of last read
+Nunca usar apenas nome de arquivo como identificador único.
+
+======================================================================
+15. CHECKLIST DE HANDOFF PARA O AGENTE LOCAL
+======================================================================
+
+Ao iniciar a próxima sessão:
+1. Ler este handoff.
+2. Confirmar diretório, branch, commit, versão/build e processo real do AURION_ONE.py.
+3. Confirmar quais arquivos canônicos estão disponíveis; não presumir que a matriz do Drive foi baixada.
+4. Consultar logs/DB antes de executar qualquer migração ou varredura.
+5. Consultar o estado do issue #55 e das ARANHAS, se acessíveis.
+6. Executar somente diagnósticos de leitura primeiro.
+7. Informar ao Capitão: comprovado, relatado, bloqueado, próximo passo e prova solicitada.
+8. Se alterar código, backup + diff + teste + resultado + rollback.
+9. Ao terminar, atualizar um único registro canônico de handoff, sem criar cópias paralelas.
+10. Não pedir que o Capitão repita contexto já presente neste documento; solicitar apenas o dado mínimo que realmente falta.
+
+======================================================================
+16. ÍNDICE DAS FONTES DESTA CONSOLIDAÇÃO
+======================================================================
+
+F1 — MEMORIA#SKIP.txt
+Captura textual do AURION Drive Archive, números do catálogo, hierarquia e exemplos de arquivos. Inclui credencial em texto claro; NÃO reutilizar nem copiar a credencial.
+
+F2 — DOSSIÊ ESTRUTURAL E HISTÓRICO PROTO.txt
+Dossiê de identidades do Protocolo ÁGUIA. Classifica ÁGUIA, FALCÃO e AURION ONE como confirmados no próprio documento; CHINA, KANG, O PRIMEIRO IRMÃO e OS 5 HERÓIS como não comprovados/registrados por tradição ou arquétipo.
+
+F3 — anal~isesistemFAGMENTO´gpt.txt
+Transcrição longa com painel, contadores, rotas, histórico de extração, diagnósticos anteriores, requisitos para Caixa Preta e instruções de continuidade. Contém snapshots e relatos de agentes; validar antes de tratar como estado atual.
+
+F4 — FAGMENTO´CHAT.txt
+Transcrição longa de conversas, comandos, rede local, portas, painéis, integrações, builds e problemas. Inclui relatos contraditórios ou de épocas diferentes; usar datas, código e logs para resolver.
+
+F5 — FAGMENTO´gpt.txt
+Transcrição de contexto AURION/ARANHA, relatórios de QA, issue #55, problemas de APK e sincronização. Há conteúdo substancialmente duplicado em F4; não contar como fonte independente sem comparação por hash/trecho.
+
+F6 — MEMORIA#MAESTRO.txt
+Histórico extenso de conversas/execuções, GitHub, APK, automações, painéis e ferramentas. Distinguir resultados efetivamente comprovados nos logs dos textos narrativos do agente.
+
+NOTA DE DEDUPLICAÇÃO
+Os arquivos F4 e F5 contêm passagens repetidas. F3 contém uma transcrição de tamanho muito grande. Esta consolidação não substitui a preservação dos originais e não declara que cada linha dos seis arquivos foi semanticamente auditada; serve como handoff mestre de alto valor e mapa de investigação. Quando uma decisão depender de detalhe não incluído aqui, buscar o trecho exato no arquivo original e citar sua localização.
+
+FIM DO HANDOFF
+< bip > < ¥€¢∆§ > < pip > < r4tπ > < 🦅 >
