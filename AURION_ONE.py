@@ -31,7 +31,7 @@ COMFY_URL=f"http://127.0.0.1:{COMFY_PORT}"; OLLAMA_URL=f"http://127.0.0.1:{OLLAM
 app = Flask(__name__)
 LOCK = threading.RLock()
 BOOT={"step":"Inicializando interface", "done":0, "total":8, "ready":False, "details":[], "started":time.time()}
-BUILD="2026.09.21-CENTRAL-IMAGEM-AGENTE-14"
+BUILD="2026.09.24-T8I-RAW-LAB-15"
 _CACHE = {"comfy":None,"comfy_at":0,"ollama":None,"ollama_at":0}
 
 def log(msg, error=False):
@@ -226,6 +226,14 @@ def image_progress(pid):
     elif any(isinstance(x,list) and len(x)>1 and x[1]==pid for x in pending): st="fila"
     else: st="processando"
     return {"status":st,"progress":None,"images":[]}
+
+# ---------- T8I RAW / CR3 ----------
+try:
+    from aurion_t8i_web import register_t8i
+    register_t8i(app, log)
+    log("T8I RAW LAB carregado")
+except Exception as exc:
+    log("T8I RAW LAB indisponivel: " + str(exc), True)
 
 # ---------- ROTAS ----------
 @app.get("/assets/Mesa_de_Operacao_REAL_AURION_v2.png")
@@ -839,7 +847,7 @@ body{background:repeating-linear-gradient(0deg,transparent 0 39px,#ffffff05 40px
 <button onclick="tab('central',this)">+ CENTRAL & @</button><button onclick="tab('bridge',this);loadBridge()">MODELOS · ENCAIXE REAL</button><button onclick="tab('programas',this);loadPrograms()">PROGRAMAS & LOGIN</button><button onclick="tab('knowledge',this)">BÍBLIA & REUNIÕES</button><button onclick="tab('video',this)">VÍDEO & WORKFLOWS</button><button onclick="tab('marketing',this)">COR & MARKETING</button><button onclick="tab('editor',this)">EDITOR PY SEGURO</button><button onclick="tab('spaces',this)">ESPACOS</button><button onclick="tab('library',this);libraryLoad()">BIBLIOTECA</button><button onclick="tab('favorites',this);favLoad()">FAVORITOS & ESTUDOS</button><button onclick="tab('poco',this)">POCO · CONEXÃO</button><button onclick="tab('band',this)">MI BAND · CONEXÃO</button>
 <button onclick="tab('school',this);schoolLoad()">ESCOLA · MAPA & SKILLS</button><button onclick="tab('sessions',this);studyLoad()">ESTUDO · RELÓGIO</button>
 <button onclick="tab('chat',this)">AGENTE</button>
-<button onclick="tab('image',this)">GERAR IMAGEM</button><button onclick="tab('comfy',this)">COMFYUI REAL</button><button onclick="tab('manager',this)">MANAGER / SCAN</button>
+<button onclick="tab('image',this)">GERAR IMAGEM</button><button onclick="window.location.href='/t8i'">T8I · RAW / CR3</button><button onclick="tab('comfy',this)">COMFYUI REAL</button><button onclick="tab('manager',this)">MANAGER / SCAN</button>
 </div></aside><main class="main"><header class="top"><div class="title">AURION ONE</div><div class="topright" id="global">Carregando...</div></header><div class="content">
 <section id="school" class="tab"><div class="card"><h3>ESCOLA · INSPEÇÃO DE MÓDULOS, VISUAL E SKILLS</h3><p>Conferência limitada dos diretórios conhecidos. Imagem parecida com um TXT/PY é hipótese, nunca fusão automática. ADAPTA protegida.</p><button onclick="schoolLoad(true)">RECONFERIR PASTAS E REFERÊNCIAS</button><div class="row" id="schoolMetrics"></div><div class="bar"><div id="schoolBar" style="width:0%"></div></div><div id="schoolPairs"></div><h3>ESFERA HISTÓRICA · REFERÊNCIA ORIGINAL</h3><div class="schoolPair"><img src="/assets/Mesa_de_Operacao_REAL_AURION_v2.png" loading="lazy" alt="Esfera histórica AURION"><div><b>Mesa_de_Operacao_REAL_AURION_v2.png</b><small>Referência visual localizada no Drive autorizado; reproduzida como referência, não como status ativo.</small></div></div><h3>SKILLS · LOCALIZADAS, NÃO EXECUTADAS</h3><div id="schoolSkills"></div><pre id="schoolResult" style="white-space:pre-wrap;max-height:300px;overflow:auto"></pre><h3>DISPOSITIVOS E PROGRAMAS</h3><div id="schoolDevices"></div></div></section>
 <section id="sessions" class="tab"><div class="card"><h3>ESTUDOS · RELÓGIO & DIÁRIO</h3><p>Abra o curso por aqui para registrar a primeira visita e iniciar uma sessão. A duração é registrada até você finalizar. Plataformas externas não fornecem conclusão automaticamente sem integração autorizada.</p><div class="hero"><div class="hudcard"><h3>SESSÃO ATIVA</h3><div style="font-size:28px;color:var(--accent)" id="studyClock">00:00:00</div><small id="studyActive">Nenhuma sessão iniciada</small></div><div class="hudcard"><h3>SESSÕES FINALIZADAS</h3><strong id="studyCount" style="font-size:28px">0</strong></div><div class="hudcard"><h3>TEMPO REGISTRADO</h3><strong id="studyHours" style="font-size:28px">0 h</strong></div><div class="hudcard"><h3>ORIGEM</h3><small>Relógio do painel; não mede atenção nem compra.</small></div></div><input id="studyTitle" placeholder="Curso ou livro: título" maxlength="180"><input id="studyUrl" placeholder="https://... link oficial do curso ou aula"><button class="primary" onclick="studyStart()">ABRIR CURSO E INICIAR RELÓGIO ↗</button><div class="row"><input id="studyChapter" placeholder="Módulo / capítulo / versículo"><input id="studyProgress" type="number" min="0" max="100" placeholder="Progresso informado 0–100%"></div><textarea id="studyNotes" placeholder="Anotações, técnica aprendida, data, referência" style="min-height:75px"></textarea><button onclick="studyFinish()">FINALIZAR SESSÃO E SALVAR</button><pre id="studyFeedback" style="white-space:pre-wrap"></pre><div id="studyHistory"></div></div></section>
