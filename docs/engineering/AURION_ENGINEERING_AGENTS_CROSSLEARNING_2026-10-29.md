@@ -91,3 +91,14 @@ Este documento é uma especificação baseada em documentação pública e nos a
 - DeepSeek Responses: https://api-docs.deepseek.com/api/create-response/
 - Agent Skills specification: https://github.com/agentskills/agentskills
 - AAIF conference schedule and videos as they are released: https://events.linuxfoundation.org/agntcon-mcpcon-north-america/
+
+
+## Atualização complementar da semana — 29/10/2026
+Pesquisa oficial adicional no newsroom da OpenAI identificou, no período, GPT-6.1 Terra (26/10; foco em computer use), expansão de integração com Oracle (27/10), parceria ServiceNow para workflows empresariais (28/10), além de materiais de segurança e engenharia publicados em 23–26/10. São sinais de evolução de agentes com uso de computador, workflows entre sistemas, segurança e infraestrutura; não provam que o AURION tenha essas funções implementadas.
+Fontes: https://openai.com/news/ (lista oficial)
+https://openai.com/news/company-announcements/
+https://openai.com/news/product-releases/
+
+## Vídeos e mídia
+A página oficial da AGNTCon + MCPCon diz que as gravações das sessões estão sendo publicadas progressivamente. A ARANHA 1 deve registrar cada URL de vídeo, título, apresentador, duração, timestamps e fonte da transcrição; o relatório só pode marcar VÍDEO_ASSISTIDO se houve leitura real do vídeo/transcrição, não apenas da página do evento.
+Fonte: https://events.linuxfoundation.org/agntcon-mcpcon-north-america/
