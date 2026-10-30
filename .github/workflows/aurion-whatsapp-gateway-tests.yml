@@ -1,0 +1,26 @@
+name: AURION WhatsApp Cloud — Offline Gateway Tests
+
+on:
+  pull_request:
+    paths:
+      - "integrations/whatsapp_cloud/**"
+      - ".github/workflows/aurion-whatsapp-gateway-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  webhook-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Use Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run offline gateway tests
+        working-directory: integrations/whatsapp_cloud
+        run: python -m unittest -v test_gateway.py
