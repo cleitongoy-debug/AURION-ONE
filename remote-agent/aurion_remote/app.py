@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from .config import Settings, get_settings
+from .lovart_catalog import load_catalog
 from .models import DeviceState, PromptRequest, PromptResponse
 
 app = FastAPI(title="AURION ONE Home Node", version="0.1.1")
@@ -93,6 +94,12 @@ async def run_inventory_scan() -> dict:
             raise HTTPException(status_code=503, detail="Inventário não pôde ser lido") from exc
 
 
+@app.get("/api/lovart", dependencies=[Depends(require_token)])
+async def lovart_catalog() -> dict:
+    """Expose only a local public-reference manifest; no Lovart/Instagram OAuth."""
+    return load_catalog()
+
+
 @app.get("/api/status", dependencies=[Depends(require_token)])
 async def system_status(settings: Settings = Depends(get_settings)) -> dict:
     ollama = "offline"
@@ -164,18 +171,46 @@ button{background:#1d6fd8;color:#fff;font-weight:700}</style></head>
 <body><div id='login' class='card'><h1>Login AURION ONE</h1><p>No primeiro acesso, cole com Ctrl+V a chave copiada pelo inicializador.</p><input id='token' type='password' placeholder='Chave local'><button onclick='loginPortal()'>Entrar</button><pre id='loginStatus'></pre></div>
 <main id='portal' style='display:none'><div class='card'><h1>AURION ONE</h1><p>Nó doméstico online, autenticado e com inventário carregado.</p></div>
 <div class='card'><button onclick='runScan()'>Iniciar scan do PC</button><button onclick='loadInventory()'>Ver inventário salvo</button><pre id='scanStatus' aria-live='polite'></pre></div>
+<div class='card'><h2>✦ LOVART · CHEFE VISUAL</h2>
+<p>Acervo de referências local e somente leitura. Sem login externo, sem gasto de créditos e sem publicação.</p>
+<p id='lovartStatus' aria-live='polite'>Aguardando autenticação local...</p>
+<button onclick='loadLovart()'>Consultar acervo visual</button>
+<div id='lovartAssets'></div>
+<p><a id='lovartInstagram' target='_blank' rel='noopener noreferrer' href='https://www.instagram.com/studio.digitalpen/' style='color:#7dd3fc'>Instagram · Portfólio Studio DigitalPen ↗</a></p>
+</div>
 <div class='card'><h2>Inventário automático</h2><pre id='inventory'>Informe o token para carregar.</pre></div>
 <div class='card'><h2>Comando local</h2>
 <textarea id='prompt' rows='4' placeholder='Escreva uma tarefa para o agente'></textarea><button onclick='sendPrompt()'>Executar</button>
 <pre id='answer'></pre></div><script>
 function savedToken(){return localStorage.getItem('aurion_token')||token.value}
-async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value.trim()}});if(!r.ok){localStorage.removeItem('aurion_token');loginStatus.textContent='Chave inválida. Execute o inicializador novamente e cole a nova chave.';return}localStorage.setItem('aurion_token',token.value.trim());login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2)}
+async function loginPortal(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+token.value.trim()}});if(!r.ok){localStorage.removeItem('aurion_token');loginStatus.textContent='Chave inválida. Execute o inicializador novamente e cole a nova chave.';return}localStorage.setItem('aurion_token',token.value.trim());login.style.display='none';portal.style.display='block';inventory.textContent=JSON.stringify(await r.json(),null,2);loadLovart()}
 async function runScan(){
 scanStatus.textContent='Escaneando PC...';
 try{const r=await fetch('/api/scan',{method:'POST',headers:{'Authorization':'Bearer '+savedToken()}});
 const data=await r.json();if(!r.ok)throw Error(data.detail||'Erro HTTP '+r.status);
 inventory.textContent=JSON.stringify(data,null,2);scanStatus.textContent='Scan concluído: '+(data.scanned_at||'sem horário');
 }catch(e){scanStatus.textContent='Falha no scan: '+e.message;}
+}
+async function loadLovart(){
+ lovartStatus.textContent='Consultando manifesto local...';
+ lovartAssets.textContent='';
+ try {
+  const r=await fetch('/api/lovart',{headers:{'Authorization':'Bearer '+savedToken()}});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  const data=await r.json();
+  const loaded=data.status==='catalog_loaded';
+  lovartStatus.textContent=(loaded?'Manifesto lido':'Manifesto local ausente ou inválido')+
+  ' · '+data.asset_count+' referências · Lovart API: NÃO CONECTADA · Instagram API: NÃO CONECTADA · Créditos: NÃO MEDIDOS';
+  const profile=data.instagram_profile;
+  if(typeof profile==='string' && profile.startsWith('https://www.instagram.com/'))lovartInstagram.href=profile;
+  for(const asset of (data.assets||[])){
+   const p=document.createElement('p');
+   const a=document.createElement('a');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';a.style.color='#b4f4ff';
+   a.textContent=asset.title+' ↗';
+   const tag=document.createElement('small');tag.textContent=' · '+asset.kind+' · referência histórica, não validada';
+   p.append(a,tag);lovartAssets.append(p);
+  }
+ }catch(e){lovartStatus.textContent='Acervo não disponível: '+e.message}
 }
 async function loadInventory(){const r=await fetch('/api/inventory',{headers:{'Authorization':'Bearer '+savedToken()}});inventory.textContent=JSON.stringify(await r.json(),null,2)}
 async function sendPrompt(){answer.textContent='Processando...';const r=await fetch('/api/prompt',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+savedToken()},body:JSON.stringify({text:prompt.value,device_id:'portal-pc',moving:false})});answer.textContent=JSON.stringify(await r.json(),null,2)}
