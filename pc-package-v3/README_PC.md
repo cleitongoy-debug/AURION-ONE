@@ -19,3 +19,19 @@ Após iniciar, use `CONECTAR_CELULAR.txt` para preencher o endereço e token no 
 - `_aurion_superstudio\LOGS\server.log`
 
 Leia `LABORATORIO_ERROS_TESTES.md` antes de alterar o inicializador.
+
+
+## Aba Canon T8i / CR3 · v3.1
+
+A aba T8i agora mantém um cofre de trabalho persistente:
+
+- instala/valida `rawpy/LibRaw`, NumPy, imageio e tifffile no ambiente isolado;
+- preserva cada CR3 original em um depósito escolhido pelo operador;
+- exporta JPEG 8-bit ou TIFF 16-bit sem sobrescrever arquivos existentes;
+- permite escolher, salvar, abrir e criar pastas para RAW, exportações, conversas, projetos, presets, logs, manifestos e backups;
+- salva conversas do agente em SQLite e também em Markdown + JSONL;
+- cria manifestos com caminho, parâmetros e SHA-256 para cada revelação;
+- gera snapshot documental de memória/configurações/conversas/presets/logs/manifestos sem duplicar automaticamente os arquivos RAW/TIFF grandes;
+- mantém ações privadas da aba T8i protegidas pelo token local.
+
+**Importante:** CR3 é RAW fotográfico. O fluxo da T8i não trata CR3 como C-Log de vídeo. Canon Log deve ser tratado no fluxo de vídeo quando o arquivo e a câmera realmente registrarem esse perfil.

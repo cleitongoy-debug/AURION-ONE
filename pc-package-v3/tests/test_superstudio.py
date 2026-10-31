@@ -23,7 +23,7 @@ class SuperStudioTests(unittest.TestCase):
     def test_health(self):
         response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["version"], "3.0.0")
+        self.assertEqual(response.get_json()["version"], "3.1.0")
 
     def test_mobile_status_requires_token(self):
         self.assertEqual(self.client.get("/api/mobile/status").status_code, 401)
@@ -35,6 +35,40 @@ class SuperStudioTests(unittest.TestCase):
         response = self.client.get("/api/preflight")
         self.assertIn(response.status_code, (200, 404))
         self.assertIn("ok", response.get_json())
+
+    def test_t8i_private_status_requires_token(self):
+        self.assertEqual(self.client.get("/api/t8i/settings").status_code, 401)
+        response = self.client.get("/api/t8i/settings", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("conversation_dir", response.get_json()["settings"])
+
+    def test_t8i_dependency_install_requires_explicit_confirmation(self):
+        response = self.client.post(
+            "/api/mobile/t8i/deps/install",
+            headers=self.headers,
+            json={},
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(response.get_json()["confirmation_required"])
+
+    def test_t8i_snapshot_requires_explicit_confirmation(self):
+        response = self.client.post(
+            "/api/t8i/snapshot",
+            headers=self.headers,
+            json={},
+        )
+        self.assertEqual(response.status_code, 409)
+
+    def test_panel_contains_t8i_persistence_controls(self):
+        html = self.client.get("/").get_data(as_text=True)
+        for marker in (
+            "Canon T8i · CR3 · Cofre de Trabalho",
+            "INSTALAR DEPENDÊNCIAS",
+            "SNAPSHOT · NÃO PERDER",
+            "Conversas, decisões e notas da sessão",
+            "CRIAR PASTA",
+        ):
+            self.assertIn(marker, html)
 
     def test_final_panel_contains_3d_modules(self):
         html = self.client.get("/").get_data(as_text=True)

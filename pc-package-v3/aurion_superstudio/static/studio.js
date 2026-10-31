@@ -4,7 +4,7 @@ const pages=[['home','CENTRAL'],['project','PROJETOS'],['t8i','CANON T8i'],['pho
 let cfg={},statusCache={},fx=[],timeline=[],keyframes=[];
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function api(path,opt={}){opt.headers={...(opt.headers||{}),'X-Aurion-Token':token};if(opt.json!==undefined){opt.body=JSON.stringify(opt.json);opt.headers['Content-Type']='application/json';delete opt.json}let r=await fetch(path,opt),j=await r.json().catch(()=>({ok:false,error:'Resposta inválida'}));if(!r.ok&&!j.error)j.error='HTTP '+r.status;return j}
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));$('pageTitle').textContent=pages.find(x=>x[0]===id)?.[1]||id;if(id==='memory')loadRecords();if(id==='legacy')$('legacyFrame').src=cfg.panel||'about:blank'}
+function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));$('pageTitle').textContent=pages.find(x=>x[0]===id)?.[1]||id;if(id==='memory')loadRecords();if(id==='t8i')loadT8iState();if(id==='legacy')$('legacyFrame').src=cfg.panel||'about:blank'}
 function initNav(){$('nav').innerHTML=pages.map(([id,name],i)=>`<button data-page="${id}" class="${i?'':'active'}" onclick="go('${id}')">${name}</button>`).join('')}
 function state(id,obj){let el=$(id),ok=!!obj?.ok;el.className=ok?'ok':'bad';el.textContent=el.textContent.split(' · ')[0]+' · '+(ok?'ON':'OFF')}
 async function refreshStatus(){let [j,p]=await Promise.all([api('/api/status'),api('/api/preflight')]);statusCache=j;state('sPanel',j.panel);state('sOllama',j.ollama);state('sComfy',j.comfy);$('metrics').innerHTML=[['CPU',j.system?.cpu??'—'],['RAM',j.system?.ram??'—'],['DISCO',j.system?.disk??'—'],['VERSÃO','v'+j.version]].map(x=>`<div class="metric"><small>${x[0]}</small><b>${x[1]}${typeof x[1]==='number'?'%':''}</b></div>`).join('');$('healthCards').innerHTML=['panel','ollama','comfy'].map(k=>`<div class="row"><span>${k.toUpperCase()}</span><b class="${j[k]?.ok?'ok':'bad'}">${j[k]?.ok?'VERIFICADO':'INDISPONÍVEL'} ${j[k]?.ms??'—'}ms</b></div>`).join('');$('baseFiles').textContent=(j.base?.files||[]).map(f=>`${f.name}\n${f.size} bytes · ${f.sha256}`).join('\n\n')||'Nenhum arquivo protegido encontrado nesta cópia. O módulo não criou nem alterou esses arquivos.';$('diagLog').textContent=JSON.stringify({estado_atual:j,pre_voo:p.report||p},null,2);let models=j.ollama?.models||[];$('ollamaModel').innerHTML=models.map(m=>`<option>${esc(m)}</option>`).join('')||'<option value="">Nenhum modelo confirmado</option>';let cps=j.comfy?.checkpoints||[];$('checkpoint').innerHTML=cps.map(m=>`<option>${esc(m)}</option>`).join('')||'<option value="">Catálogo não confirmado</option>'}
@@ -14,7 +14,69 @@ async function addRecord(kind,title,body,metadata={}){return api('/api/records',
 async function saveProject(){let p={name:$('projectName').value,client:$('clientName').value,brief:$('projectBrief').value,deadline:$('projectDeadline').value,delivery:$('projectDelivery').value};let j=await addRecord('project',p.name||'Projeto sem nome',JSON.stringify(p,null,2),{client:p.client});$('projectLog').textContent=j.ok?'Projeto salvo na memória permanente.':j.error}
 async function saveMemory(){let j=await addRecord($('memoryKind').value,$('memoryTitle').value,$('memoryBody').value);if(j.ok){$('memoryTitle').value='';$('memoryBody').value='';loadRecords()}}
 async function loadRecords(){let j=await api('/api/records?q='+encodeURIComponent($('memoryQuery')?.value||''));$('memoryList').innerHTML=(j.records||[]).map(r=>`<article><small>${esc(r.kind)} · ${esc(r.updated_at)}</small><h3>${esc(r.title)}</h3><pre>${esc(r.body)}</pre></article>`).join('')||'<p class="note">Nenhum registro.</p>'}
-async function developCr3(){let f=$('cr3File').files[0];if(!f){$('t8iLog').textContent='Selecione um CR3.';return}let form=new FormData();form.append('file',f);form.append('params',JSON.stringify({brightness:Number($('cr3Bright').value),quality:Number($('cr3Quality').value)}));$('t8iLog').textContent='Importando original e revelando…';let j=await api('/api/t8i/develop',{method:'POST',body:form});$('t8iLog').textContent=j.ok?JSON.stringify(j.result,null,2):(j.error+'\nOriginal preservado em: '+(j.imported||'—'))}
+const t8iFields={raw_dir:'t8iRawDir',export_dir:'t8iExportDir',conversation_dir:'t8iConversationDir',project_dir:'t8iProjectDir',preset_dir:'t8iPresetDir',log_dir:'t8iLogDir',manifest_dir:'t8iManifestDir',backup_dir:'t8iBackupDir'};
+function t8iListText(items){return (items||[]).map(x=>x.name+'\n'+x.path+'\n'+x.size+' bytes · '+x.modified).join('\n\n')||'Nenhum arquivo.'}
+async function loadT8iState(){
+  let [settings,status,library]=await Promise.all([api('/api/t8i/settings'),api('/api/mobile/t8i/status'),api('/api/t8i/library')]);
+  if(settings.ok){Object.entries(t8iFields).forEach(([k,id])=>{if($(id))$(id).value=settings.settings?.[k]||''})}
+  $('t8iDeps').textContent=JSON.stringify({ready:status.ready,modules:status.modules,python:status.python,python_exists:status.python_exists,note:status.note},null,2);
+  $('t8iRawList').textContent=t8iListText(library.raw);
+  $('t8iExportList').textContent=t8iListText(library.exports);
+  $('t8iConversationList').textContent=t8iListText(library.conversations);
+  $('t8iManifestList').textContent=t8iListText(library.manifests);
+}
+async function saveT8iFolders(){
+  let body={};Object.entries(t8iFields).forEach(([k,id])=>body[k]=$(id).value.trim());
+  $('t8iFolderLog').textContent='Salvando depósitos…';
+  let j=await api('/api/t8i/settings',{method:'POST',json:body});
+  $('t8iFolderLog').textContent=j.ok?'Depósitos salvos e verificados.':j.error;
+  if(j.ok)await loadT8iState();
+}
+async function chooseT8iFolder(key){
+  $('t8iFolderLog').textContent='Abrindo seletor no PC…';
+  let j=await api('/api/t8i/folder/select',{method:'POST',json:{key}});
+  $('t8iFolderLog').textContent=j.ok?('Selecionado: '+j.path):(j.cancelled?'Seleção cancelada.':j.error);
+  if(j.ok)await loadT8iState();
+}
+async function openT8iFolder(key){
+  let j=await api('/api/t8i/folder/open',{method:'POST',json:{key}});
+  $('t8iFolderLog').textContent=j.ok?'Pasta aberta no PC.':j.error;
+}
+async function createT8iFolder(){
+  let key=$('t8iCreateKey').value,name=$('t8iCreateName').value.trim();
+  if(!name){$('t8iFolderLog').textContent='Digite o nome da subpasta.';return}
+  let j=await api('/api/t8i/folder/create',{method:'POST',json:{key,name}});
+  $('t8iFolderLog').textContent=j.ok?('Criada: '+j.path):j.error;
+  if(j.ok)$('t8iCreateName').value='';
+}
+async function installT8iDeps(){
+  if(!confirm('Instalar/confirmar rawpy, LibRaw, NumPy, imageio e tifffile no ambiente isolado do Super Studio?'))return;
+  $('t8iDeps').textContent='Instalando dependências T8i…';
+  let j=await api('/api/mobile/t8i/deps/install',{method:'POST',json:{confirm:'INSTALAR_T8I'}});
+  $('t8iDeps').textContent=JSON.stringify({ok:j.ok,ready:j.ready,modules:j.modules,stdout_tail:j.stdout_tail,stderr_tail:j.stderr_tail,error:j.error},null,2);
+  await loadT8iState();
+}
+async function saveT8iNote(){
+  let body=$('t8iNoteBody').value.trim();if(!body){$('t8iNoteLog').textContent='Escreva a nota.';return}
+  let j=await api('/api/t8i/note',{method:'POST',json:{title:$('t8iNoteTitle').value.trim()||'Sessão T8i',body}});
+  $('t8iNoteLog').textContent=j.ok?('Salvo em SQLite + arquivos:\n'+JSON.stringify(j.files,null,2)):j.error;
+  if(j.ok){$('t8iNoteBody').value='';await loadT8iState()}
+}
+async function snapshotT8i(){
+  if(!confirm('Criar snapshot documental da aba T8i? CR3/TIFF grandes não serão duplicados; memória, configurações, conversas, presets, logs e manifestos serão incluídos.'))return;
+  $('t8iDeps').textContent='Criando snapshot…';
+  let j=await api('/api/t8i/snapshot',{method:'POST',json:{confirm:'SNAPSHOT_T8I'}});
+  $('t8iDeps').textContent=j.ok?JSON.stringify({snapshot:j.path,sha256:j.sha256,manifest:j.manifest,includes_media:j.includes_media},null,2):j.error;
+}
+async function developCr3(){
+  let f=$('cr3File').files[0];if(!f){$('t8iLog').textContent='Selecione um CR3.';return}
+  let params={brightness:Number($('cr3Bright').value),quality:Number($('cr3Quality').value),profile:$('cr3Profile').value,format:$('cr3Format').value,no_auto_bright:$('cr3NoAutoBright').checked};
+  let form=new FormData();form.append('file',f);form.append('params',JSON.stringify(params));
+  $('t8iLog').textContent='Copiando original, calculando checksum e revelando…';
+  let j=await api('/api/t8i/develop',{method:'POST',body:form});
+  $('t8iLog').textContent=j.ok?JSON.stringify({original:j.original,result:j.result,manifest:j.manifest},null,2):(j.error+'\nOriginal preservado em: '+(j.imported||'—'));
+  if(j.ok)await loadT8iState();
+}
 function previewImage(){let f=$('imageFile').files[0];if(!f)return;$('imagePreview').src=URL.createObjectURL(f);$('imagePreview').onload=drawScopes}
 async function processImage(){let f=$('imageFile').files[0];if(!f){$('photoLog').textContent='Selecione uma imagem.';return}let params={brightness:Number($('imgBrightness').value),contrast:Number($('imgContrast').value),saturation:Number($('imgSaturation').value),sharpness:Number($('imgSharp').value),effect:$('imgEffect').value,quality:Number($('imgQuality').value)},form=new FormData();form.append('file',f);form.append('params',JSON.stringify(params));$('photoLog').textContent='Processando…';let j=await api('/api/image/process',{method:'POST',body:form});$('photoLog').textContent=j.ok?JSON.stringify(j.result,null,2):j.error}
 function drawScopes(){let img=$('imagePreview');if(!img.naturalWidth)return;let c=document.createElement('canvas'),w=Math.min(480,img.naturalWidth),h=Math.round(img.naturalHeight*w/img.naturalWidth);c.width=w;c.height=h;let x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,w,h);let p=x.getImageData(0,0,w,h).data,rs=new Uint32Array(256),gs=new Uint32Array(256),bs=new Uint32Array(256);for(let i=0;i<p.length;i+=16){rs[p[i]]++;gs[p[i+1]]++;bs[p[i+2]]++}scopeHist(rs,gs,bs);scopeWave(p,w,h);scopeVector(p)}

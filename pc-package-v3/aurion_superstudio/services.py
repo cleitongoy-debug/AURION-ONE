@@ -111,18 +111,58 @@ def develop_cr3(source: Path, output: Path, params: dict) -> dict:
     try:
         import rawpy
         import imageio.v3 as iio
+        import tifffile
     except ImportError as exc:
-        raise RuntimeError("Suporte CR3 opcional ausente. Execute INSTALAR_SUPORTE_T8I.cmd.") from exc
+        raise RuntimeError("Suporte CR3 ausente. Use o botão INSTALAR DEPENDÊNCIAS na aba T8i.") from exc
+
+    profile = str(params.get("profile", "camera")).strip().lower()
+    output_format = str(params.get("format", "JPEG")).strip().upper()
+    if output_format not in {"JPEG", "TIFF"}:
+        output_format = "JPEG"
+    brightness = max(0.1, min(4.0, float(params.get("brightness", 1.0))))
+    quality = max(40, min(100, int(params.get("quality", 95))))
+    no_auto_bright = bool(params.get("no_auto_bright", False))
+    output_bps = 16 if output_format == "TIFF" else 8
+    use_auto_wb = profile == "auto"
+    use_camera_wb = not use_auto_wb
+
     with rawpy.imread(str(source)) as raw:
         rgb = raw.postprocess(
-            use_camera_wb=True,
-            no_auto_bright=False,
-            bright=float(params.get("brightness", 1.0)),
-            output_bps=8,
+            use_camera_wb=use_camera_wb,
+            use_auto_wb=use_auto_wb,
+            no_auto_bright=no_auto_bright,
+            bright=brightness,
+            output_bps=output_bps,
         )
+        metadata = {
+            "raw_width": int(raw.sizes.raw_width),
+            "raw_height": int(raw.sizes.raw_height),
+            "visible_width": int(raw.sizes.width),
+            "visible_height": int(raw.sizes.height),
+            "camera_whitebalance": [float(x) for x in raw.camera_whitebalance] if raw.camera_whitebalance is not None else None,
+            "daylight_whitebalance": [float(x) for x in raw.daylight_whitebalance] if raw.daylight_whitebalance is not None else None,
+            "color_desc": bytes(raw.color_desc).decode("ascii", errors="replace") if raw.color_desc is not None else None,
+        }
+
     output.parent.mkdir(parents=True, exist_ok=True)
-    iio.imwrite(output, rgb, quality=max(40, min(100, int(params.get("quality", 95)))))
-    return {"output": str(output), "sha256": sha256(output)}
+    if output_format == "TIFF":
+        tifffile.imwrite(str(output), rgb, photometric="rgb")
+    else:
+        iio.imwrite(output, rgb, quality=quality)
+
+    return {
+        "output": str(output),
+        "sha256": sha256(output),
+        "width": int(rgb.shape[1]),
+        "height": int(rgb.shape[0]),
+        "bits_per_sample": output_bps,
+        "format": output_format,
+        "profile": profile,
+        "brightness": brightness,
+        "quality": quality,
+        "no_auto_bright": no_auto_bright,
+        "metadata": metadata,
+    }
 
 
 def validate_local_url(url: str) -> bool:
