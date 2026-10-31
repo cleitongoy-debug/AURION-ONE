@@ -11,6 +11,7 @@ APK Android independente do painel de PC, mantendo o mesmo applicationId `one.au
 - **T8i**: seleção de CR3/MP4, preservação do original, depósito escolhido pelo operador, verificação/instalação opcional do suporte RAW no Super Studio do PC e revelação CR3 → JPEG quando o PC estiver conectado.
 - **Estudos**: curso, professor, assunto, tópico, progresso informado, conclusão manual, notas e cronômetro persistente.
 - **Clientes**: cliente, projeto, serviço, status, prazo, notas e cronômetro de trabalho.
+- **Portfólio**: matriz de 10 capacidades, 8 projetos catalogados, progresso de cursos auditado e pendências probatórias do dossiê de 28/09/2026.
 - **Depósitos**: escolha de raiz/pastas pelo seletor oficial do Android, exportação de conversas, estudos, clientes e backup ZIP.
 - **Conexões / PC / Bíblia / Contas**: preservados.
 
@@ -57,3 +58,8 @@ Também executa `py_compile` no bridge T8i do Super Studio antes do build Androi
 - A integração T8i com o PC exige Super Studio online, URL/token local e ambiente Python isolado preparado.
 - Qwen-Image, Wan e outros modelos pesados continuam dependentes do PC/GPU ou de endpoints externos adequados.
 - Mi Band 9 Pro depende das capacidades expostas pelo Android/Mi Fitness; não é tratada como microfone genérico.
+
+
+## Dossiê / Portfólio
+
+A tela **Portfólio** usa `app/src/main/assets/portfolio_dossie.json` como fonte estruturada. Percentuais de cursos não são convertidos em horas e blocos de horas de natureza diferente não são somados. Dados financeiros de clientes não são publicados nesta tela.
