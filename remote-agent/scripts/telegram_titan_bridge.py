@@ -26,6 +26,23 @@ def stop(_signum: int, _frame: object) -> None:
     STOP = True
 
 
+def load_env_file() -> None:
+    env_path = ROOT / ".env"
+    try:
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        item = line.strip()
+        if not item or item.startswith("#") or "=" not in item:
+            continue
+        key, value = item.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
 def required_env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
@@ -71,6 +88,7 @@ def send_text(client: httpx.Client, token: str, chat_id: str, text: str) -> None
 
 
 def main() -> int:
+    load_env_file()
     try:
         token = required_env("TELEGRAM_BOT_TOKEN")
         allowed_chat_id = required_env("TELEGRAM_ALLOWED_CHAT_ID")
