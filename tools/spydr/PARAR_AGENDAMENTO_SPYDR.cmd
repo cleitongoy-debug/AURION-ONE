@@ -1,0 +1,2 @@
+@echo off
+powershell.exe -NoProfile -Command "Unregister-ScheduledTask -TaskName 'AURION_SPYDR_VIGIA_UNICO' -Confirm:$false -ErrorAction SilentlyContinue; Write-Host 'Agendamento SPYDR removido. Logs e fontes preservados.'"
