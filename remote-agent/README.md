@@ -58,7 +58,7 @@ O worker scripts/telegram_titan_bridge.py faz long polling do Telegram no PC e a
 
 Configure no .env local (nunca commitar valores):
 - TELEGRAM_BOT_TOKEN: token do bot existente.
-- TELEGRAM_ALLOWED_CHAT_ID: ID numérico do chat autorizado.
+- O worker aceita exclusivamente o Chat ID `2028747281`, fixado no código; outros chats são ignorados.
 - AURION_TITAN_CHAT_URL: URL completa de /backend/v1/titan/chat (opcional para contingência).
 - AURION_TITAN_CACHE_URL: URL completa de /backend/v1/titan/cache.
 - AURION_API_KEY: chave de serviço guardada no ambiente local e no servidor; nunca no bundle do navegador.
