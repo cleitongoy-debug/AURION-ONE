@@ -23,7 +23,7 @@ def test_fallback_uses_cached_records_and_discloses_offline_state() -> None:
         ],
     )
     assert "contingência local" in reply
-    assert "não é uma nova pesquisa" in reply
+    assert "não é uma nova pesquisa" in reply.lower()
     assert "Quem é o TITAN" in reply
     assert "titan_knowledge" in reply
 
