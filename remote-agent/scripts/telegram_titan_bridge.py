@@ -112,7 +112,7 @@ def refresh_cache(client: httpx.Client, cache_url: str, api_key: str) -> bool:
     if not cache_url or not api_key:
         return False
     try:
-        response = client.get(cache_url, headers={"X-API-Key": api_key})
+        response = client.get(cache_url, headers={"X-API-Key": api_key}, timeout=5.0)
         response.raise_for_status()
         payload = response.json()
         items = payload.get("items", [])
