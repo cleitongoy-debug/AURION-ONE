@@ -155,6 +155,7 @@ def ask_local_ollama(
     try:
         response = client.post(
             ollama_url,
+            timeout=25.0,
             json={
                 "model": model,
                 "stream": False,
@@ -243,7 +244,7 @@ def main() -> int:
                             token,
                             chat_id,
                             "Canal TITAN conectado. Envie sua mensagem normalmente. "
-                            "As respostas vêm do endpoint TITAN configurado; falhas serão informadas.",
+                            "Se o painel cair, tentarei usar o cache local e o Ollama deste PC.",
                         )
                         save_offset(offset)
                         continue
@@ -259,6 +260,7 @@ def main() -> int:
                                     "mode": mode,
                                     "conversation_id": f"telegram-{chat_id}",
                                 },
+                                timeout=8.0,
                             )
                             data = response.json() if response.content else {}
                             if response.is_success:
