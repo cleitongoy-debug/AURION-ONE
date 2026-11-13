@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OFFSET_FILE = ROOT / "data" / "telegram_titan_offset.json"
 CACHE_FILE = ROOT / "data" / "titan_memory_cache.json"
 CACHE_REFRESH_SECONDS = 300
+ALLOWED_CHAT_ID = "2028747281"
 STOP = False
 
 
@@ -50,6 +51,10 @@ def required_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Variável obrigatória ausente: {name}")
     return value
+
+
+def is_allowed_chat(chat_id: object) -> bool:
+    return str(chat_id or "") == ALLOWED_CHAT_ID
 
 
 def load_offset() -> int:
@@ -183,7 +188,6 @@ def main() -> int:
     load_env_file()
     try:
         token = required_env("TELEGRAM_BOT_TOKEN")
-        allowed_chat_id = required_env("TELEGRAM_ALLOWED_CHAT_ID")
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -234,7 +238,7 @@ def main() -> int:
                     text = str(message.get("text", "")).strip()
 
                     # Ignore all chats except the explicitly authorized owner chat.
-                    if chat_id != allowed_chat_id or not text:
+                    if not is_allowed_chat(chat_id) or not text:
                         save_offset(offset)
                         continue
 
