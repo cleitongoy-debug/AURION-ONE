@@ -50,3 +50,23 @@ de prompts serão feitas somente depois do teste local.
 
 O uso durante deslocamento fica limitado a estado passivo; comandos interativos
 devem ser feitos quando o usuário estiver parado em local seguro.
+
+
+## Ponte Telegram para o TITAN (opcional)
+
+O worker `scripts/telegram_titan_bridge.py` faz long polling do Telegram no PC e encaminha mensagens somente do chat autorizado para o endpoint TITAN já existente. Não abre porta local, não executa comandos do sistema e não envia e-mails.
+
+Configure no arquivo `.env` local (nunca commitar valores):
+- `TELEGRAM_BOT_TOKEN`: token do bot existente.
+- `TELEGRAM_ALLOWED_CHAT_ID`: ID numérico do chat autorizado do Capitão.
+- `AURION_TITAN_CHAT_URL`: URL completa de `/backend/v1/titan/chat`.
+- `AURION_API_KEY`: chave configurada no servidor TITAN.
+- `TITAN_CHAT_MODE`: `CURTO`, `PENSATIVO` ou `PROGRAMADOR`.
+
+Execute com o ambiente virtual ativo:
+
+```powershell
+.\\.venv\\Scripts\\python.exe .\\scripts\\telegram_titan_bridge.py
+```
+
+O worker persiste o offset de atualizações em `data/telegram_titan_offset.json`, ignora qualquer chat diferente do autorizado e oculta tokens dos logs. Ele só conecta quando as quatro variáveis obrigatórias estão configuradas. A conexão ainda precisa ser validada com o bot e o endpoint reais; o commit não ativa o worker nem configura o serviço de inicialização automática.
