@@ -6,6 +6,7 @@ on:
       - 'tools/aurion_chat_local.py'
       - 'tools/test_aurion_memory.py'
       - '.github/workflows/aurion-memory-tests.yml'
+      - 'remote-agent/**'
   pull_request:
     paths:
       - 'remote-agent/**'
