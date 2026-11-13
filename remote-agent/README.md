@@ -52,21 +52,33 @@ O uso durante deslocamento fica limitado a estado passivo; comandos interativos
 devem ser feitos quando o usuário estiver parado em local seguro.
 
 
-## Ponte Telegram para o TITAN (opcional)
+## Ponte Telegram independente para o TITAN
 
-O worker `scripts/telegram_titan_bridge.py` faz long polling do Telegram no PC e encaminha mensagens somente do chat autorizado para o endpoint TITAN já existente. Não abre porta local, não executa comandos do sistema e não envia e-mails.
+O worker scripts/telegram_titan_bridge.py faz long polling do Telegram no PC e aceita somente o chat autorizado. Não abre porta local, não executa comandos do sistema e não envia e-mails.
 
-Configure no arquivo `.env` local (nunca commitar valores):
-- `TELEGRAM_BOT_TOKEN`: token do bot existente.
-- `TELEGRAM_ALLOWED_CHAT_ID`: ID numérico do chat autorizado do Capitão.
-- `AURION_TITAN_CHAT_URL`: URL completa de `/backend/v1/titan/chat`.
-- `AURION_API_KEY`: chave configurada no servidor TITAN.
-- `TITAN_CHAT_MODE`: `CURTO`, `PENSATIVO` ou `PROGRAMADOR`.
+Configure no .env local (nunca commitar valores):
+- TELEGRAM_BOT_TOKEN: token do bot existente.
+- TELEGRAM_ALLOWED_CHAT_ID: ID numérico do chat autorizado.
+- AURION_TITAN_CHAT_URL: URL completa de /backend/v1/titan/chat (opcional para contingência).
+- AURION_TITAN_CACHE_URL: URL completa de /backend/v1/titan/cache.
+- AURION_API_KEY: chave de serviço guardada no ambiente local e no servidor; nunca no bundle do navegador.
+- TITAN_OLLAMA_URL e TITAN_OLLAMA_MODEL: endpoint e modelo já instalados no Ollama local.
 
-Execute com o ambiente virtual ativo:
+O worker atualiza o cache local a cada 5 minutos enquanto a API está acessível. Se o painel/API cair, ele tenta responder pelo Ollama local com esse cache; se o Ollama também estiver indisponível, devolve um resumo factual do cache e avisa que não fez pesquisa nova. O bot continua recebendo mensagens enquanto o PC e a conexão com Telegram permanecerem ligados.
+
+### Executar manualmente
 
 ```powershell
-.\\.venv\\Scripts\\python.exe .\\scripts\\telegram_titan_bridge.py
+.\.venv\Scripts\python.exe .\scripts\telegram_titan_bridge.py
 ```
 
-O worker persiste o offset de atualizações em `data/telegram_titan_offset.json`, ignora qualquer chat diferente do autorizado e oculta tokens dos logs. Ele só conecta quando as quatro variáveis obrigatórias estão configuradas. A conexão ainda precisa ser validada com o bot e o endpoint reais; o commit não ativa o worker nem configura o serviço de inicialização automática.
+### Inicialização automática no Windows
+
+Depois de configurar o .env, execute uma vez:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\install_telegram_titan_task.ps1
+```
+
+O instalador registra uma tarefa do Agendador do Windows no logon do usuário, com reinício automático após falha. Isso não foi instalado no PC do Capitão por este commit; é um instalador local a executar quando o PC estiver disponível.
