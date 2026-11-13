@@ -32,3 +32,11 @@ def test_fallback_without_cache_is_honest() -> None:
     reply = format_memory_fallback("Olá", [])
     assert "memória local ainda não estão disponíveis" in reply
     assert "tentará novamente" in reply
+
+
+def test_only_captain_chat_id_is_allowed() -> None:
+    from telegram_titan_bridge import is_allowed_chat
+
+    assert is_allowed_chat(2028747281)
+    assert not is_allowed_chat(2028747282)
+    assert not is_allowed_chat("")
