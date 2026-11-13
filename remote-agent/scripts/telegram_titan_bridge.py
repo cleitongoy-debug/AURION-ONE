@@ -18,6 +18,8 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFSET_FILE = ROOT / "data" / "telegram_titan_offset.json"
+CACHE_FILE = ROOT / "data" / "titan_memory_cache.json"
+CACHE_REFRESH_SECONDS = 300
 STOP = False
 
 
@@ -87,16 +89,109 @@ def send_text(client: httpx.Client, token: str, chat_id: str, text: str) -> None
         )
 
 
+def load_cache() -> list[dict[str, Any]]:
+    try:
+        payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+        items = payload.get("items", [])
+        return items if isinstance(items, list) else []
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return []
+
+
+def save_cache(items: list[dict[str, Any]], generated_at: str = "") -> None:
+    CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temp = CACHE_FILE.with_suffix(".tmp")
+    temp.write_text(
+        json.dumps({"generated_at": generated_at, "items": items}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    temp.replace(CACHE_FILE)
+
+
+def refresh_cache(client: httpx.Client, cache_url: str, api_key: str) -> bool:
+    if not cache_url or not api_key:
+        return False
+    try:
+        response = client.get(cache_url, headers={"X-API-Key": api_key})
+        response.raise_for_status()
+        payload = response.json()
+        items = payload.get("items", [])
+        if not isinstance(items, list):
+            return False
+        save_cache(items, str(payload.get("generated_at", "")))
+        return True
+    except (httpx.HTTPError, ValueError, TypeError):
+        return False
+
+
+def format_memory_fallback(message: str, items: list[dict[str, Any]]) -> str:
+    selected = items[:8]
+    if not selected:
+        return (
+            "TITAN em contingência: painel/API e memória local ainda não estão disponíveis. "
+            "A ponte Telegram segue online e tentará novamente."
+        )
+    lines = [
+        "TITAN em contingência local. A base profunda/servidor está offline; esta resposta usa "
+        "somente o cache consolidado neste computador. Não é uma nova pesquisa.",
+        "",
+        "Registros disponíveis:",
+    ]
+    for item in selected:
+        title = str(item.get("title") or item.get("key") or "Registro")[:120]
+        body = str(item.get("body") or "")[:500]
+        source = str(item.get("source") or "")
+        lines.append(f"- {title}: {body}" + (f" [origem: {source}]" if source else ""))
+    lines.extend(["", f"Mensagem recebida: {message[:500]}"])
+    return "\n".join(lines)
+
+
+def ask_local_ollama(
+    client: httpx.Client, message: str, items: list[dict[str, Any]], ollama_url: str, model: str
+) -> str:
+    if not ollama_url:
+        return ""
+    context = json.dumps(items[:30], ensure_ascii=False)[:18000]
+    try:
+        response = client.post(
+            ollama_url,
+            json={
+                "model": model,
+                "stream": False,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Você é o TITAN em contingência local. A base profunda e o painel podem estar offline. "
+                            "Use apenas o cache fornecido; não invente fatos nem alegue pesquisa nova. "
+                            "Avise que a resposta veio do cache local e diferencie fato de hipótese. Cache: " + context
+                        ),
+                    },
+                    {"role": "user", "content": message[:6000]},
+                ],
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
+        return str((data.get("message") or {}).get("content") or "").strip()
+    except (httpx.HTTPError, ValueError, TypeError):
+        return ""
+
+
 def main() -> int:
     load_env_file()
     try:
         token = required_env("TELEGRAM_BOT_TOKEN")
         allowed_chat_id = required_env("TELEGRAM_ALLOWED_CHAT_ID")
-        titan_url = required_env("AURION_TITAN_CHAT_URL")
-        api_key = required_env("AURION_API_KEY")
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 2
+
+    titan_url = os.environ.get("AURION_TITAN_CHAT_URL", "").strip()
+    cache_url = os.environ.get("AURION_TITAN_CACHE_URL", "").strip()
+    api_key = os.environ.get("AURION_API_KEY", "").strip()
+    ollama_url = os.environ.get("TITAN_OLLAMA_URL", "http://127.0.0.1:11434/api/chat").strip()
+    ollama_model = os.environ.get("TITAN_OLLAMA_MODEL", "llama3.1:8b").strip()
 
     mode = os.environ.get("TITAN_CHAT_MODE", "PENSATIVO").strip().upper()
     if mode not in {"CURTO", "PENSATIVO", "PROGRAMADOR"}:
@@ -107,13 +202,21 @@ def main() -> int:
         signal.signal(signal.SIGTERM, stop)
 
     offset = load_offset()
-    timeout = httpx.Timeout(100.0, connect=10.0)
+    timeout = httpx.Timeout(35.0, connect=5.0)
     headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
+    cached_items = load_cache()
+    last_cache_refresh = 0.0
 
-    print("[TITAN TELEGRAM] ponte iniciada; credenciais ocultas.", flush=True)
+    print("[TITAN TELEGRAM] ponte independente iniciada; credenciais ocultas.", flush=True)
     with httpx.Client(timeout=timeout) as client:
         while not STOP:
             try:
+                now = time.monotonic()
+                if cache_url and api_key and now - last_cache_refresh >= CACHE_REFRESH_SECONDS:
+                    if refresh_cache(client, cache_url, api_key):
+                        cached_items = load_cache()
+                        print("[TITAN TELEGRAM] cache local atualizado.", flush=True)
+                    last_cache_refresh = now
                 updates = telegram_call(
                     client,
                     token,
@@ -145,36 +248,31 @@ def main() -> int:
                         save_offset(offset)
                         continue
 
-                    try:
-                        response = client.post(
-                            titan_url,
-                            headers=headers,
-                            json={
-                                "message": text[:6000],
-                                "mode": mode,
-                                "conversation_id": f"telegram-{chat_id}",
-                            },
-                        )
-                        data = response.json() if response.content else {}
-                        if not response.is_success:
-                            detail = (data.get("error") or {}).get("message") or f"HTTP {response.status_code}"
-                            send_text(client, token, chat_id, f"TITAN não respondeu: {detail}")
-                        else:
-                            reply = str(data.get("reply") or "").strip()
-                            if not reply:
-                                send_text(client, token, chat_id, "TITAN retornou resposta vazia. A falha foi reportada.")
-                            else:
-                                send_text(client, token, chat_id, reply)
-                    except (httpx.HTTPError, ValueError, RuntimeError):
-                        send_text(
-                            client,
-                            token,
-                            chat_id,
-                            "Não consegui alcançar ou interpretar a resposta do TITAN. "
-                            "A ponte continua ativa e tentará receber novas mensagens.",
-                        )
-                    finally:
-                        save_offset(offset)
+                    reply = ""
+                    if titan_url and api_key:
+                        try:
+                            response = client.post(
+                                titan_url,
+                                headers=headers,
+                                json={
+                                    "message": text[:6000],
+                                    "mode": mode,
+                                    "conversation_id": f"telegram-{chat_id}",
+                                },
+                            )
+                            data = response.json() if response.content else {}
+                            if response.is_success:
+                                reply = str(data.get("reply") or "").strip()
+                        except (httpx.HTTPError, ValueError):
+                            pass
+
+                    # Painel/API fora do ar? O bot continua via cache local e Ollama.
+                    if not reply:
+                        reply = ask_local_ollama(client, text, cached_items, ollama_url, ollama_model)
+                    if not reply:
+                        reply = format_memory_fallback(text, cached_items)
+                    send_text(client, token, chat_id, reply)
+                    save_offset(offset)
 
             except (httpx.HTTPError, ValueError, RuntimeError):
                 # No exception text: it could contain the bot token URL.
