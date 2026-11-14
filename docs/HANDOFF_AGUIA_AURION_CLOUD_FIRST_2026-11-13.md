@@ -95,3 +95,33 @@ Responder no arquivo canônico e neste handoff:
 4) conectar memória online e TITAN;
 5) reativar agentes com heartbeat;
 6) corrigir testes e registrar tudo.
+
+
+---
+
+## ATUALIZAÇÃO FALCÃO — 2026-11-14: LEITOR DO DRIVE E CONTINUIDADE
+
+O operador forneceu o endereço do serviço já existente **Leitor do Google Drive**:
+`https://leitor-do-google-drive-bc578.shrd01.internal.goskip.dev`
+e mostrou o painel com catálogo informado de 6.091 itens. O operador autorizou a continuidade da integração com os serviços e credenciais já existentes. Nenhum valor de chave foi copiado para este documento ou para o GitHub.
+
+### Revisão estática do código de sincronização apresentado pelo operador
+- O serviço consulta a conta do Drive via conector de proprietário (`GOOGLEDRIVE_GET_ABOUT`) e enumera itens via `GOOGLEDRIVE_FIND_FILE`.
+- A rota de sincronização usa páginas de 100 itens e limita o loop a 50 páginas por execução: teto de 5.000 itens por execução.
+- O código apresentado encerra o loop também quando ocorre erro do conector e, mesmo assim, grava estado `completed` e retorna `success: true`. Portanto, o estado atual pode mascarar sincronização parcial.
+- O painel informa 6.091 itens. Esse número pode representar catálogo acumulado ou múltiplas execuções; não prova que uma única execução percorreu integralmente o Drive.
+- A leitura da origem Drive é não destrutiva; o serviço mantém catálogo/cache próprios e pode invalidar cache local quando metadados mudam.
+- A tela descrita também apresenta divergência entre “0 arquivos e 0 pastas” e “6.091 itens”. A causa ainda não foi localizada no código frontend/API completo.
+
+### Integração ainda não verificada em runtime
+O endpoint acima e a documentação `pocketbase/AURION_API_DOCS.md` foram mencionados, mas o conteúdo completo da documentação e as rotas de busca/leitura não estão presentes na branch `main) acessível nesta sessão. A sessão atual não dispõe de uma ferramenta de chamada HTTP genérica nem de conexão ao painel privado do Skip; portanto, não foi possível autenticar, testar rotas, consultar o secret manager, iniciar o runtime ou enviar mensagem Telegram. Não declarar essas ações como realizadas.
+
+### Próxima execução técnica obrigatória
+1. ÁGUIA/operador deve abrir o projeto Skip já existente e permitir que o agente com acesso ao workspace faça o inventário do runtime e dos secrets já configurados, sem revelar valores.
+2. Confirmar a especificação real de busca, leitura de conteúdo, autenticação e paginação no `AURION_API_DOCS.md`.
+3. Corrigir a sincronização para só marcar `completed` quando não houver `nextPageToken` e nenhuma falha; registrar estado parcial/erro e permitir continuação por cursor.
+4. Criar a integração TITAN → Leitor usando os endpoints reais, com limite, proveniência, cache e tratamento de formatos; não presumir que todos os 6.091 itens tenham texto extraído.
+5. Conectar os outros projetos Skip existentes pelo mecanismo de integração já configurado no workspace, sem criar serviços pagos ou duplicar memória.
+6. Só depois executar o teste de ponta a ponta e registrar evidência: pesquisa no acervo, leitura de documento, resposta do TITAN, estado do runtime e recibo Telegram.
+
+**Estado desta atualização:** inventário GitHub e revisão estática realizados; integração Skip, deploy cloud, Telegram e heartbeat permanecem NÃO VERIFICADOS. Esta atualização não altera nem revoga credenciais.
