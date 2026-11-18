@@ -1,0 +1,27 @@
+name: Evolution 5058 Tri-Fase QA
+on:
+  push:
+    branches:
+      - feature/evolution-trifase-5058-20261018
+  pull_request:
+    paths:
+      - AURION_ONE.py
+      - aurion_trifase_v1.py
+      - tests/test_trifase_5058.py
+      - .github/workflows/evolution-trifase-5058.yml
+permissions:
+  contents: read
+jobs:
+  tests:
+    name: Windows 5058 / no-key-leak
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile existing panel and new probes
+        run: python -m compileall -q AURION_ONE.py aurion_trifase_v1.py
+      - name: Run read-only tri-phase tests
+        run: python -m unittest discover -s tests -p test_trifase_5058.py -v
