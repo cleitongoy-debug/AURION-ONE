@@ -97,6 +97,45 @@ if ($TokenLine) {
 Write-Host "[AURION] Escaneando hardware, modelos e programas..."
 & $VenvPython "scripts\scan_system.py"
 
-Write-Host "[AURION] Abrindo portal..."
-Start-Process "http://127.0.0.1:8765/#token=$LocalToken"
-& $VenvPython "run.py"
+# The health endpoint is public but returns only service identity and status.
+# Do not treat an arbitrary HTTP 200 from a different app as AURION readiness.
+function Test-AurionReady {
+    try {
+        $Health = Invoke-RestMethod -Uri "http://127.0.0.1:8765/health" -TimeoutSec 2 -ErrorAction Stop
+        return ($Health.service -eq "aurion-home-node" -and $Health.status -eq "online")
+    } catch {
+        return $false
+    }
+}
+
+$PortalUrl = "http://127.0.0.1:8765/#token=$LocalToken"
+if (Test-AurionReady) {
+    Write-Host "[AURION] Portal ja ativo. Nao abrirei outra instancia."
+    Start-Process $PortalUrl
+    exit 0
+}
+
+Write-Host "[AURION] Iniciando servidor; aguardando health-check local..."
+$ServerProcess = Start-Process -FilePath $VenvPython -ArgumentList "run.py" -WorkingDirectory $AgentRoot -NoNewWindow -PassThru
+$Ready = $false
+for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
+    Start-Sleep -Seconds 1
+    $ServerProcess.Refresh()
+    if ($ServerProcess.HasExited) {
+        throw "[AURION] O servidor encerrou antes de ficar pronto (codigo $($ServerProcess.ExitCode)). Consulte o erro exibido acima."
+    }
+    if (Test-AurionReady) { $Ready = $true; break }
+}
+if (-not $Ready) {
+    $ServerProcess.Refresh()
+    if (-not $ServerProcess.HasExited) {
+        # Stop only the child spawned here, never an existing external service.
+        Stop-Process -Id $ServerProcess.Id -ErrorAction SilentlyContinue
+    }
+    throw "[AURION] Servidor nao respondeu em 30s. Portal NAO aberto. Verifique dependencias e logs."
+}
+
+Write-Host "[AURION] Health-check OK. Abrindo portal..."
+Start-Process $PortalUrl
+$ServerProcess.WaitForExit()
+exit $ServerProcess.ExitCode
