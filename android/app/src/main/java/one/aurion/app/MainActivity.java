@@ -436,6 +436,35 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private void writeProductionToWorkspace(String filename, String json) {
+        new Thread(() -> {
+            JSONObject result = new JSONObject();
+            try {
+                if (json == null || json.length() > 3_000_000) throw new IllegalArgumentException("Manifesto JSON inválido ou acima do limite");
+                String raw = getSharedPreferences("aurion_workspace", MODE_PRIVATE).getString("tree", "");
+                if (raw.isEmpty()) throw new IllegalStateException("Selecione a pasta de produção antes de exportar");
+                DocumentFile folder = DocumentFile.fromTreeUri(this, Uri.parse(raw));
+                if (folder == null || !folder.canWrite()) throw new IllegalStateException("Pasta sem permissão de escrita");
+                String name = (filename == null ? "AURION_PRODUCAO" : filename).replaceAll("[^A-Za-z0-9_.-]", "_");
+                if (!name.endsWith(".json")) name += ".json";
+                name = name.replace(".json", "_" + System.currentTimeMillis() + ".json");
+                DocumentFile dest = folder.createFile("application/json", name);
+                if (dest == null) throw new IllegalStateException("O provedor recusou criar o manifesto");
+                try (OutputStream stream = getContentResolver().openOutputStream(dest.getUri())) {
+                    if (stream == null) throw new IllegalStateException("Pasta sem acesso a gravação");
+                    stream.write(json.getBytes(StandardCharsets.UTF_8));
+                    stream.flush();
+                }
+                result.put("ok", true).put("filename", name).put("uri", dest.getUri().toString());
+                result.put("message", "Manifesto gravado na pasta autorizada pelo Android");
+                store.add("evidence", "Manifesto de produção exportado", name, result.toString());
+            } catch (Exception e) {
+                try { result.put("ok", false).put("error", e.getMessage()); } catch (Exception ignored) { }
+            }
+            emit("aurionProductionResult", result.toString());
+        }).start();
+    }
+
     private void shareText(String title, String text) {
         runOnUiThread(() -> {
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, text);
@@ -484,6 +513,7 @@ public class MainActivity extends Activity {
             catch (Exception e) { emit("aurionComfyResult", "{\"ok\":false,\"error\":\"Workflow JSON inválido\"}"); }
         }).start(); }
         @JavascriptInterface public void chooseWorkspace() { runOnUiThread(MainActivity.this::chooseWorkspace); }
+        @JavascriptInterface public void saveProductionManifest(String filename, String json) { writeProductionToWorkspace(filename, json); }
         @JavascriptInterface public void capturePhoto() { runOnUiThread(MainActivity.this::capturePhoto); }
         @JavascriptInterface public void convertImage(String format, int quality) { runOnUiThread(() -> chooseImageForConversion(format, quality)); }
         @JavascriptInterface public void saveEditedImage(String format, int quality, String dataUrl) { new Thread(() -> emit("aurionEditorResult", MediaTools.saveDataImage(MainActivity.this, format, quality, dataUrl).toString())).start(); }
