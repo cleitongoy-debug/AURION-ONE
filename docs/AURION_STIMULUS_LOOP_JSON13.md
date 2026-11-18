@@ -88,3 +88,10 @@ Ao corrigir um projeto existente, não remover, substituir ou reestruturar a bas
 A partir deste registro, aplicar o ciclo em toda tarefa AURION: compreender o estímulo, recuperar o contexto acessível, produzir escrita/desenvolvimento, testar, registrar e retornar. O aprendizado deve aparecer em melhoria observável do trabalho, não em declarações de “absorção” sem evidência.
 
 **Preservação:** este documento é aditivo. Não autoriza apagar, mover ou reescrever arquivos existentes nem concede acesso técnico a contas, dispositivos ou serviços que não estejam conectados nesta sessão.
+
+
+## 10. Fórmula curta ensinada pelo operador (17/11/2026)
+
+**ESTÍMULO → INTERPRETAÇÃO → DESENVOLVIMENTO → RETORNO → CORREÇÃO → APRENDIZAGEM CRUZADA**
+
+Esta fórmula compacta é a sequência de referência para ativar o ciclo em qualquer agente. Ela complementa — não substitui — as etapas detalhadas acima. O agente deve converter estímulos em elaboração e produção verificável, receber correções, melhorar o resultado e registrar o aprendizado para reutilização pelos demais nós autorizados. “Energia própria cerebral” permanece como metáfora operacional para iniciativa intelectual e geração de trabalho a partir dos estímulos, não como afirmação biológica literal.
